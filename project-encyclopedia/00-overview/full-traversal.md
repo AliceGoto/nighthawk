@@ -6,11 +6,11 @@
 
 | 指标 | 数值 |
 | --- | --- |
-| 非生成文件总数（排除 node_modules/dist/.git 等） | 4846 |
+| 非生成文件总数（排除 node_modules/dist/.git 等） | 4964 |
 | TypeScript/TSX 源文件 | 3936 |
-| Markdown 文件 | 486 |
+| Markdown 文件 | 604 |
 | JSON/JSONL 文件 | 270 |
-| 顶层目录 | `packages`、`apps`、`project-encyclopedia`、`reports`、`docs`、`.agents`、`plugins`、`scripts`、`build` 等 |
+| 顶层目录 | `packages`、`apps`、`project-encyclopedia`、`reports`、`docs`、`.agents`、`plugins`、`scripts`、`build`、`plan`、根文件 等 |
 
 > 统计来自 `.tmp/repo_stats.py`，当前仓库 HEAD 状态。
 
@@ -18,15 +18,67 @@
 
 | 目录 | 文件数 | 内容 |
 | --- | --- | --- |
-| `packages/` | 3461 | 18 个核心/支撑包，包含 agent 引擎、服务端、SDK、LLM 抽象、执行环境、TUI 框架、数据层 |
-| `apps/` | 930 | CLI/TUI、VS Code 扩展、inspect、vis 及内置 web/native 资源 |
-| `project-encyclopedia/` | 183 | 本项目深度文档集 |
-| `reports/` | 111 | 测试/运行事件 JSONL，多为自动化产出 |
-| `docs/` | 75 | VitePress 双语用户文档（不含 dist 后） |
-| `.agents/` | 29 | 仓库内置 AI 开发技能：agent-core-dev、gen-docs、write-tui、translate-docs 等 |
-| `plugins/` | 18 | 官方/精选插件市场与插件包 |
-| `scripts/` | 8 | 构建、守卫、安全冒烟、Nix 校验等脚本 |
-| `build/` | 3 | 原始文本加载器与 Vite 插件，用于打包 markdown 资源 |
+| `packages/` | 3534 | 19 个核心/支撑包，包含 agent 引擎、服务端、SDK、LLM 抽象、执行环境、TUI 框架、数据层 |
+| `apps/` | 943 | CLI/TUI、VS Code 扩展、inspect、vis 及内置 web/native 资源 |
+| `project-encyclopedia/` | 198 | 本项目深度文档集 |
+| `reports/` | 113 | 测试/运行事件 JSONL，多为自动化产出 |
+| `docs/` | 77 | VitePress 双语用户文档（不含 dist 后） |
+| `.agents/` | 31 | 仓库内置 AI 开发技能：agent-core-dev、gen-docs、write-tui、translate-docs 等 |
+| `plugins/` | 20 | 官方/精选插件市场与插件包 |
+| `scripts/` | 10 | 构建、守卫、安全冒烟、Nix 校验等脚本 |
+| `build/` | 5 | 原始文本加载器与 Vite 插件，用于打包 markdown 资源 |
+| `plan/` | 2 | 规划/设计文档目录 |
+| 根文件 | 31 | README、AGENTS、CONSTRAINTS、PROMPTS、INDEX 等 |
+
+## 约束文件
+
+为了“让工具严格遵守”，已在所有源码/工程目录生成 `CONSTRAINTS.md`，共 **74 个**：
+
+```text
+/CONSTRAINTS.md                     （根目录全局约束）
+packages/*/CONSTRAINTS.md           （19 个包）
+packages/*/src/CONSTRAINTS.md       （源码目录）
+packages/*/test/CONSTRAINTS.md      （测试目录）
+apps/*/CONSTRAINTS.md               （4 个应用）
+apps/*/src/CONSTRAINTS.md           （源码目录）
+apps/*/test/CONSTRAINTS.md          （测试目录）
+.agents/CONSTRAINTS.md
+.changeset/CONSTRAINTS.md
+.github/CONSTRAINTS.md
+build/CONSTRAINTS.md
+docs/CONSTRAINTS.md
+plan/CONSTRAINTS.md
+plugins/CONSTRAINTS.md
+project-encyclopedia/CONSTRAINTS.md
+reports/CONSTRAINTS.md
+scripts/CONSTRAINTS.md
+```
+
+每个文件包含：模块定位、开发提示词、硬约束、验证命令、相关文档。
+
+## 提示词文件
+
+除根 `PROMPTS.md` 外，每个包/应用目录和工程目录也有 `PROMPTS.md`，共 **34 个**：
+
+```text
+/PROMPTS.md
+packages/*/PROMPTS.md   （19 个包）
+apps/*/PROMPTS.md       （4 个应用）
+.agents/PROMPTS.md
+.changeset/PROMPTS.md
+.github/PROMPTS.md
+build/PROMPTS.md
+docs/PROMPTS.md
+plan/PROMPTS.md
+plugins/PROMPTS.md
+project-encyclopedia/PROMPTS.md
+reports/PROMPTS.md
+scripts/PROMPTS.md
+```
+
+每个文件包含：标准开发提示词、审查提示词、安全提示词、相关文档。
+
+
 
 ## 源码包清单
 
@@ -49,6 +101,7 @@
 | `packages/acp-adapter` | 18 | 37 | ACP 协议 v1 适配 |
 | `packages/acp-server` | 25 | 18 | ACP 协议 v2 宿主 |
 | `packages/tree-sitter-bash` | 7 | 8 | 纯 TS Bash 解析器 |
+| `packages/plugin-sdk` | 2 | 0 | 插件开发者 TypeScript 类型与工具 |
 | `packages/security-core` | 25 | 0 | 已弃用安全引擎参考实现 |
 
 ## 应用清单

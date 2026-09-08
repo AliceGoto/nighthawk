@@ -74,3 +74,7 @@ The theme apply/switch mechanics live in the `write-tui` skill. The following ru
 - Optional object properties do not need to additionally allow `undefined` in the type.
 - Internal methods with only a single parameter should not be turned into options objects just for stylistic uniformity.
 - Except for a package's own `index.ts`, other `index.ts` files should prefer `export * from './module'`.
+
+## Constraints
+
+Before modifying files in this directory, read `CONSTRAINTS.md` in this directory (and the nearest ancestor `CONSTRAINTS.md`). Follow it as hard rules. If it conflicts with this file, stop and report the conflict.

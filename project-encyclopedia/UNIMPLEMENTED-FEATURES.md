@@ -193,12 +193,6 @@ flowchart LR
   harness: NighthawkHarness,
   opts?:`
     - 类内方法（节选）：`setTimeout`
-  - `packages/node-sdk/src/sdk-rpc-client-v2.ts`：
-    - 导出签名/声明：
-      - `export interface SDKRpcClientV2Options {`
-      - `export class SDKRpcClientV2 extends SDKRpcClientBase`
-      - `export function createNighthawkHarnessV2(options: NighthawkHarnessOptions): NighthawkHarness`
-    - 类内方法（节选）：`ensureNighthawkHome`, `assertImportFits`
   - `packages/acp-adapter/src/question.ts`：
     - 导出签名/声明：
       - `export function questionItemToPermissionOptions(
@@ -209,6 +203,9 @@ flowchart LR
   question: QuestionItem,
   response: RequestPermissionResponse,
 ): QuestionAnswers | null`
+      - `export function questionRequestValidationError(
+  questions: readonly QuestionItem[],
+): string | null`
   - `packages/acp-adapter/src/events-map.ts`：
     - 导出签名/声明：
       - `export function assistantDeltaToSessionUpdate(
@@ -258,6 +255,8 @@ flowchart LR
   turnId: number,
   display: ToolInputDisplay,
 ): SessionNotification | null`
+      - `export const PLAN_ID = 'default';`
+      - `export function planRemovedToSessionUpdate(sessionId: string): SessionNotification`
       - `export function availableCommandsUpdateNotification(
   sessionId: string,
   commands: ReadonlyArray<AvailableCommand> = [],

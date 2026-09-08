@@ -8,7 +8,7 @@ allow/ask/deny DSL、模式、会话记忆和敏感路径。
 
 ## 模式
 
-normal/yolo/auto；`--yolo` 跳过常规审批，`--auto` 全自动。
+manual/yolo/auto；`--yolo` 跳过常规审批，`--auto` 全自动。
 
 ## 记忆
 

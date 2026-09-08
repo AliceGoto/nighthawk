@@ -162,6 +162,16 @@
 - 不改变与 tree-sitter-bash 的已记录差异。
 ```
 
+## packages/plugin-sdk
+
+```text
+请修改插件开发者 SDK。
+约束：
+- 保持纯类型/轻量工具，不依赖引擎运行时。
+- 新 manifest 字段必须同步引擎校验逻辑。
+- 保持 Marketplace 类型与 plugins/marketplace.json 一致。
+```
+
 ## packages/security-core
 
 ```text
@@ -170,6 +180,36 @@
 - 已弃用，不新增生产依赖。
 - 新安全逻辑应放入 agent-core 的 security 目录。
 ```
+
+## 逐函数实现说明
+
+以下按源码文件列出可验证的导出函数/类，并给出实现职责说明。
+
+
+## 核心代码片段
+
+以下片段直接从仓库源码截取，用于展示关键实现形态；完整实现请打开对应文件。
+
+> 本文证据路径没有可直接展示的 TS 源码片段。
+
+## 时序/状态图
+
+```mermaid
+flowchart LR
+    A[入口/调用方] --> B[本文核心模块]
+    B --> C[依赖服务/数据层]
+    C --> D[输出/事件/持久化]
+```
+
+> 图注：`14-prompts-constraints/per-package-prompts.md` 的抽象流程；具体参与者与状态以源码和上文函数说明为准。
+
+## 核心实现细节（源码导出）
+
+以下是本文涉及路径中的真实源码导出/结构，帮助你把概念映射到函数、类与方法：
+
+  - `packages/*/AGENTS.md`（路径不存在，请以仓库实际文件为准）
+  - `packages/*/package.json`（路径不存在，请以仓库实际文件为准）
+  - `project-encyclopedia/03-packages//`（目录内无 .ts 文件）
 
 ## 证据与代码位置
 

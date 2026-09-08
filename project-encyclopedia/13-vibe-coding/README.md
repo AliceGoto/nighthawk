@@ -2,7 +2,7 @@
 
 Vibe Coding 是一种“用自然语言描述产品/功能，让 AI Agent 自主完成编码”的开发方式。NightHawk 很适合 vibe coding，因为它同时具备：
 
-- 现代 coding agent 内核：Plan/Act/Observe/Reflect、工具调用、子 Agent、Skills、MCP
+- 现代 coding agent 内核：Turn/Step、工具调用、子 Agent、Skills、MCP
 - 原生安全引擎：写完代码后可以直接让 Agent 审计
 - 多种运行形态：终端 TUI、headless CLI、VS Code、Server/Web
 - 可编程的权限模式：`--yolo`、`--auto`、`--plan`

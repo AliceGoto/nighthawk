@@ -84,6 +84,39 @@ your-project/
 find . -name AGENTS.md -o -name README.md | sort
 ```
 
+## 逐函数实现说明
+
+以下按源码文件列出可验证的导出函数/类，并给出实现职责说明。
+
+
+## 核心代码片段
+
+以下片段直接从仓库源码截取，用于展示关键实现形态；完整实现请打开对应文件。
+
+> 本文证据路径没有可直接展示的 TS 源码片段。
+
+## 时序/状态图
+
+```mermaid
+flowchart LR
+    A[入口/调用方] --> B[本文核心模块]
+    B --> C[依赖服务/数据层]
+    C --> D[输出/事件/持久化]
+```
+
+> 图注：`14-prompts-constraints/folder-level-constraints.md` 的抽象流程；具体参与者与状态以源码和上文函数说明为准。
+
+## 核心实现细节（源码导出）
+
+以下是本文涉及路径中的真实源码导出/结构，帮助你把概念映射到函数、类与方法：
+
+  - `AGENTS.md`（非 TS 源码，可直接阅读）
+  - `apps/nighthawk/AGENTS.md`（非 TS 源码，可直接阅读）
+  - `packages/agent-core-v2/AGENTS.md`（非 TS 源码，可直接阅读）
+  - `packages/kap-server/AGENTS.md`（非 TS 源码，可直接阅读）
+  - `docs/en/customization/agents.md`（非 TS 源码，可直接阅读）
+  - `project-encyclopedia/13-vibe-coding/agents-md-and-skills.md`（非 TS 源码，可直接阅读）
+
 ## 证据与代码位置
 
 - `AGENTS.md`

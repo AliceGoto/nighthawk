@@ -78,7 +78,7 @@ flowchart LR
       - `export type { CompactionBeginData, CompactionResult } from './agent/compaction';`
       - `export type { UsageRecordScope } from './agent/usage';`
       - `export type { ToolStoreUpdate } from './tools/store';`
-    - 再导出：`./agent`, `./session`, `./rpc`, `./config`, `./flags`, `./session/export`, `./telemetry`, `./errors`, `./plugin`, `./di`, `./services`
+    - 再导出：`./agent`, `./session`, `./rpc`, `./config`, `./flags`, `./session/export`, `./telemetry`, `./errors`, `./plugin`, `./persona`, `./di`, `./services`
 
 ## 证据与代码位置
 

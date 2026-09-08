@@ -1,6 +1,22 @@
 # Agent 主循环
 
-v2 的 loop 由 stepRequest、turnOps、llmRequester、toolExecutor、toolScheduler 等协作完成 Plan/Act/Observe/Reflect。
+v2 的 loop 由 stepRequest、turnOps、llmRequester、toolExecutor、toolScheduler 等协作完成 Turn/Step。
+
+## 澄清：不是 Plan/Act/Observe/Reflect
+
+NightHawk 并没有实现独立的 Plan/Act/Observe/Reflect 四阶段状态机。实际循环是：
+
+```text
+Turn 开始
+  → Step：LLM 请求
+  → Step：工具执行（0..N 个，可并行）
+  → 结果写回 contextMemory
+  → 若模型继续请求工具，进入下一个 Step
+  → 否则 Turn 结束
+```
+
+`Plan` 是用户可选模式，不是循环阶段；`Observe`/`Reflect` 不是独立状态，而是由上下文管理、子 Agent、事件和提示词注入承担。
+
 
 ## 循环入口
 

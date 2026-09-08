@@ -1,6 +1,6 @@
 # Agent Loop 术语
 
-解释 Turn、Step、Plan/Act/Observe/Reflect、tool call、LLM requester。
+解释 Turn、Step、Tool Call、LLM Requester。NightHawk 的实际 Agent 循环是 Turn/Step 循环，不是 Plan/Act/Observe/Reflect 四阶段循环。
 
 ## Turn
 

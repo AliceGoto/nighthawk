@@ -4,14 +4,16 @@
 
 ## 总览
 
-- 源码/文档/配置文件总数：4846
+- 源码/文档/配置文件总数：4964
 
 ## 目录文件数（按前缀）
 
 | 路径前缀 | 文件数 |
 | --- | ---: |
 | `.DS_Store` | 1 |
-| `.agents` | 29 |
+| `.agents` | 31 |
+| `.agents/CONSTRAINTS.md` | 1 |
+| `.agents/PROMPTS.md` | 1 |
 | `.agents/skills` | 29 |
 | `.agents/skills/agent-core-dev` | 19 |
 | `.agents/skills/agent-core-review` | 3 |
@@ -28,69 +30,84 @@
 | `.oxlintrc.json` | 1 |
 | `AGENTS.md` | 1 |
 | `CLAUDE.md` | 1 |
+| `CONSTRAINTS.md` | 1 |
 | `CONTRIBUTING.md` | 1 |
 | `CONTRIBUTING.zh-CN.md` | 1 |
 | `GOAL.md` | 1 |
+| `INDEX.md` | 1 |
 | `LICENSE` | 1 |
 | `Makefile` | 1 |
+| `PROMPTS.md` | 1 |
 | `README.md` | 1 |
 | `README.zh-CN.md` | 1 |
 | `SECURITY.md` | 1 |
-| `apps` | 930 |
-| `apps/nighthawk` | 577 |
-| `apps/nighthawk-inspect` | 72 |
+| `apps` | 943 |
+| `apps/nighthawk` | 581 |
+| `apps/nighthawk-inspect` | 75 |
 | `apps/nighthawk-inspect/AGENTS.md` | 1 |
+| `apps/nighthawk-inspect/CONSTRAINTS.md` | 1 |
+| `apps/nighthawk-inspect/PROMPTS.md` | 1 |
 | `apps/nighthawk-inspect/README.md` | 1 |
 | `apps/nighthawk-inspect/index.html` | 1 |
 | `apps/nighthawk-inspect/package.json` | 1 |
-| `apps/nighthawk-inspect/src` | 64 |
+| `apps/nighthawk-inspect/src` | 65 |
 | `apps/nighthawk-inspect/tsconfig.json` | 1 |
 | `apps/nighthawk-inspect/vite` | 2 |
 | `apps/nighthawk-inspect/vite.config.ts` | 1 |
 | `apps/nighthawk/AGENTS.md` | 1 |
 | `apps/nighthawk/CHANGELOG.md` | 1 |
+| `apps/nighthawk/CONSTRAINTS.md` | 1 |
+| `apps/nighthawk/PROMPTS.md` | 1 |
 | `apps/nighthawk/README.md` | 1 |
 | `apps/nighthawk/native` | 4 |
 | `apps/nighthawk/package.json` | 1 |
 | `apps/nighthawk/scripts` | 35 |
-| `apps/nighthawk/src` | 315 |
-| `apps/nighthawk/test` | 213 |
+| `apps/nighthawk/src` | 316 |
+| `apps/nighthawk/test` | 214 |
 | `apps/nighthawk/tsconfig.dev.json` | 1 |
 | `apps/nighthawk/tsconfig.json` | 1 |
 | `apps/nighthawk/tsdown.config.ts` | 1 |
 | `apps/nighthawk/tsdown.native.config.ts` | 1 |
 | `apps/nighthawk/tsdown.worker.config.ts` | 1 |
 | `apps/nighthawk/vitest.config.ts` | 1 |
-| `apps/vis` | 117 |
+| `apps/vis` | 119 |
+| `apps/vis/CONSTRAINTS.md` | 1 |
+| `apps/vis/PROMPTS.md` | 1 |
 | `apps/vis/package.json` | 1 |
 | `apps/vis/scripts` | 1 |
 | `apps/vis/server` | 56 |
 | `apps/vis/web` | 59 |
-| `apps/vscode` | 164 |
+| `apps/vscode` | 168 |
 | `apps/vscode/.vscode` | 2 |
 | `apps/vscode/.vscode-test.mjs` | 1 |
 | `apps/vscode/.vscodeignore` | 1 |
 | `apps/vscode/CHANGELOG.md` | 1 |
+| `apps/vscode/CONSTRAINTS.md` | 1 |
 | `apps/vscode/LICENSE` | 1 |
+| `apps/vscode/PROMPTS.md` | 1 |
 | `apps/vscode/README.md` | 1 |
 | `apps/vscode/docs` | 1 |
 | `apps/vscode/package.json` | 1 |
 | `apps/vscode/scripts` | 12 |
 | `apps/vscode/shared` | 6 |
-| `apps/vscode/src` | 29 |
-| `apps/vscode/test` | 17 |
+| `apps/vscode/src` | 30 |
+| `apps/vscode/test` | 18 |
 | `apps/vscode/tsconfig.json` | 1 |
 | `apps/vscode/tsdown.config.ts` | 1 |
 | `apps/vscode/vitest.config.ts` | 1 |
 | `apps/vscode/webview-ui` | 88 |
-| `build` | 3 |
+| `build` | 5 |
+| `build/CONSTRAINTS.md` | 1 |
+| `build/PROMPTS.md` | 1 |
 | `build/raw-text-loader.mjs` | 1 |
 | `build/raw-text-plugin.mjs` | 1 |
 | `build/register-raw-text-loader.mjs` | 1 |
-| `docs` | 75 |
+| `docs` | 77 |
 | `docs/.DS_Store` | 1 |
 | `docs/AGENTS.md` | 1 |
+| `docs/CONSTRAINTS.md` | 1 |
 | `docs/FULL-FEATURE-SPEC.md` | 1 |
+| `docs/PROMPTS.md` | 1 |
 | `docs/architecture` | 1 |
 | `docs/architecture/plugin-and-extension-design.md` | 1 |
 | `docs/en` | 32 |
@@ -126,186 +143,229 @@
 | `latest.json` | 1 |
 | `mise.toml` | 1 |
 | `package.json` | 1 |
-| `packages` | 3461 |
-| `packages/acp-adapter` | 61 |
+| `packages` | 3534 |
+| `packages/acp-adapter` | 65 |
 | `packages/acp-adapter/CHANGELOG.md` | 1 |
+| `packages/acp-adapter/CONSTRAINTS.md` | 1 |
+| `packages/acp-adapter/PROMPTS.md` | 1 |
 | `packages/acp-adapter/README.md` | 1 |
 | `packages/acp-adapter/package.json` | 1 |
-| `packages/acp-adapter/src` | 18 |
-| `packages/acp-adapter/test` | 37 |
+| `packages/acp-adapter/src` | 19 |
+| `packages/acp-adapter/test` | 38 |
 | `packages/acp-adapter/tsconfig.json` | 1 |
 | `packages/acp-adapter/tsdown.config.ts` | 1 |
 | `packages/acp-adapter/vitest.config.ts` | 1 |
-| `packages/acp-server` | 49 |
+| `packages/acp-server` | 53 |
 | `packages/acp-server/CHANGELOG.md` | 1 |
+| `packages/acp-server/CONSTRAINTS.md` | 1 |
+| `packages/acp-server/PROMPTS.md` | 1 |
 | `packages/acp-server/package.json` | 1 |
-| `packages/acp-server/src` | 25 |
-| `packages/acp-server/test` | 19 |
+| `packages/acp-server/src` | 26 |
+| `packages/acp-server/test` | 20 |
 | `packages/acp-server/tsconfig.json` | 1 |
 | `packages/acp-server/tsdown.config.ts` | 1 |
 | `packages/acp-server/vitest.config.ts` | 1 |
-| `packages/agent-core` | 731 |
-| `packages/agent-core-v2` | 1455 |
+| `packages/agent-core` | 735 |
+| `packages/agent-core-v2` | 1459 |
 | `packages/agent-core-v2/AGENTS.md` | 1 |
 | `packages/agent-core-v2/CHANGELOG.md` | 1 |
+| `packages/agent-core-v2/CONSTRAINTS.md` | 1 |
+| `packages/agent-core-v2/PROMPTS.md` | 1 |
 | `packages/agent-core-v2/docs` | 11 |
 | `packages/agent-core-v2/package.json` | 1 |
 | `packages/agent-core-v2/scripts` | 9 |
-| `packages/agent-core-v2/src` | 1025 |
-| `packages/agent-core-v2/test` | 403 |
+| `packages/agent-core-v2/src` | 1026 |
+| `packages/agent-core-v2/test` | 404 |
 | `packages/agent-core-v2/tsconfig.contract.json` | 1 |
 | `packages/agent-core-v2/tsconfig.json` | 1 |
 | `packages/agent-core-v2/tsdown.config.ts` | 1 |
 | `packages/agent-core-v2/vitest.config.ts` | 1 |
 | `packages/agent-core/AGENTS.md` | 1 |
 | `packages/agent-core/CHANGELOG.md` | 1 |
+| `packages/agent-core/CONSTRAINTS.md` | 1 |
+| `packages/agent-core/PROMPTS.md` | 1 |
 | `packages/agent-core/README.md` | 1 |
 | `packages/agent-core/package.json` | 1 |
 | `packages/agent-core/scripts` | 1 |
-| `packages/agent-core/src` | 459 |
-| `packages/agent-core/test` | 264 |
+| `packages/agent-core/src` | 460 |
+| `packages/agent-core/test` | 265 |
 | `packages/agent-core/tsconfig.json` | 1 |
 | `packages/agent-core/tsdown.config.ts` | 1 |
 | `packages/agent-core/vitest.config.ts` | 1 |
-| `packages/kaos` | 39 |
+| `packages/kaos` | 43 |
 | `packages/kaos/CHANGELOG.md` | 1 |
+| `packages/kaos/CONSTRAINTS.md` | 1 |
+| `packages/kaos/PROMPTS.md` | 1 |
 | `packages/kaos/README.md` | 1 |
 | `packages/kaos/package.json` | 1 |
-| `packages/kaos/src` | 12 |
-| `packages/kaos/test` | 21 |
+| `packages/kaos/src` | 13 |
+| `packages/kaos/test` | 22 |
 | `packages/kaos/tsconfig.json` | 1 |
 | `packages/kaos/tsdown.config.ts` | 1 |
 | `packages/kaos/vitest.config.ts` | 1 |
-| `packages/kap-server` | 240 |
+| `packages/kap-server` | 244 |
 | `packages/kap-server/AGENTS.md` | 1 |
 | `packages/kap-server/CHANGELOG.md` | 1 |
+| `packages/kap-server/CONSTRAINTS.md` | 1 |
+| `packages/kap-server/PROMPTS.md` | 1 |
 | `packages/kap-server/package.json` | 1 |
-| `packages/kap-server/src` | 155 |
-| `packages/kap-server/test` | 78 |
+| `packages/kap-server/src` | 156 |
+| `packages/kap-server/test` | 79 |
 | `packages/kap-server/tsconfig.dev.json` | 1 |
 | `packages/kap-server/tsconfig.json` | 1 |
 | `packages/kap-server/tsdown.config.ts` | 1 |
 | `packages/kap-server/vitest.config.ts` | 1 |
-| `packages/klient` | 136 |
+| `packages/klient` | 140 |
 | `packages/klient/AGENTS.md` | 1 |
 | `packages/klient/CHANGELOG.md` | 1 |
+| `packages/klient/CONSTRAINTS.md` | 1 |
 | `packages/klient/Dockerfile` | 1 |
+| `packages/klient/PROMPTS.md` | 1 |
 | `packages/klient/README.md` | 1 |
 | `packages/klient/examples` | 7 |
 | `packages/klient/package.json` | 1 |
 | `packages/klient/reports` | 42 |
 | `packages/klient/scripts` | 1 |
-| `packages/klient/src` | 50 |
-| `packages/klient/test` | 27 |
+| `packages/klient/src` | 51 |
+| `packages/klient/test` | 28 |
 | `packages/klient/tsconfig.examples.json` | 1 |
 | `packages/klient/tsconfig.json` | 1 |
 | `packages/klient/tsdown.config.ts` | 1 |
 | `packages/klient/vitest.config.ts` | 1 |
-| `packages/kosong` | 91 |
+| `packages/kosong` | 95 |
 | `packages/kosong/CHANGELOG.md` | 1 |
+| `packages/kosong/CONSTRAINTS.md` | 1 |
+| `packages/kosong/PROMPTS.md` | 1 |
 | `packages/kosong/README.md` | 1 |
 | `packages/kosong/package.json` | 1 |
-| `packages/kosong/src` | 26 |
-| `packages/kosong/test` | 58 |
+| `packages/kosong/src` | 27 |
+| `packages/kosong/test` | 59 |
 | `packages/kosong/tsconfig.json` | 1 |
 | `packages/kosong/tsconfig.type-negative.json` | 1 |
 | `packages/kosong/tsdown.config.ts` | 1 |
 | `packages/kosong/vitest.config.ts` | 1 |
-| `packages/migration-legacy` | 101 |
+| `packages/migration-legacy` | 105 |
 | `packages/migration-legacy/CHANGELOG.md` | 1 |
+| `packages/migration-legacy/CONSTRAINTS.md` | 1 |
+| `packages/migration-legacy/PROMPTS.md` | 1 |
 | `packages/migration-legacy/package.json` | 1 |
-| `packages/migration-legacy/src` | 28 |
-| `packages/migration-legacy/test` | 68 |
+| `packages/migration-legacy/src` | 29 |
+| `packages/migration-legacy/test` | 69 |
 | `packages/migration-legacy/tsconfig.json` | 1 |
 | `packages/migration-legacy/tsdown.config.ts` | 1 |
 | `packages/migration-legacy/vitest.config.ts` | 1 |
-| `packages/minidb` | 137 |
+| `packages/minidb` | 141 |
 | `packages/minidb/AGENTS.md` | 1 |
 | `packages/minidb/CHANGELOG.md` | 1 |
+| `packages/minidb/CONSTRAINTS.md` | 1 |
 | `packages/minidb/DESIGN_NOTES.md` | 1 |
+| `packages/minidb/PROMPTS.md` | 1 |
 | `packages/minidb/README.md` | 1 |
 | `packages/minidb/bench` | 18 |
 | `packages/minidb/package.json` | 1 |
-| `packages/minidb/src` | 58 |
-| `packages/minidb/test` | 53 |
+| `packages/minidb/src` | 59 |
+| `packages/minidb/test` | 54 |
 | `packages/minidb/tsconfig.json` | 1 |
 | `packages/minidb/tsdown.config.ts` | 1 |
 | `packages/minidb/vitest.config.ts` | 1 |
-| `packages/node-sdk` | 83 |
+| `packages/node-sdk` | 87 |
 | `packages/node-sdk/CHANGELOG.md` | 1 |
+| `packages/node-sdk/CONSTRAINTS.md` | 1 |
+| `packages/node-sdk/PROMPTS.md` | 1 |
 | `packages/node-sdk/README.md` | 1 |
 | `packages/node-sdk/api-extractor.json` | 1 |
 | `packages/node-sdk/examples` | 18 |
 | `packages/node-sdk/package.json` | 1 |
 | `packages/node-sdk/scripts` | 1 |
-| `packages/node-sdk/src` | 20 |
-| `packages/node-sdk/test` | 35 |
+| `packages/node-sdk/src` | 21 |
+| `packages/node-sdk/test` | 36 |
 | `packages/node-sdk/tsconfig.api-extractor.json` | 1 |
 | `packages/node-sdk/tsconfig.dts.json` | 1 |
 | `packages/node-sdk/tsconfig.json` | 1 |
 | `packages/node-sdk/tsdown.config.ts` | 1 |
 | `packages/node-sdk/vitest.config.ts` | 1 |
-| `packages/oauth` | 53 |
+| `packages/oauth` | 57 |
 | `packages/oauth/CHANGELOG.md` | 1 |
+| `packages/oauth/CONSTRAINTS.md` | 1 |
+| `packages/oauth/PROMPTS.md` | 1 |
 | `packages/oauth/README.md` | 1 |
 | `packages/oauth/examples` | 1 |
 | `packages/oauth/package.json` | 1 |
-| `packages/oauth/src` | 26 |
-| `packages/oauth/test` | 20 |
+| `packages/oauth/src` | 27 |
+| `packages/oauth/test` | 21 |
 | `packages/oauth/tsconfig.json` | 1 |
 | `packages/oauth/tsdown.config.ts` | 1 |
 | `packages/oauth/vitest.config.ts` | 1 |
-| `packages/pi-tui` | 96 |
+| `packages/pi-tui` | 100 |
 | `packages/pi-tui/AGENTS.md` | 1 |
 | `packages/pi-tui/CHANGELOG.md` | 1 |
+| `packages/pi-tui/CONSTRAINTS.md` | 1 |
 | `packages/pi-tui/LICENSE` | 1 |
+| `packages/pi-tui/PROMPTS.md` | 1 |
 | `packages/pi-tui/README.md` | 1 |
 | `packages/pi-tui/native` | 10 |
 | `packages/pi-tui/package.json` | 1 |
-| `packages/pi-tui/src` | 40 |
-| `packages/pi-tui/test` | 39 |
+| `packages/pi-tui/src` | 41 |
+| `packages/pi-tui/test` | 40 |
 | `packages/pi-tui/tsconfig.json` | 1 |
 | `packages/pi-tui/vitest.config.ts` | 1 |
-| `packages/plugin-sdk` | 4 |
+| `packages/plugin-sdk` | 7 |
+| `packages/plugin-sdk/CONSTRAINTS.md` | 1 |
+| `packages/plugin-sdk/PROMPTS.md` | 1 |
 | `packages/plugin-sdk/package.json` | 1 |
-| `packages/plugin-sdk/src` | 2 |
+| `packages/plugin-sdk/src` | 3 |
 | `packages/plugin-sdk/tsconfig.json` | 1 |
-| `packages/protocol` | 75 |
+| `packages/protocol` | 78 |
 | `packages/protocol/CHANGELOG.md` | 1 |
+| `packages/protocol/CONSTRAINTS.md` | 1 |
+| `packages/protocol/PROMPTS.md` | 1 |
 | `packages/protocol/package.json` | 1 |
-| `packages/protocol/src` | 70 |
+| `packages/protocol/src` | 71 |
 | `packages/protocol/tsconfig.json` | 1 |
 | `packages/protocol/tsdown.config.ts` | 1 |
 | `packages/protocol/vitest.config.ts` | 1 |
-| `packages/security-core` | 26 |
+| `packages/security-core` | 29 |
+| `packages/security-core/CONSTRAINTS.md` | 1 |
+| `packages/security-core/PROMPTS.md` | 1 |
 | `packages/security-core/package.json` | 1 |
-| `packages/security-core/src` | 25 |
-| `packages/telemetry` | 16 |
+| `packages/security-core/src` | 26 |
+| `packages/telemetry` | 20 |
+| `packages/telemetry/CONSTRAINTS.md` | 1 |
+| `packages/telemetry/PROMPTS.md` | 1 |
 | `packages/telemetry/README.md` | 1 |
 | `packages/telemetry/package.json` | 1 |
-| `packages/telemetry/src` | 9 |
-| `packages/telemetry/test` | 2 |
+| `packages/telemetry/src` | 10 |
+| `packages/telemetry/test` | 3 |
 | `packages/telemetry/tsconfig.json` | 1 |
 | `packages/telemetry/tsdown.config.ts` | 1 |
 | `packages/telemetry/vitest.config.ts` | 1 |
-| `packages/transcript` | 32 |
+| `packages/transcript` | 36 |
 | `packages/transcript/AGENTS.md` | 1 |
 | `packages/transcript/CHANGELOG.md` | 1 |
+| `packages/transcript/CONSTRAINTS.md` | 1 |
+| `packages/transcript/PROMPTS.md` | 1 |
 | `packages/transcript/package.json` | 1 |
-| `packages/transcript/src` | 24 |
-| `packages/transcript/test` | 2 |
+| `packages/transcript/src` | 25 |
+| `packages/transcript/test` | 3 |
 | `packages/transcript/tsconfig.json` | 1 |
 | `packages/transcript/tsdown.config.ts` | 1 |
 | `packages/transcript/vitest.config.ts` | 1 |
-| `packages/tree-sitter-bash` | 36 |
+| `packages/tree-sitter-bash` | 40 |
+| `packages/tree-sitter-bash/CONSTRAINTS.md` | 1 |
+| `packages/tree-sitter-bash/PROMPTS.md` | 1 |
 | `packages/tree-sitter-bash/README.md` | 1 |
 | `packages/tree-sitter-bash/package.json` | 1 |
-| `packages/tree-sitter-bash/src` | 7 |
-| `packages/tree-sitter-bash/test` | 24 |
+| `packages/tree-sitter-bash/src` | 8 |
+| `packages/tree-sitter-bash/test` | 25 |
 | `packages/tree-sitter-bash/tsconfig.json` | 1 |
 | `packages/tree-sitter-bash/tsdown.config.ts` | 1 |
 | `packages/tree-sitter-bash/vitest.config.ts` | 1 |
-| `plugins` | 18 |
+| `plan` | 2 |
+| `plan/CONSTRAINTS.md` | 1 |
+| `plan/PROMPTS.md` | 1 |
+| `plugins` | 20 |
+| `plugins/CONSTRAINTS.md` | 1 |
+| `plugins/PROMPTS.md` | 1 |
 | `plugins/cdn` | 2 |
 | `plugins/cdn/.nighthawk-plugin-marketplace-build.json` | 1 |
 | `plugins/cdn/marketplace.json` | 1 |
@@ -316,7 +376,7 @@
 | `plugins/official/nighthawk-webbridge` | 3 |
 | `pnpm-lock.yaml` | 1 |
 | `pnpm-workspace.yaml` | 1 |
-| `project-encyclopedia` | 183 |
+| `project-encyclopedia` | 198 |
 | `project-encyclopedia/00-overview` | 13 |
 | `project-encyclopedia/00-overview/README.md` | 1 |
 | `project-encyclopedia/00-overview/build-and-reports.md` | 1 |
@@ -358,7 +418,8 @@
 | `project-encyclopedia/02-applications/nighthawk-vscode.md` | 1 |
 | `project-encyclopedia/02-applications/vis.md` | 1 |
 | `project-encyclopedia/02-applications/webui.md` | 1 |
-| `project-encyclopedia/03-packages` | 54 |
+| `project-encyclopedia/03-packages` | 58 |
+| `project-encyclopedia/03-packages/README.md` | 1 |
 | `project-encyclopedia/03-packages/acp-adapter` | 3 |
 | `project-encyclopedia/03-packages/acp-server` | 3 |
 | `project-encyclopedia/03-packages/agent-core` | 3 |
@@ -372,6 +433,7 @@
 | `project-encyclopedia/03-packages/node-sdk` | 3 |
 | `project-encyclopedia/03-packages/oauth` | 3 |
 | `project-encyclopedia/03-packages/pi-tui` | 3 |
+| `project-encyclopedia/03-packages/plugin-sdk` | 3 |
 | `project-encyclopedia/03-packages/protocol` | 3 |
 | `project-encyclopedia/03-packages/security-core` | 3 |
 | `project-encyclopedia/03-packages/telemetry` | 3 |
@@ -475,9 +537,23 @@
 | `project-encyclopedia/13-vibe-coding/role-prompts.md` | 1 |
 | `project-encyclopedia/13-vibe-coding/security-review.md` | 1 |
 | `project-encyclopedia/13-vibe-coding/workflow.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints` | 7 |
+| `project-encyclopedia/14-prompts-constraints/README.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints/enforcement.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints/folder-level-constraints.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints/global-constraints.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints/index.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints/per-feature-prompts.md` | 1 |
+| `project-encyclopedia/14-prompts-constraints/per-package-prompts.md` | 1 |
+| `project-encyclopedia/COMPLETION.md` | 1 |
+| `project-encyclopedia/CONSTRAINTS.md` | 1 |
+| `project-encyclopedia/PROMPTS.md` | 1 |
 | `project-encyclopedia/README.md` | 1 |
 | `project-encyclopedia/UNIMPLEMENTED-FEATURES.md` | 1 |
-| `reports` | 111 |
+| `project-encyclopedia/VERIFICATION.md` | 1 |
+| `reports` | 113 |
+| `reports/CONSTRAINTS.md` | 1 |
+| `reports/PROMPTS.md` | 1 |
 | `reports/latest` | 111 |
 | `reports/latest/events-33043.jsonl` | 1 |
 | `reports/latest/events-33045.jsonl` | 1 |
@@ -590,7 +666,9 @@
 | `reports/latest/events-95037.jsonl` | 1 |
 | `reports/latest/events-95039.jsonl` | 1 |
 | `reports/latest/events-95040.jsonl` | 1 |
-| `scripts` | 8 |
+| `scripts` | 10 |
+| `scripts/CONSTRAINTS.md` | 1 |
+| `scripts/PROMPTS.md` | 1 |
 | `scripts/build.mjs` | 1 |
 | `scripts/check-nix-workspace.mjs` | 1 |
 | `scripts/check-no-comments.mjs` | 1 |
@@ -606,6 +684,8 @@
 ## 完整文件列表（相对路径）
 
 - `.DS_Store`
+- `.agents/CONSTRAINTS.md`
+- `.agents/PROMPTS.md`
 - `.agents/skills/agent-core-dev/SKILL.md`
 - `.agents/skills/agent-core-dev/align.md`
 - `.agents/skills/agent-core-dev/close-vs-dispose.md`
@@ -642,16 +722,21 @@
 - `.oxlintrc.json`
 - `AGENTS.md`
 - `CLAUDE.md`
+- `CONSTRAINTS.md`
 - `CONTRIBUTING.md`
 - `CONTRIBUTING.zh-CN.md`
 - `GOAL.md`
+- `INDEX.md`
 - `LICENSE`
 - `Makefile`
+- `PROMPTS.md`
 - `README.md`
 - `README.zh-CN.md`
 - `SECURITY.md`
 - `apps/nighthawk/AGENTS.md`
 - `apps/nighthawk/CHANGELOG.md`
+- `apps/nighthawk/CONSTRAINTS.md`
+- `apps/nighthawk/PROMPTS.md`
 - `apps/nighthawk/README.md`
 - `apps/nighthawk/native/darwin/prebuilds/darwin-arm64/darwin-modifiers.node`
 - `apps/nighthawk/native/darwin/prebuilds/darwin-x64/darwin-modifiers.node`
@@ -693,6 +778,7 @@
 - `apps/nighthawk/scripts/smoke.mjs`
 - `apps/nighthawk/scripts/update-catalog.mjs`
 - `apps/nighthawk/scripts/update-model-context.mjs`
+- `apps/nighthawk/src/CONSTRAINTS.md`
 - `apps/nighthawk/src/built-in-catalog.ts`
 - `apps/nighthawk/src/cli/agent-selection.ts`
 - `apps/nighthawk/src/cli/build-info.ts`
@@ -1008,6 +1094,7 @@
 - `apps/nighthawk/src/utils/terminal-restore.ts`
 - `apps/nighthawk/src/utils/usage/debug-timing.ts`
 - `apps/nighthawk/src/utils/usage/usage-format.ts`
+- `apps/nighthawk/test/CONSTRAINTS.md`
 - `apps/nighthawk/test/cli/acp-native.test.ts`
 - `apps/nighthawk/test/cli/acp.test.ts`
 - `apps/nighthawk/test/cli/doctor.test.ts`
@@ -1228,10 +1315,13 @@
 - `apps/nighthawk/tsdown.worker.config.ts`
 - `apps/nighthawk/vitest.config.ts`
 - `apps/nighthawk-inspect/AGENTS.md`
+- `apps/nighthawk-inspect/CONSTRAINTS.md`
+- `apps/nighthawk-inspect/PROMPTS.md`
 - `apps/nighthawk-inspect/README.md`
 - `apps/nighthawk-inspect/index.html`
 - `apps/nighthawk-inspect/package.json`
 - `apps/nighthawk-inspect/src/App.tsx`
+- `apps/nighthawk-inspect/src/CONSTRAINTS.md`
 - `apps/nighthawk-inspect/src/activity/di.ts`
 - `apps/nighthawk-inspect/src/activity/store.test.ts`
 - `apps/nighthawk-inspect/src/activity/store.ts`
@@ -1299,6 +1389,8 @@
 - `apps/nighthawk-inspect/vite/serverDiscovery.test.ts`
 - `apps/nighthawk-inspect/vite/serverDiscovery.ts`
 - `apps/nighthawk-inspect/vite.config.ts`
+- `apps/vis/CONSTRAINTS.md`
+- `apps/vis/PROMPTS.md`
 - `apps/vis/package.json`
 - `apps/vis/scripts/dev.mjs`
 - `apps/vis/server/package.json`
@@ -1421,7 +1513,9 @@
 - `apps/vscode/.vscode-test.mjs`
 - `apps/vscode/.vscodeignore`
 - `apps/vscode/CHANGELOG.md`
+- `apps/vscode/CONSTRAINTS.md`
 - `apps/vscode/LICENSE`
+- `apps/vscode/PROMPTS.md`
 - `apps/vscode/README.md`
 - `apps/vscode/docs/node-sdk-migration.md`
 - `apps/vscode/package.json`
@@ -1443,6 +1537,7 @@
 - `apps/vscode/shared/legacy-sdk.ts`
 - `apps/vscode/shared/types.ts`
 - `apps/vscode/shared/utils.ts`
+- `apps/vscode/src/CONSTRAINTS.md`
 - `apps/vscode/src/NighthawkWebviewProvider.ts`
 - `apps/vscode/src/bridge-handler.ts`
 - `apps/vscode/src/config/vscode-settings.ts`
@@ -1472,6 +1567,7 @@
 - `apps/vscode/src/utils/session-context.ts`
 - `apps/vscode/src/utils/string.ts`
 - `apps/vscode/src/utils/workspace-path.ts`
+- `apps/vscode/test/CONSTRAINTS.md`
 - `apps/vscode/test/app-init.test.ts`
 - `apps/vscode/test/baseline.manager.test.ts`
 - `apps/vscode/test/bridge-handler.test.ts`
@@ -1580,12 +1676,16 @@
 - `apps/vscode/webview-ui/src/vite-env.d.ts`
 - `apps/vscode/webview-ui/tsconfig.json`
 - `apps/vscode/webview-ui/vite.config.ts`
+- `build/CONSTRAINTS.md`
+- `build/PROMPTS.md`
 - `build/raw-text-loader.mjs`
 - `build/raw-text-plugin.mjs`
 - `build/register-raw-text-loader.mjs`
 - `docs/.DS_Store`
 - `docs/AGENTS.md`
+- `docs/CONSTRAINTS.md`
 - `docs/FULL-FEATURE-SPEC.md`
+- `docs/PROMPTS.md`
 - `docs/architecture/plugin-and-extension-design.md`
 - `docs/en/architecture/plugin-and-extension-design.md`
 - `docs/en/configuration/config-files.md`
@@ -1666,8 +1766,11 @@
 - `mise.toml`
 - `package.json`
 - `packages/acp-adapter/CHANGELOG.md`
+- `packages/acp-adapter/CONSTRAINTS.md`
+- `packages/acp-adapter/PROMPTS.md`
 - `packages/acp-adapter/README.md`
 - `packages/acp-adapter/package.json`
+- `packages/acp-adapter/src/CONSTRAINTS.md`
 - `packages/acp-adapter/src/approval.ts`
 - `packages/acp-adapter/src/builtin-commands.ts`
 - `packages/acp-adapter/src/config-options.ts`
@@ -1686,6 +1789,7 @@
 - `packages/acp-adapter/src/slash.ts`
 - `packages/acp-adapter/src/types.ts`
 - `packages/acp-adapter/src/version.ts`
+- `packages/acp-adapter/test/CONSTRAINTS.md`
 - `packages/acp-adapter/test/_helpers/harness-stubs.ts`
 - `packages/acp-adapter/test/approval-cancel.test.ts`
 - `packages/acp-adapter/test/approval-display.test.ts`
@@ -1727,7 +1831,10 @@
 - `packages/acp-adapter/tsdown.config.ts`
 - `packages/acp-adapter/vitest.config.ts`
 - `packages/acp-server/CHANGELOG.md`
+- `packages/acp-server/CONSTRAINTS.md`
+- `packages/acp-server/PROMPTS.md`
 - `packages/acp-server/package.json`
+- `packages/acp-server/src/CONSTRAINTS.md`
 - `packages/acp-server/src/acp-client.ts`
 - `packages/acp-server/src/acp-fs/acpConnection.ts`
 - `packages/acp-server/src/acp-fs/acpFsService.ts`
@@ -1753,6 +1860,7 @@
 - `packages/acp-server/src/start.ts`
 - `packages/acp-server/src/types.ts`
 - `packages/acp-server/src/version.ts`
+- `packages/acp-server/test/CONSTRAINTS.md`
 - `packages/acp-server/test/_helpers/acpClient.ts`
 - `packages/acp-server/test/_helpers/fakeModelConfig.ts`
 - `packages/acp-server/test/_helpers/png.ts`
@@ -1777,9 +1885,12 @@
 - `packages/acp-server/vitest.config.ts`
 - `packages/agent-core/AGENTS.md`
 - `packages/agent-core/CHANGELOG.md`
+- `packages/agent-core/CONSTRAINTS.md`
+- `packages/agent-core/PROMPTS.md`
 - `packages/agent-core/README.md`
 - `packages/agent-core/package.json`
 - `packages/agent-core/scripts/generate-webp-dec-wasm.mjs`
+- `packages/agent-core/src/CONSTRAINTS.md`
 - `packages/agent-core/src/agent/background/agent-task.ts`
 - `packages/agent-core/src/agent/background/index.ts`
 - `packages/agent-core/src/agent/background/persist.ts`
@@ -2239,6 +2350,7 @@
 - `packages/agent-core/src/utils/workdir-slug.ts`
 - `packages/agent-core/src/utils/xml-escape.ts`
 - `packages/agent-core/src/version.ts`
+- `packages/agent-core/test/CONSTRAINTS.md`
 - `packages/agent-core/test/agent/background/agent-timeout.test.ts`
 - `packages/agent-core/test/agent/background/foreground-persistence.test.ts`
 - `packages/agent-core/test/agent/background/heartbeat-stale.test.ts`
@@ -2508,6 +2620,8 @@
 - `packages/agent-core/vitest.config.ts`
 - `packages/agent-core-v2/AGENTS.md`
 - `packages/agent-core-v2/CHANGELOG.md`
+- `packages/agent-core-v2/CONSTRAINTS.md`
+- `packages/agent-core-v2/PROMPTS.md`
 - `packages/agent-core-v2/docs/Permission.md`
 - `packages/agent-core-v2/docs/config-manifest.toml`
 - `packages/agent-core-v2/docs/di-testing.md`
@@ -2529,6 +2643,7 @@
 - `packages/agent-core-v2/scripts/gen-wire-manifest.mts`
 - `packages/agent-core-v2/scripts/generate-webp-dec-wasm.mjs`
 - `packages/agent-core-v2/scripts/lib/jsonSchema.mts`
+- `packages/agent-core-v2/src/CONSTRAINTS.md`
 - `packages/agent-core-v2/src/_base/asyncEventQueue.ts`
 - `packages/agent-core-v2/src/_base/contribution/registry.ts`
 - `packages/agent-core-v2/src/_base/di/cascadeEngine.ts`
@@ -3554,6 +3669,7 @@
 - `packages/agent-core-v2/src/workspace/workspaceTrust/trustRecord.ts`
 - `packages/agent-core-v2/src/workspace/workspaceTrust/workspaceTrust.ts`
 - `packages/agent-core-v2/src/workspace/workspaceTrust/workspaceTrustService.ts`
+- `packages/agent-core-v2/test/CONSTRAINTS.md`
 - `packages/agent-core-v2/test/_base/contribution/registry.test.ts`
 - `packages/agent-core-v2/test/_base/di/auto-inject.test.ts`
 - `packages/agent-core-v2/test/_base/di/cascade.test.ts`
@@ -3962,8 +4078,11 @@
 - `packages/agent-core-v2/tsdown.config.ts`
 - `packages/agent-core-v2/vitest.config.ts`
 - `packages/kaos/CHANGELOG.md`
+- `packages/kaos/CONSTRAINTS.md`
+- `packages/kaos/PROMPTS.md`
 - `packages/kaos/README.md`
 - `packages/kaos/package.json`
+- `packages/kaos/src/CONSTRAINTS.md`
 - `packages/kaos/src/current.ts`
 - `packages/kaos/src/environment.ts`
 - `packages/kaos/src/errors.ts`
@@ -3976,6 +4095,7 @@
 - `packages/kaos/src/shell-path-bridge.ts`
 - `packages/kaos/src/ssh.ts`
 - `packages/kaos/src/types.ts`
+- `packages/kaos/test/CONSTRAINTS.md`
 - `packages/kaos/test/cmd.test.ts`
 - `packages/kaos/test/current.test.ts`
 - `packages/kaos/test/e2e/concurrent-operations.test.ts`
@@ -4002,7 +4122,10 @@
 - `packages/kaos/vitest.config.ts`
 - `packages/kap-server/AGENTS.md`
 - `packages/kap-server/CHANGELOG.md`
+- `packages/kap-server/CONSTRAINTS.md`
+- `packages/kap-server/PROMPTS.md`
 - `packages/kap-server/package.json`
+- `packages/kap-server/src/CONSTRAINTS.md`
 - `packages/kap-server/src/contract.ts`
 - `packages/kap-server/src/env.d.ts`
 - `packages/kap-server/src/envelope.ts`
@@ -4158,6 +4281,7 @@
 - `packages/kap-server/src/transport/ws/v1/subagentRosterTracker.ts`
 - `packages/kap-server/src/transport/ws/v1/wsConnectionV1.ts`
 - `packages/kap-server/src/version.ts`
+- `packages/kap-server/test/CONSTRAINTS.md`
 - `packages/kap-server/test/__snapshots__/apiSurface.snapshot.test.ts.snap`
 - `packages/kap-server/test/apiSurface.snapshot.test.ts`
 - `packages/kap-server/test/approvals.test.ts`
@@ -4242,7 +4366,9 @@
 - `packages/kap-server/vitest.config.ts`
 - `packages/klient/AGENTS.md`
 - `packages/klient/CHANGELOG.md`
+- `packages/klient/CONSTRAINTS.md`
 - `packages/klient/Dockerfile`
+- `packages/klient/PROMPTS.md`
 - `packages/klient/README.md`
 - `packages/klient/examples/basic.ts`
 - `packages/klient/examples/context-usage.ts`
@@ -4295,6 +4421,7 @@
 - `packages/klient/reports/latest/events-9555.jsonl`
 - `packages/klient/reports/vitest/latest/index.html`
 - `packages/klient/scripts/run-docker-e2e.sh`
+- `packages/klient/src/CONSTRAINTS.md`
 - `packages/klient/src/contract/agent/activity.ts`
 - `packages/klient/src/contract/agent/events.ts`
 - `packages/klient/src/contract/agent/schemas.ts`
@@ -4345,6 +4472,7 @@
 - `packages/klient/src/transports/memory/dispatcher.ts`
 - `packages/klient/src/transports/memory/index.ts`
 - `packages/klient/src/transports/memory/serviceRegistry.ts`
+- `packages/klient/test/CONSTRAINTS.md`
 - `packages/klient/test/contract-parity.ts`
 - `packages/klient/test/contract.test.ts`
 - `packages/klient/test/e2e/harness/client.ts`
@@ -4377,8 +4505,11 @@
 - `packages/klient/tsdown.config.ts`
 - `packages/klient/vitest.config.ts`
 - `packages/kosong/CHANGELOG.md`
+- `packages/kosong/CONSTRAINTS.md`
+- `packages/kosong/PROMPTS.md`
 - `packages/kosong/README.md`
 - `packages/kosong/package.json`
+- `packages/kosong/src/CONSTRAINTS.md`
 - `packages/kosong/src/capability.ts`
 - `packages/kosong/src/catalog.ts`
 - `packages/kosong/src/errors.ts`
@@ -4405,6 +4536,7 @@
 - `packages/kosong/src/providers/tool-call-id.ts`
 - `packages/kosong/src/tool.ts`
 - `packages/kosong/src/usage.ts`
+- `packages/kosong/test/CONSTRAINTS.md`
 - `packages/kosong/test/anthropic-errors.test.ts`
 - `packages/kosong/test/anthropic.test.ts`
 - `packages/kosong/test/capability-providers.test.ts`
@@ -4468,7 +4600,10 @@
 - `packages/kosong/tsdown.config.ts`
 - `packages/kosong/vitest.config.ts`
 - `packages/migration-legacy/CHANGELOG.md`
+- `packages/migration-legacy/CONSTRAINTS.md`
+- `packages/migration-legacy/PROMPTS.md`
 - `packages/migration-legacy/package.json`
+- `packages/migration-legacy/src/CONSTRAINTS.md`
 - `packages/migration-legacy/src/atomic-write.ts`
 - `packages/migration-legacy/src/detect.ts`
 - `packages/migration-legacy/src/index.ts`
@@ -4497,6 +4632,7 @@
 - `packages/migration-legacy/src/steps/user-history.ts`
 - `packages/migration-legacy/src/stub-detect.ts`
 - `packages/migration-legacy/src/types.ts`
+- `packages/migration-legacy/test/CONSTRAINTS.md`
 - `packages/migration-legacy/test/atomic-write.test.ts`
 - `packages/migration-legacy/test/detect.test.ts`
 - `packages/migration-legacy/test/fixtures/archived/context.jsonl`
@@ -4570,7 +4706,9 @@
 - `packages/migration-legacy/vitest.config.ts`
 - `packages/minidb/AGENTS.md`
 - `packages/minidb/CHANGELOG.md`
+- `packages/minidb/CONSTRAINTS.md`
 - `packages/minidb/DESIGN_NOTES.md`
+- `packages/minidb/PROMPTS.md`
 - `packages/minidb/README.md`
 - `packages/minidb/bench/baseline.ts`
 - `packages/minidb/bench/bench.ts`
@@ -4591,6 +4729,7 @@
 - `packages/minidb/bench/session-store-demo.ts`
 - `packages/minidb/bench/session-store.ts`
 - `packages/minidb/package.json`
+- `packages/minidb/src/CONSTRAINTS.md`
 - `packages/minidb/src/backup.ts`
 - `packages/minidb/src/cluster/coordinator.ts`
 - `packages/minidb/src/cluster/index.ts`
@@ -4649,6 +4788,7 @@
 - `packages/minidb/src/worker/text-build.ts`
 - `packages/minidb/src/worker-runtime.ts`
 - `packages/minidb/src/write-path.ts`
+- `packages/minidb/test/CONSTRAINTS.md`
 - `packages/minidb/test/batch.test.ts`
 - `packages/minidb/test/bench-json.test.ts`
 - `packages/minidb/test/cluster/basic.test.ts`
@@ -4706,6 +4846,8 @@
 - `packages/minidb/tsdown.config.ts`
 - `packages/minidb/vitest.config.ts`
 - `packages/node-sdk/CHANGELOG.md`
+- `packages/node-sdk/CONSTRAINTS.md`
+- `packages/node-sdk/PROMPTS.md`
 - `packages/node-sdk/README.md`
 - `packages/node-sdk/api-extractor.json`
 - `packages/node-sdk/examples/nighthawk-harness-auth-smoke.ts`
@@ -4728,6 +4870,7 @@
 - `packages/node-sdk/examples/t8-race-direct.ts`
 - `packages/node-sdk/package.json`
 - `packages/node-sdk/scripts/build-dts.mjs`
+- `packages/node-sdk/src/CONSTRAINTS.md`
 - `packages/node-sdk/src/auth.ts`
 - `packages/node-sdk/src/catalog.ts`
 - `packages/node-sdk/src/config-rpc.ts`
@@ -4748,6 +4891,7 @@
 - `packages/node-sdk/src/v2/resume-replay.ts`
 - `packages/node-sdk/src/v2/session-mapper.ts`
 - `packages/node-sdk/src/v2/session-wiring.ts`
+- `packages/node-sdk/test/CONSTRAINTS.md`
 - `packages/node-sdk/test/auth-facade.test.ts`
 - `packages/node-sdk/test/catalog.test.ts`
 - `packages/node-sdk/test/config.test.ts`
@@ -4789,9 +4933,12 @@
 - `packages/node-sdk/tsdown.config.ts`
 - `packages/node-sdk/vitest.config.ts`
 - `packages/oauth/CHANGELOG.md`
+- `packages/oauth/CONSTRAINTS.md`
+- `packages/oauth/PROMPTS.md`
 - `packages/oauth/README.md`
 - `packages/oauth/examples/nighthawk-oauth-smoke.ts`
 - `packages/oauth/package.json`
+- `packages/oauth/src/CONSTRAINTS.md`
 - `packages/oauth/src/api-error.ts`
 - `packages/oauth/src/constants.ts`
 - `packages/oauth/src/custom-registry.ts`
@@ -4818,6 +4965,7 @@
 - `packages/oauth/src/toolkit.ts`
 - `packages/oauth/src/types.ts`
 - `packages/oauth/src/utils.ts`
+- `packages/oauth/test/CONSTRAINTS.md`
 - `packages/oauth/test/custom-registry.test.ts`
 - `packages/oauth/test/helpers.ts`
 - `packages/oauth/test/identity.test.ts`
@@ -4843,7 +4991,9 @@
 - `packages/oauth/vitest.config.ts`
 - `packages/pi-tui/AGENTS.md`
 - `packages/pi-tui/CHANGELOG.md`
+- `packages/pi-tui/CONSTRAINTS.md`
 - `packages/pi-tui/LICENSE`
+- `packages/pi-tui/PROMPTS.md`
 - `packages/pi-tui/README.md`
 - `packages/pi-tui/native/darwin/README.md`
 - `packages/pi-tui/native/darwin/build.sh`
@@ -4856,6 +5006,7 @@
 - `packages/pi-tui/native/win32/prebuilds/win32-x64/win32-console-mode.node`
 - `packages/pi-tui/native/win32/src/win32-console-mode.c`
 - `packages/pi-tui/package.json`
+- `packages/pi-tui/src/CONSTRAINTS.md`
 - `packages/pi-tui/src/alt-screen-search.ts`
 - `packages/pi-tui/src/autocomplete.ts`
 - `packages/pi-tui/src/components/alt-screen-flash.ts`
@@ -4896,6 +5047,7 @@
 - `packages/pi-tui/src/undo-stack.ts`
 - `packages/pi-tui/src/utils.ts`
 - `packages/pi-tui/src/word-navigation.ts`
+- `packages/pi-tui/test/CONSTRAINTS.md`
 - `packages/pi-tui/test/autocomplete.test.ts`
 - `packages/pi-tui/test/bug-regression-isimageline-startswith-bug.test.ts`
 - `packages/pi-tui/test/chat-simple.ts`
@@ -4937,12 +5089,18 @@
 - `packages/pi-tui/test/wrap-ansi.test.ts`
 - `packages/pi-tui/tsconfig.json`
 - `packages/pi-tui/vitest.config.ts`
+- `packages/plugin-sdk/CONSTRAINTS.md`
+- `packages/plugin-sdk/PROMPTS.md`
 - `packages/plugin-sdk/package.json`
+- `packages/plugin-sdk/src/CONSTRAINTS.md`
 - `packages/plugin-sdk/src/index.ts`
 - `packages/plugin-sdk/src/types.ts`
 - `packages/plugin-sdk/tsconfig.json`
 - `packages/protocol/CHANGELOG.md`
+- `packages/protocol/CONSTRAINTS.md`
+- `packages/protocol/PROMPTS.md`
 - `packages/protocol/package.json`
+- `packages/protocol/src/CONSTRAINTS.md`
 - `packages/protocol/src/__tests__/approval.test.ts`
 - `packages/protocol/src/__tests__/envelope.test.ts`
 - `packages/protocol/src/__tests__/events.test.ts`
@@ -5016,7 +5174,10 @@
 - `packages/protocol/tsconfig.json`
 - `packages/protocol/tsdown.config.ts`
 - `packages/protocol/vitest.config.ts`
+- `packages/security-core/CONSTRAINTS.md`
+- `packages/security-core/PROMPTS.md`
 - `packages/security-core/package.json`
+- `packages/security-core/src/CONSTRAINTS.md`
 - `packages/security-core/src/cli/commands.ts`
 - `packages/security-core/src/cli/index.ts`
 - `packages/security-core/src/config/index.ts`
@@ -5042,8 +5203,11 @@
 - `packages/security-core/src/ui/i18n.ts`
 - `packages/security-core/src/ui/shell.ts`
 - `packages/security-core/src/ui/theme.ts`
+- `packages/telemetry/CONSTRAINTS.md`
+- `packages/telemetry/PROMPTS.md`
 - `packages/telemetry/README.md`
 - `packages/telemetry/package.json`
+- `packages/telemetry/src/CONSTRAINTS.md`
 - `packages/telemetry/src/bootstrap.ts`
 - `packages/telemetry/src/client.ts`
 - `packages/telemetry/src/crash.ts`
@@ -5053,6 +5217,7 @@
 - `packages/telemetry/src/systemMetrics.ts`
 - `packages/telemetry/src/transport.ts`
 - `packages/telemetry/src/types.ts`
+- `packages/telemetry/test/CONSTRAINTS.md`
 - `packages/telemetry/test/normalize-remote.test.ts`
 - `packages/telemetry/test/telemetry.test.ts`
 - `packages/telemetry/tsconfig.json`
@@ -5060,7 +5225,10 @@
 - `packages/telemetry/vitest.config.ts`
 - `packages/transcript/AGENTS.md`
 - `packages/transcript/CHANGELOG.md`
+- `packages/transcript/CONSTRAINTS.md`
+- `packages/transcript/PROMPTS.md`
 - `packages/transcript/package.json`
+- `packages/transcript/src/CONSTRAINTS.md`
 - `packages/transcript/src/contract/events.ts`
 - `packages/transcript/src/contract/mediaRef.ts`
 - `packages/transcript/src/contract/schema.ts`
@@ -5085,13 +5253,17 @@
 - `packages/transcript/src/store/agentTranscript.ts`
 - `packages/transcript/src/store/transcriptStore.ts`
 - `packages/transcript/src/view/registry.ts`
+- `packages/transcript/test/CONSTRAINTS.md`
 - `packages/transcript/test/layers.test.ts`
 - `packages/transcript/test/store.test.ts`
 - `packages/transcript/tsconfig.json`
 - `packages/transcript/tsdown.config.ts`
 - `packages/transcript/vitest.config.ts`
+- `packages/tree-sitter-bash/CONSTRAINTS.md`
+- `packages/tree-sitter-bash/PROMPTS.md`
 - `packages/tree-sitter-bash/README.md`
 - `packages/tree-sitter-bash/package.json`
+- `packages/tree-sitter-bash/src/CONSTRAINTS.md`
 - `packages/tree-sitter-bash/src/budget.ts`
 - `packages/tree-sitter-bash/src/grammar.ts`
 - `packages/tree-sitter-bash/src/index.ts`
@@ -5099,6 +5271,7 @@
 - `packages/tree-sitter-bash/src/node.ts`
 - `packages/tree-sitter-bash/src/parse.ts`
 - `packages/tree-sitter-bash/src/parser.ts`
+- `packages/tree-sitter-bash/test/CONSTRAINTS.md`
 - `packages/tree-sitter-bash/test/differential.test.ts`
 - `packages/tree-sitter-bash/test/fixtures/README.md`
 - `packages/tree-sitter-bash/test/fixtures/corpus/README.md`
@@ -5126,6 +5299,10 @@
 - `packages/tree-sitter-bash/tsconfig.json`
 - `packages/tree-sitter-bash/tsdown.config.ts`
 - `packages/tree-sitter-bash/vitest.config.ts`
+- `plan/CONSTRAINTS.md`
+- `plan/PROMPTS.md`
+- `plugins/CONSTRAINTS.md`
+- `plugins/PROMPTS.md`
 - `plugins/cdn/.nighthawk-plugin-marketplace-build.json`
 - `plugins/cdn/marketplace.json`
 - `plugins/marketplace.json`
@@ -5184,6 +5361,7 @@
 - `project-encyclopedia/02-applications/nighthawk-vscode.md`
 - `project-encyclopedia/02-applications/vis.md`
 - `project-encyclopedia/02-applications/webui.md`
+- `project-encyclopedia/03-packages/README.md`
 - `project-encyclopedia/03-packages/acp-adapter/internals.md`
 - `project-encyclopedia/03-packages/acp-adapter/overview.md`
 - `project-encyclopedia/03-packages/acp-adapter/usage.md`
@@ -5223,6 +5401,9 @@
 - `project-encyclopedia/03-packages/pi-tui/internals.md`
 - `project-encyclopedia/03-packages/pi-tui/overview.md`
 - `project-encyclopedia/03-packages/pi-tui/usage.md`
+- `project-encyclopedia/03-packages/plugin-sdk/internals.md`
+- `project-encyclopedia/03-packages/plugin-sdk/overview.md`
+- `project-encyclopedia/03-packages/plugin-sdk/usage.md`
 - `project-encyclopedia/03-packages/protocol/internals.md`
 - `project-encyclopedia/03-packages/protocol/overview.md`
 - `project-encyclopedia/03-packages/protocol/usage.md`
@@ -5327,8 +5508,21 @@
 - `project-encyclopedia/13-vibe-coding/role-prompts.md`
 - `project-encyclopedia/13-vibe-coding/security-review.md`
 - `project-encyclopedia/13-vibe-coding/workflow.md`
+- `project-encyclopedia/14-prompts-constraints/README.md`
+- `project-encyclopedia/14-prompts-constraints/enforcement.md`
+- `project-encyclopedia/14-prompts-constraints/folder-level-constraints.md`
+- `project-encyclopedia/14-prompts-constraints/global-constraints.md`
+- `project-encyclopedia/14-prompts-constraints/index.md`
+- `project-encyclopedia/14-prompts-constraints/per-feature-prompts.md`
+- `project-encyclopedia/14-prompts-constraints/per-package-prompts.md`
+- `project-encyclopedia/COMPLETION.md`
+- `project-encyclopedia/CONSTRAINTS.md`
+- `project-encyclopedia/PROMPTS.md`
 - `project-encyclopedia/README.md`
 - `project-encyclopedia/UNIMPLEMENTED-FEATURES.md`
+- `project-encyclopedia/VERIFICATION.md`
+- `reports/CONSTRAINTS.md`
+- `reports/PROMPTS.md`
 - `reports/latest/events-33043.jsonl`
 - `reports/latest/events-33045.jsonl`
 - `reports/latest/events-33047.jsonl`
@@ -5440,6 +5634,8 @@
 - `reports/latest/events-95037.jsonl`
 - `reports/latest/events-95039.jsonl`
 - `reports/latest/events-95040.jsonl`
+- `scripts/CONSTRAINTS.md`
+- `scripts/PROMPTS.md`
 - `scripts/build.mjs`
 - `scripts/check-nix-workspace.mjs`
 - `scripts/check-no-comments.mjs`

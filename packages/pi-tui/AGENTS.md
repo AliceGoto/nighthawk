@@ -23,3 +23,7 @@ Never overwrite this directory wholesale when syncing from upstream. Each of the
 
 - This package's tests run with `node --test` (`pnpm --filter @nighthawk/pi-tui test`), not vitest; the root `vitest run` does not execute them — CI covers them through the dedicated `test-pi-tui` job in `.github/workflows/ci.yml`.
 - Prefer adding new narrow-width tests to the existing test file of the corresponding component.
+
+## Constraints
+
+Before modifying files in this directory, read `CONSTRAINTS.md` in this directory (and the nearest ancestor `CONSTRAINTS.md`). Follow it as hard rules. If it conflicts with this file, stop and report the conflict.

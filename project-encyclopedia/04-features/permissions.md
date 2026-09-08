@@ -8,7 +8,7 @@ v1 有 19 个 policy，v2 重构为 PermissionPolicy 服务 + veto 事件。
 
 ## 模式
 
-normal/yolo/auto 模式；`--yolo` 跳过常规审批，`--auto` 不问用户。
+manual/yolo/auto 模式；`--yolo` 跳过常规审批，`--auto` 不问用户。
 
 ## 资源声明
 

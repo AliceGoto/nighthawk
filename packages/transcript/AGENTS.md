@@ -21,3 +21,7 @@ Owned here (`transcriptSeqSchema` in `contract/schema.ts`): a per-(session, agen
 ## Wire-level detail
 
 Beyond the timeline, the model carries wire-equivalent detail: steps carry `usage` / `finishReason` / `timing` (LLM latencies) / `retry` / interrupt reason, turns carry `durationMs` / `error` / `usage`, tool frames carry the streamed `inputText` and the latest `progress`, tasks carry subagent `resultSummary` / `error` / `stateReason` / `usage`, `meta.agent` mirrors the agent status slices (model / usage / context / permission / phase), a global `prompts` entity (op `prompt.upsert`) tracks the prompt queue, and `hook.result` lands as a `'hook'` marker. These live-projected fields are NOT backfilled by the cold rebuild (known limitation).
+
+## Constraints
+
+Before modifying files in this directory, read `CONSTRAINTS.md` in this directory (and the nearest ancestor `CONSTRAINTS.md`). Follow it as hard rules. If it conflicts with this file, stop and report the conflict.

@@ -1,6 +1,6 @@
 # NightHawk 是什么
 
-NightHawk 是一个安全优先的终端 AI Agent，把现代 coding agent 的 Plan/Act/Observe/Reflect 循环与原生安全引擎放进同一个终端产品。
+NightHawk 是一个安全优先的终端 AI Agent，把现代 coding agent 的 Turn/Step 循环与原生安全引擎放进同一个终端产品。
 
 ## 一句话定位
 
@@ -8,7 +8,7 @@ NightHawk 是“安全为先的终端 AI Agent —— 渗透测试、代码审�
 
 ## 核心能力
 
-它包含：现代化 agent 内核（Plan/Act/Observe/Reflect、子 Agent、MCP、Skills、持久记忆）、安全工具箱（116 条漏洞规则、密钥检测、跨文件污点追踪、依赖审计）、REST/WebSocket 服务端、CLI/TUI、VS Code 扩展、Web inspector 和可视化调试器。
+它包含：现代化 agent 内核（Turn/Step、子 Agent、MCP、Skills、持久记忆）、安全工具箱（116 条漏洞规则、密钥检测、跨文件污点追踪、依赖审计）、REST/WebSocket 服务端、CLI/TUI、VS Code 扩展、Web inspector 和可视化调试器。
 
 ## 目标用户
 
@@ -74,7 +74,7 @@ flowchart LR
       - `export type { SkillSource } from '#/features/skill/catalog/types';`
       - `export type { DaemonFileRef, MediaKind } from '#/agent/media/mediaRef';`
       - `export type { AgentToolContributionOptions } from '#/agent/toolRegistry/toolContribution';`
-    - 再导出：`#/_base/di/descriptors`, `#/_base/di/errors`, `#/_base/di/graph`, `#/_base/di/instantiation`, `#/_base/di/instantiationService`, `#/_base/di/lifecycle`, `#/_base/di/scope`, `./app/scopes`, `#/_base/di/serviceCollection`, `#/_base/di/cascadeEngine`, `#/_base/di/dependencyGraph`, `#/_base/lifecycle/ledger`, `./errors`, `#/runtime/runtime`, `#/runtime/runtimeRegistry`, `#/runtime/runtimeWorkspaceView`, `#/runtime/runtimeProvider`, `#/runtime/runtimeUnitHost`, `#/runtime/localRuntime`, `#/runtime/standaloneRuntime`, `#/program/program`, `#/workspace/workspaceInstance/workspaceInstance`, `#/workspace/workspaceInstance/workspaceInstanceManager`, `#/workspace/workspaceInstance/workspaceInstanceManagerService`, `#/agent/runtimeBinding/runtimeBinding`, `#/agent/runtimeBinding/runtimeBindingService`, `#/agent/runtimeBinding/agentRuntime`, `#/app/sessionManager/sessionManager`, `#/app/sessionManager/sessionManagerService`, `#/_base/log/log`
+    - 再导出：`#/_base/di/descriptors`, `#/_base/di/errors`, `#/_base/di/graph`, `#/_base/di/instantiation`, `#/_base/di/instantiationService`, `#/_base/di/lifecycle`, `#/_base/di/scope`, `./app/scopes`, `#/_base/di/serviceCollection`, `#/_base/di/cascadeEngine`, `#/_base/di/dependencyGraph`, `#/_base/lifecycle/ledger`, `./errors`, `#/runtime/runtime`, `#/runtime/runtimeRegistry`, `#/runtime/runtimeWorkspaceView`, `#/runtime/runtimeProvider`, `#/runtime/runtimeUnitHost`, `#/runtime/localRuntime`, `#/runtime/standaloneRuntime`, `#/runtime/kaosRuntime`, `#/program/program`, `#/workspace/workspaceInstance/workspaceInstance`, `#/workspace/workspaceInstance/workspaceInstanceManager`, `#/workspace/workspaceInstance/workspaceInstanceManagerService`, `#/agent/runtimeBinding/runtimeBinding`, `#/agent/runtimeBinding/runtimeBindingService`, `#/agent/runtimeBinding/agentRuntime`, `#/app/sessionManager/sessionManager`, `#/app/sessionManager/sessionManagerService`
 
 ## 证据与代码位置
 

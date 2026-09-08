@@ -482,6 +482,7 @@ flowchart LR
     - `apps/nighthawk/src/tui/commands/parse.ts`
     - `apps/nighthawk/src/tui/commands/pentest-scan.ts`
     - `apps/nighthawk/src/tui/commands/pentest.ts`
+    - `apps/nighthawk/src/tui/commands/personas.ts`
     - `apps/nighthawk/src/tui/commands/plugin-commands.ts`
     - `apps/nighthawk/src/tui/commands/plugins.ts`
     - `apps/nighthawk/src/tui/commands/prompts.ts`
@@ -491,7 +492,6 @@ flowchart LR
     - `apps/nighthawk/src/tui/commands/resolve.ts`
     - `apps/nighthawk/src/tui/commands/session.ts`
     - `apps/nighthawk/src/tui/commands/skills.ts`
-    - `apps/nighthawk/src/tui/commands/swarm.ts`
   - `apps/nighthawk/src/tui/nighthawk-tui.ts`：
     - 导出签名/声明：
       - `export type { TUIState } from './tui-state';`

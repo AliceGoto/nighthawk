@@ -42,3 +42,7 @@ Full state is read from `GET /api/v1/sessions/{id}/transcript` (initial load = n
 ## Transcript audit panel
 
 The Transcript audit panel (`src/components/audit/`, the `Audit` tab of the chat view's right dock — `src/components/RightPanel.tsx`, fed the trail by `ChatView`'s `onTrailChange`) replays how the visible store was built: an `AuditTrail` (`src/audit/`) records every step — each REST page (request + replace/prepend), every WS frame (`transcript.ops` live/buffered/flushed/catchup, `transcript.reset`), loss signals, and prompt/cancel actions — with the resulting immutable `AgentState` per entry; the panel offers a draggable timeline plus a Diff tab (structural diff vs the previous entry: added/modified/removed colored, long strings tail-truncated, all fields kept), a full State view, and the raw Event payload.
+
+## Constraints
+
+Before modifying files in this directory, read `CONSTRAINTS.md` in this directory (and the nearest ancestor `CONSTRAINTS.md`). Follow it as hard rules. If it conflicts with this file, stop and report the conflict.

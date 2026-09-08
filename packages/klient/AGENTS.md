@@ -78,3 +78,7 @@ adapts the engine's `IFileService` streams in both directions.
   the kimi-only wire encoding of dynamic tool declarations, then runs a live
   two-step select→use flow per real kimi model (see
   `examples/nighthawk-select-tools.ts`).
+
+## Constraints
+
+Before modifying files in this directory, read `CONSTRAINTS.md` in this directory (and the nearest ancestor `CONSTRAINTS.md`). Follow it as hard rules. If it conflicts with this file, stop and report the conflict.
