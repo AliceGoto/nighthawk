@@ -1,5 +1,11 @@
 # @nighthawk/agent-core-v2
 
+## 0.5.0
+
+### Minor Changes
+
+- [`3178390`](https://github.com/AliceGoto/nighthawk/commit/3178390289c72206ff1be6dab911430a821f2577) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add the four security scanning tools (SecurityScan, SecretScan, TaintTrace, DepAudit) to the v2 engine as a new security feature.
+
 ## 0.4.2
 
 ### Patch Changes
