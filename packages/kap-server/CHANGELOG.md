@@ -1,5 +1,12 @@
 # @nighthawk/kap-server
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [[`3178390`](https://github.com/AliceGoto/nighthawk/commit/3178390289c72206ff1be6dab911430a821f2577)]:
+  - @nighthawk/agent-core-v2@0.5.0
+
 ## 0.2.3
 
 ### Patch Changes

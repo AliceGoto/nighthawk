@@ -1,6 +1,6 @@
 {
   "name": "@nighthawk/kap-server",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "NightHawk server backed by the DI × Scope agent engine (agent-core-v2)",
   "type": "module",
