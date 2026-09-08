@@ -2,7 +2,7 @@
 
 **安全为先的终端 AI Agent —— 渗透测试、代码审计与高强度编程，同一个闭环。**
 
-NightHawk 的核心命题：进攻性安全与严肃工程属于同一个 Agent。它将现代化编程 Agent 内核（Plan/Act/Observe/Reflect 循环、子 Agent、MCP、Skills、持久记忆）与原生安全引擎结合 —— 116+ 条映射到 OWASP Top 10 与 CWE 的漏洞规则、基于 Shannon 熵的密钥检测、跨文件污点追踪、依赖审计（离线 / OSV / 宿主机包管理器）—— 全部作为一等工具暴露给 Agent，可在会话中随时调用。
+NightHawk 的核心命题：进攻性安全与严肃工程属于同一个 Agent。它将现代化编程 Agent 内核（Turn/Step 循环、子 Agent、MCP、Skills、持久记忆）与原生安全引擎结合 —— 116 条映射到 OWASP Top 10 与 CWE 的漏洞规则、基于 Shannon 熵的密钥检测、跨文件污点追踪、依赖审计（离线 / OSV / 宿主机包管理器）—— 全部作为一等工具暴露给 Agent，可在会话中随时调用。
 
 [English](README.md)
 
@@ -14,7 +14,7 @@ NightHawk 的核心命题：进攻性安全与严肃工程属于同一个 Agent�
 
 - **审计是一等工作流。** 一句"审计这个仓库的注入风险"，Agent 即运行 `SecurityScan` 按严重度分诊，用 `TaintTrace` 确认可利用性，并给出修复建议 —— 一个回合完成。
 - **面向进攻性安全。** 密钥狩猎、依赖风险、危险汇点追踪、配置缺陷，由同一个能读、能改、能跑代码的闭环呈现 —— 无需在扫描器和 IDE 之间切换上下文。
-- **编码能力不落下。** Plan/Act/Observe/Reflect 内核、并行工具调用、子 Agent 扇出、会话检查点，工程标准对标最强闭源编程 Agent —— 并有完整的验证体系背书（见[工程证明](#工程证明)）。
+- **编码能力不落下。** Turn/Step 内核、并行工具调用、子 Agent 扇出、会话检查点，工程标准对标最强闭源编程 Agent —— 并有完整的验证体系背书（见[工程证明](#工程证明)）。
 - **终端原生。** TUI 毫秒级启动，可 over SSH 运行，无需 IDE。TUI 层基于 pi 风格的组件化框架构建。
 - **供应商无关。** OpenAI、Anthropic、Google、DeepSeek，或任何 OpenAI/Anthropic 兼容端点 —— 供应商层是协议抽象，不是厂商锁定。
 
@@ -22,7 +22,7 @@ NightHawk 的核心命题：进攻性安全与严肃工程属于同一个 Agent�
 
 | 工具 | 功能 |
 | --- | --- |
-| `SecurityScan` | 规则引擎，116+ 模式覆盖 SQL 注入、XSS、命令注入、路径穿越、SSRF、反序列化、弱加密、认证缺陷、XXE 及分语言风险（Node/Python/Java/Go/PHP）。每个发现携带 CWE/OWASP 编号、严重度和修复建议 —— 中英双语。结果写入磁盘缓存，重复扫描未变更文件时更快。 |
+| `SecurityScan` | 规则引擎，116 模式覆盖 SQL 注入、XSS、命令注入、路径穿越、SSRF、反序列化、弱加密、认证缺陷、XXE 及分语言风险（Node/Python/Java/Go/PHP）。每个发现携带 CWE/OWASP 编号、严重度和修复建议 —— 中英双语。结果写入磁盘缓存，重复扫描未变更文件时更快。 |
 | `SecretScan` | 检测硬编码凭据 —— AWS/GCP/Azure 密钥、token、私钥 —— 已知模式与 Shannon 熵评分相结合。 |
 | `TaintTrace` | 污点追踪：识别用户可控源（HTTP 参数、环境变量、stdin），追踪赋值链到危险汇点（exec、eval、innerHTML、SQL）。默认沿模块导入跨文件追踪数据流（`scope: file` 可限定单文件）。 |
 | `DepAudit` | 通过离线检查标记高风险依赖模式（postinstall 脚本、未锁定版本、已知风险配置），查询 OSV API，并可调用宿主机包管理器审计工具（`useExternal: true`）合并真实 CVE。 |
@@ -78,8 +78,9 @@ node scripts/smoke-security.ts             # 安全引擎端到端
 └───────────────────────────┬─────────────────────────────┘
                             │ SDK
 ┌───────────────────────────▼─────────────────────────────┐
-│  agent-core — Agent 引擎                                │
-│  Plan/Act/Observe/Reflect · 工具 · Skills · MCP 客户端   │
+│  agent-core-v2 — 当前 Agent 引擎（DI×Scope）            │
+│  agent-core — v1 旧版 Agent 引擎                        │
+│  Turn/Step · 工具 · Skills · MCP 客户端                 │
 │  会话检查点 · 权限 · 子 Agent                            │
 │  └─ 安全工具: SecurityScan / SecretScan /               │
 │     TaintTrace / DepAudit / PortScanner / DirBrute /   │
@@ -90,7 +91,7 @@ node scripts/smoke-security.ts             # 安全引擎端到端
 └─────────────────────────────────────────────────────────┘
 ```
 
-设计上取当前一代 Agent harness 之所长 —— 带显式 observe/reflect 阶段的类型化工具调用循环、作为隔离状态机（而非嵌套提示词）的子 Agent、把模型后端视为可互换协议的供应商抽象。
+设计上取当前一代 Agent harness 之所长 —— 类型化工具调用 Turn/Step 循环（没有显式 observe/reflect 阶段）、作为隔离状态机（而非嵌套提示词）的子 Agent、把模型后端视为可互换协议的供应商抽象。
 
 ### Monorepo 布局
 

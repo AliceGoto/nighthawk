@@ -34,7 +34,7 @@ outline: 2
 
 - **渗透测试模式**：输入 `/pentest` 或 `/hack` 切换到专业渗透测试工作台，界面切换为 Matrix 绿字黑底黑客主题。
 - **渗透测试工具**：五个仅在渗透测试模式下可用的新工具——`PortScanner`（nmap 端口扫描）、`DirBrute`（40+ 路径字典目录爆破）、`PasswordBrute`（常见密码字典凭据测试）、`ThreatModel`（STRIDE 威胁建模 + Mermaid 图表）、`SubdomainEnum`（DNS 解析 + 50+ 子域名枚举）。
-- **核心安全工具**：四个始终可用的安全工具——`SecurityScan`（116+ 漏洞规则，覆盖 SQLi、XSS、命令注入、路径穿越、SSRF、反序列化、弱加密、认证缺陷）、`SecretScan`（Shannon 熵评分的硬编码凭据检测）、`TaintTrace`（跨文件用户输入到危险 sink 的污点追踪）、`DepAudit`（依赖审计，含 postinstall 脚本检查、版本锁定检测和 OSV CVE 查询）。
+- **核心安全工具**：四个始终可用的安全工具——`SecurityScan`（116 漏洞规则，覆盖 SQLi、XSS、命令注入、路径穿越、SSRF、反序列化、弱加密、认证缺陷）、`SecretScan`（Shannon 熵评分的硬编码凭据检测）、`TaintTrace`（跨文件用户输入到危险 sink 的污点追踪）、`DepAudit`（依赖审计，含 postinstall 脚本检查、版本锁定检测和 OSV CVE 查询）。
 - 渗透测试报告生成：`/report` 导出 HTML/PDF 格式，包含执行摘要、风险矩阵、漏洞详情（CWE/OWASP/CVSS）、复现步骤和修复建议。
 - 斜杠命令系统：30+ 内置命令——`/help`、`/login`、`/logout`、`/model`、`/provider`、`/settings`、`/permission`、`/theme`、`/editor`、`/exit`、`/version`、`/status`、`/usage`、`/title`、`/compact`、`/new`、`/sessions`、`/session`、`/tasks`、`/fork`、`/undo`、`/init`、`/export-md`、`/export-debug-zip`、`/copy`、`/reload`、`/reload-tui`、`/goal`、`/swarm`、`/plan`、`/yolo`、`/auto`、`/btw`、`/mcp`、`/plugins`、`/feedback`、`/add-dir`、`/experiments`、`/mcp-config`、`/custom-theme`、`/update-config`、`/check-nighthawk-docs`、`/import-from-cc-codex`、`/sub-skill`。
 - MCP stdio 支持 kaos executor：可为 MCP stdio server 配置 `executor: 'kaos'`，通过 Kaos 执行器启动子进程，不再局限于本地执行。
@@ -262,7 +262,7 @@ outline: 2
 - NightHawk CLI 首个公开发布版本。
 - 交互式 TUI，支持深色/浅色/自动主题和自定义主题。
 - `/login` 和 `/provider` 通过 API 密钥配置 AI 供应商。
-- 完整的 Plan/Act/Observe/Reflect Agent 循环，支持 Plan 模式、YOLO 模式和 Auto 模式。
+- 完整的 Turn/Step Agent 循环，支持 Plan 模式、YOLO 模式和 Auto 模式。
 - 内置工具：`Read`、`Write`、`Edit`、`Grep`、`Glob`、`Bash`、`FetchURL`、`CronCreate`、`CronDelete`、`CronList`、`TaskList`、`TaskOutput`、`TaskStop`、`TodoList`、`WaitFor`、`Agent`、`AgentSwarm`、`AskUserQuestion`、`EnterPlanMode`、`ExitPlanMode`、`ReadMediaFile`、`Skill`。
 - 斜杠命令系统，支持会话管理、模式切换和配置命令。
 - MCP（Model Context Protocol）客户端，支持 stdio、HTTP 和 SSE 传输。

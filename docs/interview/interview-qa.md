@@ -5,15 +5,15 @@
 
 ## 项目 30 秒介绍（开场白模板）
 
-"我做了一个安全为先的终端 AI Agent，叫 NightHawk。它的核心命题是：进攻性安全和严肃工程应该在同一个 agent 里——一个 Plan/Act/Observe/Reflect 循环的编程 agent 内核，加上原生的安全引擎（116 条映射 CWE/OWASP 的规则、熵值密钥检测、污点分析、依赖审计），安全工具和读写文件、跑 shell 一样是一等工具。TypeScript monorepo，多 provider 抽象，TUI 终端原生。"
+"我做了一个安全为先的终端 AI Agent，叫 NightHawk。它的核心命题是：进攻性安全和严肃工程应该在同一个 agent 里——一个 Turn/Step 循环的编程 agent 内核，加上原生的安全引擎（116 条映射 CWE/OWASP 的规则、熵值密钥检测、污点分析、依赖审计），安全工具和读写文件、跑 shell 一样是一等工具。TypeScript monorepo，多 provider 抽象，TUI 终端原生。"
 
 ## 一、整体架构
 
 **Q: 为什么拆成 agent-core / kosong / kaos 这样的分层？**
 A: 关注点分离到可独立测试的边界——`kosong` 管"模型后端是可互换协议"（provider 抽象），`kaos` 管执行环境（文件/进程抽象，本地或远程），`agent-core` 管编排（循环、工具、会话、权限）。换模型不动引擎，换执行环境不动循环。CLI 应用只通过 SDK 消费内核，不直接依赖实现。
 
-**Q: Plan/Act/Observe/Reflect 和普通的 ReAct 有什么区别？**
-A: ReAct 是"想一步做一步"。加显式 Observe（工具结果的独立观测阶段，避免结果直接怼进下一轮推理）和 Reflect（阶段性复盘：目标是否偏移、要不要改计划），长任务不容易陷进局部循环。子 agent 是隔离状态机而不是嵌套提示词——主上下文不被子任务的中间细节污染。
+**Q: NightHawk 的 Agent 循环和普通的 ReAct 有什么区别？**
+A: NightHawk 并不是按 Plan/Act/Observe/Reflect 四个显式阶段开发的。实际实现是一个 Turn/Step 循环：用户输入进入 Turn，每个 Step 由“LLM 请求 → 工具执行 → 结果写回上下文”组成，循环直到模型不再请求工具或达到步数上限。Plan 模式是可选用户模式，不是循环阶段；观察和反思主要通过上下文管理、子 Agent 隔离、提示词注入和事件机制实现，而不是独立的 Observe/Reflect 状态。
 
 **Q: 子 agent 的价值是什么？**
 A: 三个词：隔离、并行、聚焦。子任务（如"扫完这 40 个文件"）在子 agent 的独立上下文里跑完，只把结论带回主循环——主上下文的 token 花在决策上，不花在过程上。

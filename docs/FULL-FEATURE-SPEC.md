@@ -4,7 +4,7 @@
 
 **安全为先的终端 AI Agent —— 渗透测试、代码审计与高强度编程，同一个闭环。**
 
-NightHawk 将进攻性安全与严肃工程结合在同一个 Agent 中：Plan/Act/Observe/Reflect 循环、子 Agent 扇出、MCP、Skills、持久记忆，与原生安全引擎（116+ 漏洞规则、Shannon 熵密钥检测、跨文件污点追踪、依赖审计）—— 全部作为一等工具，Agent 可在会话中随时调用。
+NightHawk 将进攻性安全与严肃工程结合在同一个 Agent 中：Turn/Step 循环、子 Agent 扇出、MCP、Skills、持久记忆，与原生安全引擎（116 漏洞规则、Shannon 熵密钥检测、跨文件污点追踪、依赖审计）—— 全部作为一等工具，Agent 可在会话中随时调用。
 
 ## 架构
 
@@ -12,8 +12,9 @@ NightHawk 将进攻性安全与严肃工程结合在同一个 Agent 中：Plan/A
 apps/nighthawk — CLI / TUI
   │ (终端界面、斜杠命令、审批流、主题、渗透测试模式)
   │ SDK
-agent-core — Agent 引擎
-  │ Plan/Act/Observe/Reflect · 工具 · Skills · MCP 客户端
+agent-core-v2 — 当前 Agent 引擎（DI×Scope）
+agent-core — v1 旧版 Agent 引擎
+  │ Turn/Step · 工具 · Skills · MCP 客户端
   │ 会话检查点 · 权限 · 子 Agent
   │ └─ 安全工具: SecurityScan / SecretScan / TaintTrace / DepAudit
   │ └─ 渗透工具: PortScanner / DirBrute / PasswordBrute / ThreatModel / SubdomainEnum
@@ -82,7 +83,7 @@ kaos — 执行环境与文件/进程抽象（本地 / SSH / 容器）
 ### 核心安全工具（始终可用）
 | 工具 | 说明 |
 |------|------|
-| `SecurityScan` | 116+ 漏洞规则（SQLi、XSS、命令注入、路径穿越、SSRF、反序列化、弱加密、认证缺陷等） |
+| `SecurityScan` | 116 漏洞规则（SQLi、XSS、命令注入、路径穿越、SSRF、反序列化、弱加密、认证缺陷等） |
 | `SecretScan` | 检测硬编码凭据（AWS/GCP/Azure 密钥、token、私钥），Shannon 熵评分 |
 | `TaintTrace` | 污点追踪：用户输入到危险 sink 的数据流追踪 |
 | `DepAudit` | 依赖审计：postinstall 脚本、未锁定版本、已知风险配置、OSV CVE 查询 |

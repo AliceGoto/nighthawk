@@ -6,7 +6,7 @@ This is a TypeScript monorepo built for agent-assisted development. Keep the roo
 
 ## Project Overview
 
-**NightHawk** is a security-first AI agent for the terminal — penetration testing, code audit, and full-strength coding in one loop. It pairs a modern coding agent core (Plan/Act/Observe/Reflect loop, sub-agents, MCP, skills, persistent memory) with a native security engine — 116+ vulnerability rules mapped to OWASP Top 10 and CWE, Shannon-entropy secret detection, cross-file taint analysis, and dependency auditing (offline, OSV, and host package-manager) — all exposed as first-class tools the agent can invoke mid-session.
+**NightHawk** is a security-first AI agent for the terminal — penetration testing, code audit, and full-strength coding in one loop. It pairs a modern coding agent core (Turn/Step loop, sub-agents, MCP, skills, persistent memory) with a native security engine — 116 vulnerability rules mapped to OWASP Top 10 and CWE, Shannon-entropy secret detection, cross-file taint analysis, and dependency auditing (offline, OSV, and host package-manager) — all exposed as first-class tools the agent can invoke mid-session.
 
 ### Technology Stack
 
@@ -28,7 +28,7 @@ This is a TypeScript monorepo built for agent-assisted development. Keep the roo
 2. **KAP Server** (`packages/kap-server`): NightHawk server exposing REST + WebSocket APIs
 3. **LLM Abstraction** (`packages/kosong`): Provider-agnostic LLM integration (OpenAI, Anthropic, Google, DeepSeek)
 4. **Execution Environment** (`packages/kaos`): File/process abstractions for local/remote execution
-5. **Security Engine**: 116+ vulnerability rules, secret scanning, taint analysis (production code in `packages/agent-core/src/tools/builtin/security/`)
+5. **Security Engine**: 116 vulnerability rules, secret scanning, taint analysis (production code in `packages/agent-core/src/tools/builtin/security/`)
 6. **Terminal UI** (`packages/pi-tui`): Component framework for the TUI
 7. **Client SDK** (`packages/klient`): Contract-driven facade over agent-core-v2
 
@@ -283,7 +283,7 @@ The CI runs tests in parallel shards (5 shards) for faster execution. Each PR tr
 
 NightHawk includes a comprehensive security engine with four main tools:
 
-1. **SecurityScan**: 116+ vulnerability rules across SQLi, XSS, command injection, path traversal, SSRF, deserialization, weak crypto, auth flaws, XXE, and per-language risks
+1. **SecurityScan**: 116 vulnerability rules across SQLi, XSS, command injection, path traversal, SSRF, deserialization, weak crypto, auth flaws, XXE, and per-language risks
 2. **SecretScan**: Detects hardcoded credentials using patterns and Shannon-entropy scoring
 3. **TaintTrace**: Variable-level taint tracking tracing user-controlled sources through assignment chains to dangerous sinks
 4. **DepAudit**: Flags risky dependency patterns like unpinned versions

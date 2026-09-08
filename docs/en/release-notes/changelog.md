@@ -34,7 +34,7 @@ This page documents the changes in each NightHawk CLI release.
 
 - **Pentest mode**: Enter `/pentest` or `/hack` to switch to a dedicated penetration testing workstation with a Matrix-green-on-black hacker theme. Includes a 9-stage orchestrated workflow: compliance → scope → recon → attack surface → vulnerability verification → exploitation → post-exploitation → remediation → report generation.
 - **Pentest tools**: Five new tools available only in pentest mode — `PortScanner` (port scanning via nmap), `DirBrute` (directory brute force with 40+ path dictionary), `PasswordBrute` (credential testing with common password dictionary), `ThreatModel` (STRIDE threat modeling with Mermaid diagrams), `SubdomainEnum` (subdomain enumeration via DNS + 50+ subdomain dictionary).
-- **Core security tools**: Four security tools always available — `SecurityScan` (116+ vulnerability rules covering SQLi, XSS, command injection, path traversal, SSRF, deserialization, weak crypto, and auth flaws), `SecretScan` (hardcoded credential detection with Shannon entropy scoring), `TaintTrace` (cross-file taint tracking from user-controlled sources to dangerous sinks), `DepAudit` (dependency audit with postinstall script checks, unpinned version detection, and OSV CVE queries).
+- **Core security tools**: Four security tools always available — `SecurityScan` (116 vulnerability rules covering SQLi, XSS, command injection, path traversal, SSRF, deserialization, weak crypto, and auth flaws), `SecretScan` (hardcoded credential detection with Shannon entropy scoring), `TaintTrace` (cross-file taint tracking from user-controlled sources to dangerous sinks), `DepAudit` (dependency audit with postinstall script checks, unpinned version detection, and OSV CVE queries).
 - Pentest report generation via `/report` — exports HTML/PDF with executive summary, risk matrix, vulnerability details (CWE/OWASP/CVSS), reproduction steps, and remediation.
 - Slash command system with 30+ commands: `/help`, `/login`, `/logout`, `/model`, `/provider`, `/settings`, `/permission`, `/theme`, `/editor`, `/exit`, `/version`, `/status`, `/usage`, `/title`, `/compact`, `/new`, `/sessions`, `/session`, `/tasks`, `/fork`, `/undo`, `/init`, `/export-md`, `/export-debug-zip`, `/copy`, `/reload`, `/reload-tui`, `/goal`, `/swarm`, `/plan`, `/yolo`, `/auto`, `/btw`, `/mcp`, `/plugins`, `/feedback`, `/add-dir`, `/experiments`, `/mcp-config`, `/custom-theme`, `/update-config`, `/check-nighthawk-docs`, `/import-from-cc-codex`, `/sub-skill`.
 - MCP stdio supports kaos executor: configure `executor: 'kaos'` for MCP stdio servers to launch child processes via the Kaos executor, no longer limited to local execution.
@@ -263,7 +263,7 @@ This page documents the changes in each NightHawk CLI release.
 - First public release of NightHawk CLI.
 - Interactive TUI with dark/light/auto themes and custom theme support.
 - `/login` and `/provider` for configuring AI providers via API key.
-- Full Plan/Act/Observe/Reflect agent loop with Plan mode, YOLO mode, and Auto mode.
+- Full Turn/Step agent loop with Plan mode, YOLO mode, and Auto mode.
 - Built-in tools: `Read`, `Write`, `Edit`, `Grep`, `Glob`, `Bash`, `FetchURL`, `CronCreate`, `CronDelete`, `CronList`, `TaskList`, `TaskOutput`, `TaskStop`, `TodoList`, `WaitFor`, `Agent`, `AgentSwarm`, `AskUserQuestion`, `EnterPlanMode`, `ExitPlanMode`, `ReadMediaFile`, `Skill`.
 - Slash command system with session management, mode switching, and configuration commands.
 - MCP (Model Context Protocol) client supporting stdio, HTTP, and SSE transports.

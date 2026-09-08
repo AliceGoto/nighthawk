@@ -2,7 +2,7 @@
 
 **A security-first AI agent for the terminal — penetration testing, code audit, and full-strength coding in one loop.**
 
-NightHawk is built around a simple thesis: offensive security and serious engineering belong in the same agent. It pairs a modern coding agent core (Plan/Act/Observe/Reflect loop, sub-agents, MCP, skills, persistent memory) with a native security engine — 116+ vulnerability rules mapped to OWASP Top 10 and CWE, Shannon-entropy secret detection, cross-file taint analysis, and dependency auditing (offline, OSV, and host package-manager) — all exposed as first-class tools the agent can invoke mid-session.
+NightHawk is built around a simple thesis: offensive security and serious engineering belong in the same agent. It pairs a modern coding agent core (Turn/Step loop, sub-agents, MCP, skills, persistent memory) with a native security engine — 116 vulnerability rules mapped to OWASP Top 10 and CWE, Shannon-entropy secret detection, cross-file taint analysis, and dependency auditing (offline, OSV, and host package-manager) — all exposed as first-class tools the agent can invoke mid-session.
 
 [中文文档](README.zh-CN.md)
 
@@ -14,7 +14,7 @@ Most AI coding agents help you write code faster. NightHawk helps you **break it
 
 - **Audit as a first-class workflow.** Ask "audit this repo for injection risks" and the agent runs `SecurityScan`, triages findings by severity, confirms exploitability with `TaintTrace`, and proposes fixes — in one turn.
 - **Offensive-security oriented.** Secret hunting, dependency risk, dangerous-sink tracing, and configuration flaws are surfaced by the same loop that reads, edits, and runs code — no context switching between scanner and IDE.
-- **Coding that keeps up.** The Plan/Act/Observe/Reflect core, parallel tool calls, sub-agent fan-out, and session checkpoints are engineered to the bar set by the best closed-source coding agents — with the verification harness to back it (see [Engineering Proof](#engineering-proof)).
+- **Coding that keeps up.** The Turn/Step core, parallel tool calls, sub-agent fan-out, and session checkpoints are engineered to the bar set by the best closed-source coding agents — with the verification harness to back it (see [Engineering Proof](#engineering-proof)).
 - **Terminal-native.** Millisecond TUI startup, runs over SSH, zero IDE required. The TUI layer is built on a pi-style component framework.
 - **Provider-agnostic.** OpenAI, Anthropic, Google, DeepSeek, or any OpenAI/Anthropic-compatible endpoint — the provider layer is a protocol abstraction, not a vendor lock.
 
@@ -22,7 +22,7 @@ Most AI coding agents help you write code faster. NightHawk helps you **break it
 
 | Tool | What it does |
 | --- | --- |
-| `SecurityScan` | Rule engine with 116+ patterns across SQLi, XSS, command injection, path traversal, SSRF, deserialization, weak crypto, auth flaws, XXE, and per-language risks (Node/Python/Java/Go/PHP). Every finding carries CWE/OWASP IDs, severity, and a fix suggestion — bilingual (EN/中文). Caches results to disk so rescanning unchanged files is fast. |
+| `SecurityScan` | Rule engine with 116 patterns across SQLi, XSS, command injection, path traversal, SSRF, deserialization, weak crypto, auth flaws, XXE, and per-language risks (Node/Python/Java/Go/PHP). Every finding carries CWE/OWASP IDs, severity, and a fix suggestion — bilingual (EN/中文). Caches results to disk so rescanning unchanged files is fast. |
 | `SecretScan` | Detects hardcoded credentials — AWS/GCP/Azure keys, tokens, private keys — combining known patterns with Shannon-entropy scoring. |
 | `TaintTrace` | Taint tracking: identifies user-controlled sources (HTTP params, env, stdin) and traces assignment chains to dangerous sinks (exec, eval, innerHTML, SQL). Follows data flow across module imports by default (`scope: file` restricts to a single file). |
 | `DepAudit` | Flags risky dependency patterns (postinstall scripts, unpinned versions, known-risk config) via offline checks, queries the OSV API, and can run the host package-manager audit (`useExternal: true`) to merge real CVEs. |
@@ -78,8 +78,9 @@ node scripts/smoke-security.ts             # security engine end-to-end
 └───────────────────────────┬─────────────────────────────┘
                             │ SDK
 ┌───────────────────────────▼─────────────────────────────┐
-│  agent-core — Agent engine                              │
-│  Plan/Act/Observe/Reflect · tools · skills · MCP client │
+│  agent-core-v2 — current Agent engine (DI×Scope)        │
+│  agent-core — v1 legacy Agent engine                    │
+│  Turn/Step · tools · skills · MCP client                │
 │  session checkpoints · permissions · sub-agents         │
 │  └─ security tools: SecurityScan / SecretScan /         │
 │     TaintTrace / DepAudit / PortScanner / DirBrute /   │
@@ -90,7 +91,7 @@ node scripts/smoke-security.ts             # security engine end-to-end
 └─────────────────────────────────────────────────────────┘
 ```
 
-The design takes the strongest ideas from the current generation of agent harnesses — a typed tool-calling loop with explicit observe/reflect phases, sub-agents as isolated state machines rather than nested prompts, and a provider abstraction that treats model backends as interchangeable protocols.
+The design takes the strongest ideas from the current generation of agent harnesses — a typed tool-calling Turn/Step loop (no explicit observe/reflect phases), sub-agents as isolated state machines rather than nested prompts, and a provider abstraction that treats model backends as interchangeable protocols.
 
 ### Monorepo layout
 
