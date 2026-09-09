@@ -510,21 +510,6 @@ async function handleBuiltInSlashCommand(
       // session can be inspected (Ctrl+E) and deleted (Delete) in one place.
       void host.showSessionPicker('all');
       return;
-    case 'session-delete':
-      if (host.session === undefined) {
-        host.showError('没有活跃会话。');
-        return;
-      }
-      const sid = host.session.id;
-      try {
-        await host.session.close();
-        await host.harness.deleteSession(sid);
-        host.showStatus('会话已删除。');
-        host.state.appState.sessionId = '';
-      } catch (e) {
-        host.showError(`删除失败：${e instanceof Error ? e.message : String(e)}`);
-      }
-      return;
     case 'tasks':
       void host.tasksBrowserController.show();
       return;

@@ -272,14 +272,7 @@ export const BUILTIN_SLASH_COMMANDS = [
   {
     name: 'session',
     aliases: [],
-    description: 'Browse all sessions across workspaces — expand and delete · 浏览全部工作区会话（展开/删除）',
-    priority: 80,
-    normalOnly: true,
-  },
-  {
-    name: 'session-delete',
-    aliases: ['del-session'],
-    description: 'Delete the current session · 删除当前会话',
+    description: 'Manage sessions - browse, resume, delete (press Delete key in picker) · 管理会话（在列表中按 Delete 删除）',
     priority: 80,
     normalOnly: true,
   },
