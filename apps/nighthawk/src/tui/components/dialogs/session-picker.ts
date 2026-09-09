@@ -257,6 +257,16 @@ export class SessionPickerComponent extends Container implements Focusable {
       this.armDeleteConfirm();
       return;
     }
+    if (matchesKey(data, Key.backspace)) {
+      // 有搜索查询时退格清除查询，无查询时触发删除
+      if (this.list.view().query.length > 0) {
+        const prev = this.list.view().query;
+        if (this.list.handleKey(data)) this.syncVisibleCount(prev);
+        return;
+      }
+      this.armDeleteConfirm();
+      return;
+    }
     if (matchesKey(data, Key.escape)) {
       if (this.list.clearQuery()) {
         this.visibleCount = Math.min(this.filteredSessions().length, this.pageSize);
@@ -363,7 +373,7 @@ export class SessionPickerComponent extends Container implements Focusable {
       '↑↓ navigate',
       scopeHint,
       'Ctrl+E expand',
-      'Delete delete',
+      'Delete/⌫ delete',
       'Enter select',
       'Esc cancel',
     ].filter((item): item is string => item !== undefined);
