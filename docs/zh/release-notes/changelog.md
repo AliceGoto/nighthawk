@@ -6,6 +6,29 @@ outline: 2
 
 本页记录 NightHawk CLI 每个版本的变更内容。
 
+## 0.42.0（2026-09-09）
+
+### 新功能
+
+- 新增 `/session` 命令：浏览和管理所有工作区的会话，`Ctrl+E` 展开会话详情，`Delete` 键确认后删除。
+- v2 引擎增强：完整实现渗透测试模式切换、非 main agent 的 Goal 支持、`createSessionWithKaos` / `resumeSessionWithKaos` 的 Kaos 注入适配。
+- MCP stdio 新增 kaos executor 支持：可在 stdio MCP server 配置 `executor: 'kaos'`，通过 Kaos 执行器启动子进程。
+- ACP 协议增强：支持 `type: 'acp'` 的 MCP transport，以及 Other 内容块自由文本编辑。
+- 旧版 CLI 插件迁移支持：`nighthawk migrate` 现可同时迁移旧版 CLI 插件与技能。
+- TodoList 新增可选 `priority` 字段（high/medium/low），按优先级排序展示。
+- TUI Agent 按描述自动分组：多个 Agent 工具调用自动合并为组，支持按需拆分查看。
+
+### 优化
+
+- TUI 欢迎横幅替换为紧凑渐变 NightHawk 字母标志。
+- 发布 Windows、Linux、macOS 无签名原生二进制。
+- 改进 ACP AskUserQuestion 校验，更新 ACP 参考文档。
+
+### 修复
+
+- 修复 v2 引擎中 Read 和 Write 工具的参数名兼容问题——`offset`/`count` 和 `file_path` 别名现可正常使用。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+
 ## 0.41.0（2026-08-30）
 
 ### 新功能

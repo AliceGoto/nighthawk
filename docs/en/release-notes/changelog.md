@@ -6,6 +6,29 @@ outline: 2
 
 This page documents the changes in each NightHawk CLI release.
 
+## 0.42.0 (2026-09-09)
+
+### Features
+
+- Add the `/session` command to browse and manage sessions across workspaces — `Ctrl+E` expands session details and `Delete` removes one after confirmation.
+- Add v2 engine enhancements: pentest mode full implementation, non-main agent Goal support, and Kaos injection adapter for `createSessionWithKaos` / `resumeSessionWithKaos`.
+- Add MCP stdio kaos executor support: configure `executor: 'kaos'` on stdio MCP servers to launch child processes through the Kaos executor.
+- Add ACP protocol enhancements: `type: 'acp'` MCP transport support and Other content block free-text editing.
+- Add legacy CLI plugin migration: `nighthawk migrate` now transfers legacy CLI plugins alongside skills.
+- Add optional `priority` field (high/medium/low) to TodoList items, displayed sorted by priority in the TUI.
+- Add TUI Agent auto-grouping by description: multiple Agent tool calls are automatically grouped with on-demand split view.
+
+### Polish
+
+- Replace the TUI welcome banner with a compact gradient NightHawk wordmark.
+- Publish unsigned native builds for Windows, Linux, and macOS.
+- Improve ACP AskUserQuestion validation and update the ACP reference docs.
+
+### Bug Fixes
+
+- Fix Read and Write tool argument normalization in the v2 engine — `offset`/`count` and `file_path` aliases are now accepted.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+
 ## 0.41.0 (2026-08-30)
 
 ### New Features

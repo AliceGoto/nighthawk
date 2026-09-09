@@ -1,5 +1,41 @@
 # @nighthawk/nighthawk
 
+## 0.42.0
+
+### Minor Changes
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add ACP Other content block free-text support: `Other` type content blocks in the ACP protocol now accept free-form text instead of being ignored.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add ACP `type: 'acp'` MCP transport support: MCP servers from ACP with the `acp` transport type are now handled correctly instead of being silently dropped.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add legacy CLI plugin migration support: `nighthawk migrate` now migrates legacy CLI plugins in addition to skills — both skills and plugins are fully transferred.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add MCP stdio kaos executor support: configure `executor: 'kaos'` on a stdio MCP server to launch child processes through the Kaos executor instead of the local process runner.
+
+- [`cb79efa`](https://github.com/AliceGoto/nighthawk/commit/cb79efa1c9f989d839deba4df10b86c79b7f3dca) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add optional `priority` field (high/medium/low) to TodoList tool items. Set it on a todo item to display the priority level in the todo list output.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add TUI Agent auto-grouping by description: multiple Agent tool calls with similar descriptions are automatically grouped in the TUI, with an on-demand split view to inspect individual calls.
+
+- [`be64603`](https://github.com/AliceGoto/nighthawk/commit/be646037aa43aa6edad37af0b07e5592c7a1d0cd) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add the `/session` command to browse every session across workspaces: `Ctrl+E` expands a session's details and `Delete` deletes one after a `[y/N]` confirmation.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add v2 Kaos injection adapter: `createSessionWithKaos` and `resumeSessionWithKaos` now correctly inject the Kaos execution environment in the v2 engine instead of silently falling back to local execution.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add v2 non-main agent Goal support: non-main agents in the v2 engine can now set and execute Goal objectives, closing the v1/v2 gap.
+
+- [`01d8812`](https://github.com/AliceGoto/nighthawk/commit/01d8812bf9aa5b27d8424e913d29e55ecdb4c40a) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Add v2 pentest mode full implementation: `setPentestMode` is now fully functional in the v2 engine — SDK clients can switch pentest mode on and off normally.
+
+### Patch Changes
+
+- [`5ff4c29`](https://github.com/AliceGoto/nighthawk/commit/5ff4c293e6a2fe87f18f2fc1b89476d5b51ec4a2) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Improve AskUserQuestion validation, clarify ACP fallback boundaries, and update the ACP reference docs.
+
+- [`41a1612`](https://github.com/AliceGoto/nighthawk/commit/41a161211e56291d251eb1bd28fd811d7543244e) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Publish unsigned native builds for Windows, Linux, and macOS without Apple or Homebrew credentials.
+
+- [`2b695d8`](https://github.com/AliceGoto/nighthawk/commit/2b695d8531bca520e138e1fdafc2f4be99cca83b) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Replace the TUI welcome banner with a compact gradient NightHawk wordmark instead of the large block-letter logo.
+
+- [`27d39db`](https://github.com/AliceGoto/nighthawk/commit/27d39dbc453058104df7c862bf44ffdb008acf42) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Fix Read tool rejections in the v2 engine when models pass `offset`/`count` aliases instead of `line_offset`/`n_lines`.
+
+- [`d7d63d9`](https://github.com/AliceGoto/nighthawk/commit/d7d63d99045a23550559bd78da741a6a84e42297) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Fix Write tool rejections when models pass `file_path` instead of `path` or non-string content.
+
 ## 0.39.0
 
 ### Minor Changes
