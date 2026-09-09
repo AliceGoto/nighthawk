@@ -445,6 +445,14 @@ export class AgentSwarmProgressComponent implements Component {
         this.cancelMember(member, nowMs);
       }
     }
+    // Cancel any remaining members that were queued/pending but never started
+    // (e.g. from over-counting partial streaming input). Without this, stale
+    // "排队中" entries persist in the UI after the swarm completes.
+    for (const member of this.members) {
+      if (member.phase === 'queued' || member.phase === 'pending') {
+        this.cancelMember(member, Date.now());
+      }
+    }
     this.startAnimationIfNeeded();
     return true;
   }
