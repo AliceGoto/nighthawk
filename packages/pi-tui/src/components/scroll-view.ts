@@ -190,10 +190,10 @@ export class ScrollView extends Container {
 		const maxScrollTop = Math.max(0, this.contentHeight - this.currentViewportHeight);
 		if (this.followingEnd) this.currentScrollTop = maxScrollTop;
 		else this.currentScrollTop = Math.max(0, Math.min(this.currentScrollTop, maxScrollTop));
-		if (this.currentScrollTop < maxScrollTop) this.followSuppressedAtEnd = false;
-		if (this.followEnd && this.currentScrollTop === maxScrollTop && !this.followSuppressedAtEnd) {
-			this.followingEnd = true;
-		}
+		// Removed automatic followingEnd re-enable logic — it caused the
+		// view to snap back to bottom when the user was scrolled up and
+		// new streaming content arrived. followingEnd is now only set by
+		// explicit user scroll actions (scrollBy/scrollTo/scrollToEnd).
 		if (this.contentHeight <= this.currentViewportHeight) this.hideTransientScrollbar();
 	}
 
