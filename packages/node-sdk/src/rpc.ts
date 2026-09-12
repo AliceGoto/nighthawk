@@ -616,6 +616,11 @@ export abstract class SDKRpcClientBase {
     });
   }
 
+  async cancelAgent(input: SessionIdRpcInput & { agentId: string }): Promise<void> {
+    const rpc = await this.getRpc();
+    return rpc.cancel({ sessionId: input.sessionId, agentId: input.agentId });
+  }
+
   async clearContext(input: SessionIdRpcInput): Promise<void> {
     const rpc = await this.getRpc();
     return rpc.clearContext({

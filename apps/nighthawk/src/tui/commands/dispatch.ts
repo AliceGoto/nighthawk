@@ -9,6 +9,7 @@ import type { BtwPanelController } from '../controllers/btw-panel';
 import type { StreamingUIController } from '../controllers/streaming-ui';
 import type { SessionEventHandler } from '../controllers/session-event-handler';
 import type { TasksBrowserController } from '../controllers/tasks-browser';
+import type { SwarmBrowserController } from '../controllers/swarm-browser';
 import { tryHandleDanceCommand } from '../easter-eggs/dance';
 import type { ResolvedTheme } from '../theme/colors';
 import type { TUIState } from '../tui-state';
@@ -222,6 +223,7 @@ export interface SlashCommandHost {
   readonly streamingUI: StreamingUIController;
   readonly btwPanelController: BtwPanelController;
   readonly tasksBrowserController: TasksBrowserController;
+  readonly swarmBrowserController: SwarmBrowserController;
   readonly sessionEventHandler: SessionEventHandler;
   readonly authFlow: AuthFlowController;
 }
@@ -569,7 +571,7 @@ async function handleBuiltInSlashCommand(
       void showStatusReport(host);
       return;
     case 'personas':
-      void handlePersonasCommand(host);
+      handlePersonasCommand(host);
       return;
     case 'feedback':
       await handleFeedbackCommand(host);

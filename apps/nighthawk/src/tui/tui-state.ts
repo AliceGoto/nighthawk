@@ -19,6 +19,7 @@ import { CustomEditor } from './components/editor/custom-editor';
 import { DEFAULT_TUI_CONFIG } from './config';
 import { CHROME_GUTTER } from './constant/rendering';
 import type { TasksBrowserState } from './controllers/tasks-browser';
+import type { SwarmBrowserState } from './controllers/swarm-browser';
 import { currentTheme, type Theme } from './theme';
 import { setMarkdownRenderLatex } from './utils/markdown-options';
 import { createTerminalState, type TerminalState } from './utils/terminal-state';
@@ -73,6 +74,7 @@ export interface TUIState {
    */
   editorReplacementMounted: boolean;
   tasksBrowser: TasksBrowserState | undefined;
+  swarmBrowser: SwarmBrowserState | undefined;
   externalEditorRunning: boolean;
   queuedMessages: QueuedMessage[];
   /**
@@ -187,6 +189,7 @@ export function createTUIState(options: NighthawkTUIOptions): TUIState {
     activeDialog: null,
     editorReplacementMounted: false,
     tasksBrowser: undefined,
+    swarmBrowser: undefined,
     externalEditorRunning: false,
     queuedMessages: [],
     queuedMessageDispatchPending: false,

@@ -306,6 +306,9 @@ export class AgentSwarmProgressComponent implements Component {
     const itemCount = Math.max(fullRows.length, partialRows.length);
     if (itemCount > 0) this.ensureMemberCount(itemCount);
     this.updateItemTexts(fullRows, partialRows);
+    if (fullRows.length > 0) {
+      this.trimUnboundTail(fullRows.length);
+    }
   }
 
   markInputComplete(): void {
@@ -739,6 +742,24 @@ export class AgentSwarmProgressComponent implements Component {
       const member = this.members[index];
       if (member !== undefined) this.progressEstimator.ensureMember(member.id, nowMs);
     }
+  }
+
+  /**
+   * Drop trailing members that never bound to a real subagent once the final
+   * argument list is known. Streaming arguments can over-count items while the
+   * model drafts the tool call; the authoritative full args shrink the swarm
+   * back to its true size. Only unbound, never-started tail members are
+   * removed so bound or running members survive untouched.
+   */
+  private trimUnboundTail(targetCount: number): void {
+    if (targetCount >= this.members.length) return;
+    const tailUnboundOnly = this.members.slice(targetCount).every(
+      (member) =>
+        member.agentId === undefined &&
+        (member.phase === 'pending' || member.phase === 'queued'),
+    );
+    if (!tailUnboundOnly) return;
+    this.members = this.members.slice(0, targetCount);
   }
 
   private updateItemTexts(fullItems: readonly string[], partialItems: readonly string[]): void {

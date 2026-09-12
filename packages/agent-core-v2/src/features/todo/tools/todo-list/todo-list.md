@@ -13,6 +13,11 @@ Use this tool to maintain a structured TODO list as you work through a multi-ste
 - Trivial requests where tracking adds no clarity
 - Purely conversational or informational replies
 
+**Complexity gate:**
+- Start with a TODO list when the work has three or more dependent sub-steps, spans multiple files or packages, or is a long investigation — before the first edit, capture the sequence.
+- Do the same right after a plan is approved: break the approved plan into tracked sub-steps here, one `in_progress` at a time.
+- Skip it for single-file small fixes, answer-only requests, and while an approach still needs user sign-off — an unapproved approach belongs in the plan file (EnterPlanMode), not in a TODO list.
+
 **Avoid churn:**
 - Do not re-call this tool when nothing meaningful has changed since the last call — update the list only after real progress.
 - When unsure of the current state, call query mode first (omit `todos`) to check the list before deciding what to update.

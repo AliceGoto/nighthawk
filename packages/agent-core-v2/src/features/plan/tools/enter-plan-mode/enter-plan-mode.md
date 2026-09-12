@@ -23,4 +23,9 @@ When NOT to use:
 - User gave very specific, detailed instructions
 - Pure research/exploration tasks
 
+Relationship to TodoList:
+- Plan mode is for decisions that need user sign-off; once approved, track the execution with TodoList (break the plan into sub-steps there), not with another plan.
+- Multi-file or architectural work goes through plan first; approved execution is then TodoList-driven.
+- Use EnterPlanMode only when planning itself adds value.
+
 Once you are in plan mode, a reminder walks you through the workflow (explore → design → write the plan file → `ExitPlanMode`) and enforces read-only access. For non-trivial tasks where you are unsure of the codebase structure or relevant code paths, use `Agent(subagent_type="explore")` to investigate first when the `Agent` tool is available.

@@ -117,6 +117,11 @@ export class NighthawkHarness {
     return this.rpc.withInteractiveAgent(agentId, fn);
   }
 
+  /** Cancel exactly one agent's current turn (e.g. a swarm member). */
+  async cancelAgent(input: { sessionId: string; agentId: string }): Promise<void> {
+    await this.rpc.cancelAgent(input);
+  }
+
   track(event: string, properties?: TelemetryProperties): void {
     this.telemetry.track(event, properties);
   }

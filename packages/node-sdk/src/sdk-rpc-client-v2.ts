@@ -1847,6 +1847,17 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   }
 
   /**
+   * Cancel a single agent's current turn (the swarm member), through the
+   * klient agent facade — `agentLoopService.cancelFromUser` for exactly that
+   * agent, unlike session-level `cancel` which only targets the interactive
+   * agent. Used by the swarm browser's member stop action.
+   */
+  override async cancelAgent(input: { sessionId: string; agentId: string }): Promise<void> {
+    await this.agentScope(input.sessionId);
+    await this.klient.session(input.sessionId).agent(input.agentId).cancel();
+  }
+
+  /**
    * Through the agent scope (`IAgentFullCompactionService.begin`) — no klient
    * facade exists. Same semantics as v1's `beginCompaction`: a manual
    * compaction launches the summarizer immediately in the background, is a

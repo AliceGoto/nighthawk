@@ -127,6 +127,7 @@ import { StagingLeaseTracker, type StagingLease } from './controllers/staging-le
 import { PentestOrchestrator } from './controllers/pentest-orchestrator';
 import { StreamingUIController } from './controllers/streaming-ui';
 import { TasksBrowserController } from './controllers/tasks-browser';
+import { SwarmBrowserController } from './controllers/swarm-browser';
 import { installRainbowDance } from './easter-eggs/dance';
 import { adaptPanelResponse } from './reverse-rpc/approval/adapter';
 import { ApprovalController } from './reverse-rpc/approval/controller';
@@ -369,6 +370,7 @@ export class NighthawkTUI {
   readonly sessionEventHandler: SessionEventHandler;
   readonly sessionReplay: SessionReplayRenderer;
   readonly tasksBrowserController: TasksBrowserController;
+  readonly swarmBrowserController: SwarmBrowserController;
   readonly editorKeyboard: EditorKeyboardController;
 
   /** Timer that auto-clears the one-shot "moved to background" footer hint. */
@@ -459,6 +461,7 @@ export class NighthawkTUI {
     this.sessionEventHandler = new SessionEventHandler(this);
     this.sessionReplay = new SessionReplayRenderer(this);
     this.tasksBrowserController = new TasksBrowserController(this);
+    this.swarmBrowserController = new SwarmBrowserController(this);
     this.editorKeyboard = new EditorKeyboardController(this, this.imageStore);
     this.editorKeyboard.install();
     this.buildLayout();
@@ -1010,6 +1013,7 @@ export class NighthawkTUI {
     // before tearing the UI down, so they can't keep firing requestRender after
     // stop() returns (or leak when stop() runs without process.exit).
     this.tasksBrowserController.close();
+    this.swarmBrowserController.close();
     this.btwPanelController.clear();
     this.stopActivitySpinner();
     this.streamingUI.disposeActiveCompactionBlock();
@@ -2121,6 +2125,10 @@ export class NighthawkTUI {
     this.state.tasksBrowser = value;
   }
 
+  setSwarmBrowser(value: TUIState['swarmBrowser']): void {
+    this.state.swarmBrowser = value;
+  }
+
   appendStartupNotice(extra: string): void {
     this.startupNotice = combineStartupNotice(this.startupNotice, extra);
   }
@@ -2608,6 +2616,7 @@ export class NighthawkTUI {
     this.streamingUI.resetToolUi();
     this.sessionEventHandler.resetRuntimeState();
     this.tasksBrowserController.close();
+    this.swarmBrowserController.close();
     this.btwPanelController.clear();
     this.state.footer.setBackgroundCounts({ bashTasks: 0, agentTasks: 0 });
     this.streamingUI.setTodoList([]);
