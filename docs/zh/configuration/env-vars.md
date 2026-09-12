@@ -2,10 +2,10 @@
 
 NightHawk CLI 通过环境变量控制少数运行时行为——迁移数据目录、关闭遥测、不改配置文件临时切换模型。
 
-::: warning 重要：API 密钥不在这里配置
-`NIGHTHAWK_API_KEY`、`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 等密钥变量**不会**从 shell 环境变量自动读取。在终端里 `export NIGHTHAWK_API_KEY=xxx` 不会让任何供应商获得密钥——必须写在 `config.toml` 的 `[providers.<name>]` 段或 `[providers.<name>.env]` 子表里。
+::: warning 提示：供应商凭证会回退到对应的 shell 环境变量
+`NIGHTHAWK_API_KEY`、`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 等密钥变量**会**被 CLI 读取：当 `config.toml` 未设置某个供应商的 `api_key`（或 `base_url`）时，该供应商会回退读取对应的 shell 环境变量——`nighthawk` 型供应商读 `NIGHTHAWK_API_KEY`，`openai` 读 `OPENAI_API_KEY`，`google-genai` 读 `GOOGLE_API_KEY`，以此类推。配置文件——`[providers.<name>].api_key` 或 `[providers.<name>.env]` 子表——始终优先于 shell。
 
-唯一的例外是 `NIGHTHAWK_MODEL_*` 系列，它是一个显式通道，*确实*会从 shell 读取凭证——详见[用环境变量定义模型](#用环境变量定义模型-nighthawk-model)。
+`NIGHTHAWK_MODEL_*` 系列是另一条显式通道，*确实*会从 shell 读取凭证——详见[用环境变量定义模型](#用环境变量定义模型-nighthawk-model)。
 
 背景说明见[配置覆盖：供应商凭证](./overrides.md#供应商凭证)。
 :::
@@ -54,14 +54,14 @@ export NIGHTHAWK_CUSTOM_HEADERS=$'X-Gateway-Cluster: my-cluster\nX-Custom-Tag: d
 
 ## 供应商凭证键（写在 config.toml 里）
 
-下面这些键名不是直接从 shell 读取的——它们是写在 `config.toml` 的 `[providers.<name>.env]` 子表里、作为 `api_key` / `base_url` 备用来源的键名。CLI 只从配置文件读取，不从 `process.env` 读取。
+下面这些键名是 `api_key` / `base_url` 的备用来源。你可以把它们写在 `config.toml` 的 `[providers.<name>.env]` 子表里统一管理，也可以直接在 shell 里 `export`——当某个供应商的 `api_key`（或 `base_url`）未在配置文件中设置时，CLI 会回退读取对应的 shell 环境变量。
 
 这样设计是为了让你保留熟悉的键名写法，同时把密钥放在配置文件里统一管理：
 
 ```toml
 [providers.nighthawk.env]
 NIGHTHAWK_API_KEY = "sk-xxx"
-NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
+NIGHTHAWK_BASE_URL = "https://api.nighthawk.com/v1"
 ```
 
 各供应商对应的键名：
@@ -69,7 +69,7 @@ NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
 | 键名 | 适用供应商 | 默认值 |
 | --- | --- | --- |
 | `NIGHTHAWK_API_KEY` | NightHawk / NightHawk | 无 |
-| `NIGHTHAWK_BASE_URL` | NightHawk / NightHawk | `https://api.nighthawk.dev/v1` |
+| `NIGHTHAWK_BASE_URL` | NightHawk / NightHawk | `https://api.nighthawk.com/v1` |
 | `ANTHROPIC_API_KEY` | Anthropic | 无 |
 | `ANTHROPIC_BASE_URL` | Anthropic | Anthropic SDK 默认值 |
 | `OPENAI_API_KEY` | OpenAI（`openai` 和 `openai_responses`） | 无 |
@@ -80,7 +80,7 @@ NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
 | `GOOGLE_CLOUD_LOCATION` | Vertex AI | 无 |
 
 ::: warning
-`GOOGLE_APPLICATION_CREDENTIALS`（服务账号 JSON 路径）是唯一走系统环境变量的例外——它由 Google SDK 自身通过 ADC 流程读取，CLI 不参与。其他所有键名都必须写在 `[providers.<name>.env]` 子表里。
+`GOOGLE_APPLICATION_CREDENTIALS`（服务账号 JSON 路径）走的是另一套机制——它由 Google SDK 自身通过 ADC 流程读取，CLI 不参与。其他所有键名都由 CLI 自己解析：可以写在 `[providers.<name>.env]` 子表里，也可以直接在 shell 里 `export`——配置文件中未设置时，CLI 会回退读取对应的 shell 环境变量。
 :::
 
 供应商类型与字段的完整说明见[平台与模型](./providers.md)。

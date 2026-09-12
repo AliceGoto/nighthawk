@@ -31,7 +31,7 @@ telemetry = true
 
 [providers."managed:nighthawk"]
 type = "nighthawk"
-base_url = "https://api.nighthawk.dev/v1"
+base_url = "https://api.nighthawk.com/v1"
 api_key = ""
 
 [models."nighthawk/k3"]
@@ -69,11 +69,11 @@ max_running_tasks = 4
 keep_alive_on_exit = false
 
 [services.nighthawk_search]
-base_url = "https://api.nighthawk.dev/v1/search"
+base_url = "https://api.nighthawk.com/v1/search"
 api_key = ""
 
 [services.nighthawk_fetch]
-base_url = "https://api.nighthawk.dev/v1/fetch"
+base_url = "https://api.nighthawk.com/v1/fetch"
 api_key = ""
 
 [[permission.rules]]
@@ -121,7 +121,7 @@ timeout = 5
 
 ## `providers`
 
-`providers` 表的每一项定义一个 API 供应商，以唯一名称为 key。CLI 只从这里读取凭证，**不会**从 shell 环境变量自动取后备值——在终端里 `export NIGHTHAWK_API_KEY` 不会让供应商自动获得密钥，必须显式写在配置文件里（详见[配置覆盖](./overrides.md#供应商凭证)）。
+`providers` 表的每一项定义一个 API 供应商，以唯一名称为 key。当 `api_key`（或 `base_url`）未在配置文件中设置时，CLI 会回退到对应的 shell 环境变量——`nighthawk` 型供应商读 `NIGHTHAWK_API_KEY` / `NIGHTHAWK_BASE_URL`，`openai` 读 `OPENAI_API_KEY` / `OPENAI_BASE_URL`，`google-genai` 读 `GOOGLE_API_KEY` 等（详见[配置覆盖](./overrides.md#供应商凭证)）。配置文件始终优先于 shell。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -131,15 +131,15 @@ timeout = 5
 | `env` | `table<string, string>` | 否 | 供应商凭证的备用来源，详见下文 |
 | `custom_headers` | `table<string, string>` | 否 | 每次请求附加的自定义 HTTP 头 |
 
-**`env` 子表**：可以把供应商惯用的键名（如 `NIGHTHAWK_API_KEY`）写在 `[providers.<name>.env]` 里，作为 `api_key` / `base_url` 的备用来源。这个子表**只在配置文件里读取**，不会修改 shell 环境：
+**`env` 子表**：可以把供应商惯用的键名（如 `NIGHTHAWK_API_KEY`）写在 `[providers.<name>.env]` 里，作为 `api_key` / `base_url` 的备用来源。这个子表只是配置文件里的一个 TOML 区块——它优先于对应的 shell 环境变量，但不会修改 shell 环境：
 
 ```toml
 [providers.nighthawk.env]
 NIGHTHAWK_API_KEY = "sk-xxx"
-NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
+NIGHTHAWK_BASE_URL = "https://api.nighthawk.com/v1"
 ```
 
-优先级：`api_key` 字段 > `env` 子表键 > 两者都缺时启动报错。
+优先级：`api_key` 字段 > `env` 子表键 > 对应的 shell 环境变量（如 `NIGHTHAWK_API_KEY`）> 全部缺失时启动报错。
 
 ## `models`
 
@@ -160,6 +160,12 @@ NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
 | `display_name` | `string` | 否 | UI 中显示的名称，未设时回退到 `model` |
 | `reasoning_key` | `string` | 否 | 仅 `openai` 供应商。当网关用非标准字段名返回推理内容时才需要设置；默认自动识别 `reasoning_content` / `reasoning_details` / `reasoning` |
 | `adaptive_thinking` | `boolean` | 否 | 仅 `anthropic` 供应商。强制开启或关闭 adaptive thinking，覆盖按模型名推断的逻辑。省略时自动推断（Claude ≥ 4.6 使用 adaptive） |
+| `provider_id` | `string` | 否 | 供应商标识，用于把 catalog 同步的模型条目与上游供应商对应起来 |
+| `api_key` | `string` | 否 | 该模型条目自己的 API 密钥，优先于供应商的密钥 |
+| `oauth` | `object` | 否 | OAuth 凭证引用：`storage`（`file` 或 `keyring`）、`key` 与 `oauth_host` |
+| `protocol` | `string` | 否 | 该模型的协议覆盖：`anthropic`、`openai`、`openai_responses` 或 `google-genai`。catalog 导入网关模型时写入；仅在与 `base_url` 配合时生效 |
+| `aliases` | `string[]` | 否 | 可解析到该模型条目的其他名称 |
+| `beta_api` | `boolean` | 否 | 让该模型走供应商的 beta API 变体（如 Anthropic beta Messages API） |
 
 别名中含 `.` 时需要加引号：
 
@@ -323,6 +329,8 @@ k3-max = "同一模型的 max Thinking 档位。适合最难的子任务。"
 | `max_steps_per_turn` | `integer` | — | 单轮最大步数；不设或设为 `0` 则无上限 |
 | `max_attempts_per_step` | `integer` | `10` | 单步失败后的最大总尝试次数（含首次尝试） |
 | `reserved_context_size` | `integer` | — | 预留给模型输出的 token 数；上下文窗口剩余量低于此值时触发自动压缩 |
+| `max_ralph_iterations` | `integer` | — | Ralph 循环的最大迭代次数上限；`-1` 表示不设上限 |
+| `compaction_trigger_ratio` | `number` | — | 已用上下文达到窗口的该比例时触发自动压缩；合法范围 `0.5`–`0.99` |
 
 `max_steps_per_turn` 可被环境变量 `NIGHTHAWK_LOOP_MAX_STEPS_PER_TURN` 覆盖，`max_attempts_per_step` 可被 `NIGHTHAWK_LOOP_MAX_ATTEMPTS_PER_STEP` 覆盖，优先级均高于配置文件。旧的 `NIGHTHAWK_LOOP_MAX_RETRIES_PER_STEP` 已废弃，但在新变量未设置时仍生效（启动时会给出警告）。
 
@@ -464,11 +472,11 @@ disabled = ["EnterPlanMode", "ExitPlanMode", "mcp__github__*"]
 
 ```toml
 [services.nighthawk_search]
-base_url = "https://api.nighthawk.dev/v1/search"
+base_url = "https://api.nighthawk.com/v1/search"
 api_key = "sk-xxx"
 
 [services.nighthawk_fetch]
-base_url = "https://api.nighthawk.dev/v1/fetch"
+base_url = "https://api.nighthawk.com/v1/fetch"
 api_key = "sk-xxx"
 ```
 

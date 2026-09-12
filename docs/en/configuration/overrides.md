@@ -6,7 +6,7 @@ NightHawk CLI has three places where runtime parameters can be influenced: the c
 - **Command-line options** make one-off changes for the current startup; discarded after exit
 - **Environment variables** primarily handle data directory location, OAuth endpoint switching, and a small number of runtime switches — **not a general fallback mechanism for config fields**
 
-This distinction matters: many users run `export NIGHTHAWK_API_KEY=xxx` in the shell expecting the CLI to pick it up automatically, but it does not. See [Provider credentials](#provider-credentials) below for why.
+This distinction matters: `export NIGHTHAWK_API_KEY=xxx` in the shell is not an ordinary runtime override — it is only picked up as a provider credential fallback when the config file does not set the key. See [Provider credentials](#provider-credentials) below.
 
 ## Three roles of environment variables
 
@@ -26,7 +26,7 @@ For ordinary runtime parameters such as model alias, Plan mode, yolo mode, and S
 A small number of environment variables explicitly override specific config file fields — for example, `NIGHTHAWK_BACKGROUND_KEEP_ALIVE_ON_EXIT` has higher priority than `[background].keep_alive_on_exit`. These exceptions are noted in [Environment variables](./env-vars.md) and in the relevant field descriptions in [Configuration files](./config-files.md).
 
 ::: warning
-**Ordinary runtime parameters do not fall back to shell environment variables.** Provider `api_key` / `base_url` are read only from `config.toml` (including the `[providers.<name>.env]` sub-table) and do not fall back to `export`-ed shell variables. The only exception is the explicit `NIGHTHAWK_MODEL_*` channel — see [Define a model from environment variables](./env-vars.md#define-a-model-from-environment-variables-nighthawk-model).
+**Ordinary runtime parameters do not fall back to shell environment variables.** Provider credentials are the exception: when `config.toml` does not set a provider's `api_key` (or `base_url`) — neither the direct field nor the `[providers.<name>.env]` sub-table — the CLI falls back to the matching shell variable (`NIGHTHAWK_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, etc.). The `NIGHTHAWK_MODEL_*` family is a separate explicit channel — see [Define a model from environment variables](./env-vars.md#define-a-model-from-environment-variables-nighthawk-model).
 :::
 
 The CLI currently reads a single user-level config file and has no project-level config file mechanism. To isolate config between different projects, point `NIGHTHAWK_HOME` at different data directories — see [Common scenarios](#common-scenarios) below.
@@ -39,9 +39,10 @@ For a single provider, credentials are resolved in this order:
 
 1. `[providers.<name>].api_key` — key written directly in the config file; highest priority
 2. The matching key inside the `[providers.<name>.env]` sub-table (`NIGHTHAWK_API_KEY`, `ANTHROPIC_API_KEY`, etc.) — consulted only when `api_key` is empty
-3. If both are absent — startup fails with an error indicating the provider is missing credentials
+3. The matching shell environment variable — consulted when the config file sets no key anywhere
+4. If all are absent — startup fails with an error indicating the provider is missing credentials
 
-`base_url` is resolved the same way: first `[providers.<name>].base_url`, then the `*_BASE_URL` key in `[providers.<name>.env]`.
+`base_url` is resolved the same way: first `[providers.<name>].base_url`, then the `*_BASE_URL` key in `[providers.<name>.env]`, then the corresponding shell variable (for example `NIGHTHAWK_BASE_URL`) — the `nighthawk` provider's built-in default (`https://api.nighthawk.com/v1`) applies when none is set.
 
 > The `[providers.<name>.env]` sub-table is just a TOML section in the config file — it does not write anything into the shell environment. It is only consulted when the corresponding direct field (`api_key` / `base_url`) is empty.
 
@@ -82,7 +83,7 @@ Mutual exclusion rules (startup fails if violated):
 NIGHTHAWK_HOME="$PWD/.nighthawk-sandbox" nighthawk
 ```
 
-**One-off test key** — since provider credentials are read only from the config file, write a test key into the `env` sub-table:
+**One-off test key** — provider credentials resolve `config.toml` first and fall back to the shell, so write a test key into the `env` sub-table to keep it in the config file and take precedence over the shell:
 
 ```toml
 [providers.nighthawk.env]

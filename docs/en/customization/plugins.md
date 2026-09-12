@@ -81,7 +81,7 @@ Official plugins are plugins and built-in product capabilities maintained by Nig
 
 - **[NightHawk Datasource](#nighthawk-datasource)**: Query financial market data, financial news, macroeconomic indicators, corporate registration records, academic literature, Chinese laws and regulations, and official data from intergovernmental organizations in natural language
 - **[NightHawk WebBridge](#nighthawk-webbridge)**: Let AI drive your own browser to get web tasks done
-- **[NightHawk Computer Use](#nighthawk-computer-use)**: Let AI operate your desktop apps (macOS and Windows)
+- **[NightHawk Pentest](#nighthawk-pentest)**: Authorized penetration-testing workflow and professional report generation
 
 ### Installation and Upgrade
 
@@ -195,41 +195,15 @@ Use this when you can't reach the stores:
 - **Competitive analysis**: Batch-question multiple AI products and collect their answers to build side-by-side comparison reports
 - **Flight price comparison**: Query the same itinerary across multiple travel platforms, record airlines, departure/arrival times, and links sorted by price, and get recommended options
 
-### NightHawk Computer Use <Badge type="tip" text="v0.5.4" />
+### NightHawk Pentest <Badge type="tip" text="v1.0.0" />
 
-NightHawk Computer Use lets AI operate your desktop apps directly, clicking, dragging, scrolling, and typing. The macOS version works silently in the background without taking over your mouse (a few popup actions may still bring an app to the foreground); see [the notes below](#notes-for-the-windows-version) for how the Windows version differs.
-
-#### Authorization (macOS)
-
-The first time you use NightHawk Computer Use after installation, it shows an authorization window — just follow the prompts:
-
-1. Click **Authorize** next to **Accessibility** and **Screen Recording**, and enable both permissions in System Settings — the former lets it perform clicks, typing, and scrolling; the latter lets it read screen content and locate UI elements
-2. Turn on the **NightHawk** switch under "Connect local agents", then restart NightHawk for it to take effect
-
-<div style="max-width: 380px; margin: 0 auto;">
-
-</div>
-
-#### Notes for the Windows version
-
-The Windows version (WinCU) installs differently from the macOS one: run `/plugins install` with the `nighthawk-cu-win-plugin.zip` URL from your NightHawk distribution mirror in NightHawk, then restart after installation. A few things to know before using it:
-
-- **It may briefly take over your mouse and keyboard**: Unlike the macOS version, the Windows version cannot reliably inject input in the background; it may briefly activate the target window and use your real mouse and keyboard while performing actions
-- **System requirements**: Windows 10 version 1903 (Build 18362) or later, or Windows 11, x64; a real interactive desktop session is required, and Windows Server needs Desktop Experience
-- **No extra permissions needed**: Windows does not require the Accessibility and Screen Recording grants that macOS does
-- **Matching privilege level**: If the target app runs as administrator, NighthawkCU must run at the same privilege level
+NightHawk Pentest is the official penetration-testing plugin: it turns NightHawk into a scoped, authorized pentest workstation with a full engagement workflow — scope confirmation, reconnaissance, attack-surface mapping, vulnerability verification, in-scope PoC, post-exploitation assessment, and remediation — plus professional report generation (HTML as the source format, one-click conversion to PDF). Compliance red lines are enforced throughout: no exfiltration, no destruction, no persistent payloads, and out-of-scope systems are never touched.
 
 #### What you can do
 
-- **Organize and enter information**: Have AI gather scattered information into Notes, spreadsheets, or your note-taking app, instead of typing everything in by hand
-- **Walk through site and app flows**: After changing a page, let AI click through the key flows and screenshot each step to confirm rendering and navigation work
-- **Handle repetitive operations**: Repeatedly opening, copying, pasting, and checking can run silently in the background without taking over your mouse
-- **Run fixed-step tasks**: For flows with clear steps, spell them out and AI follows along; for example, ask AI to open NetEase Cloud Music and play a specific song
-- **Handle software that has no API**: Plenty of professional tools and internal systems have no CLI or API at all; what used to require your own clicking can now be handed to AI, like trimming the first three seconds off a clip in Final Cut Pro and exporting it
-
-::: warning Note
-Don't hand it anything involving money, accounts, or publishing, such as payments and transfers, deleting important files, changing passwords, or posting content. To judge whether a task is suitable, check three things: the result is verifiable, the action is reversible, and the risk of getting it wrong is low.
-:::
+- **Authorized engagements only**: authorization and scope confirmation are enforced before any testing begins, then the agent follows the [pentest methodology](../guides/pentest-mode.md)
+- **Professional report generation**: generate HTML/PDF reports from the findings JSON, with evidence and remediation recommendations
+- **Chinese-first, fully bilingual**: the workflow, prompts, and report templates are Chinese-first with full English support
 
 ## Plugin Manifest
 

@@ -88,7 +88,7 @@ Paseo's generic ACP adapter does not drive the login flow, so complete the termi
 
 - **Session disconnects immediately / IDE shows "agent exited"**: usually a wrong `command` path or missing authentication. Run `nighthawk acp` in a terminal first to verify — if it blocks waiting for stdin, the CLI itself is fine and the problem is in the IDE configuration; if it exits immediately with an error, follow the error message (most commonly you need to configure a provider first).
 - **IDE shows "auth required"**: the CLI has no usable authentication token. Exit the IDE, run `nighthawk` in a terminal to configure a provider, then restart the IDE.
-- **MCP tools not visible**: check the [`nighthawk acp` reference](../reference/nighthawk-acp.md) capability table to confirm that the MCP transport type configured in your IDE is supported. The NightHawk CLI ACP adapter currently supports `http`, `stdio`, and `sse` transports; `acp` transport MCP servers are silently dropped and a warning is written to the log.
+- **MCP tools not visible**: check the [`nighthawk acp` reference](../reference/nighthawk-acp.md) capability table to confirm that the MCP transport type configured in your IDE is supported. The NightHawk CLI ACP adapter currently supports `http`, `stdio`, `sse`, and `acp` transports; only unrecognized transport types are dropped with a warning written to the log.
 
 ## Next steps
 

@@ -176,7 +176,7 @@ Plan 模式是一种受约束的工作状态：进入后 `Write` 与 `Edit` 只�
 | `DirBrute` | `url`, `wordlist`, `extensions`, `concurrency` | 目录爆破：内置 40+ 常见路径字典枚举 Web 目录和文件 |
 | `PasswordBrute` | `target_url`, `username`, `password_list`, `field_user`, `field_pass`, `failure_indicator` | 密码爆破：常见密码字典测试登录凭证。需要显式授权确认 |
 | `ThreatModel` | `path`, `scope`, `output_format` | 威胁建模：STRIDE 分析 + 信任边界图 + Mermaid 图表。纯分析工具，不执行网络请求 |
-| `SubdomainEnum` | `domain`, `methods`, `wordlist` | 子域名枚举：DNS 解析 + 50+ 常见子域名字典。支持 `dns` 和 `common` 两种方法 |
+| `SubdomainEnum` | `domain`, `methods`, `wordlist` | 子域名枚举：DNS 解析 + 45+ 常见子域名字典。支持 `dns` 和 `common` 两种方法 |
 
 ## 定时任务
 

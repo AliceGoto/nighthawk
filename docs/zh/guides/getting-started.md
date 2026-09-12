@@ -52,7 +52,7 @@ brew install AliceGoto/nighthawk/nighthawk
 
 ### npm 安装
 
-需要 Node.js 22.19.0 或更高版本：
+需要 Node.js 24.15.0 或更高版本：
 
 ```sh
 node --version

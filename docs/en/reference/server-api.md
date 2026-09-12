@@ -1,6 +1,6 @@
 # Server API
 
-The local server previously started by `nighthawk web` is no longer shipped with NightHawk CLI. This page is the protocol reference for the two programmatic surfaces that server exposed: a REST API (`/api/v1`, plus `/api/v2/sessions` and `/api/v2/mcp`) and a WebSocket event stream (`/api/v1/ws`); the protocol remains available for compatible implementations. For the removal details, see [Local server and API](../guides/server.md).
+NightHawk CLI ships a lightweight local web server via the `nighthawk web` subcommand: it serves the web UI from `dist-web/` and exposes an OpenAI-compatible API proxy (`/v1/chat/completions`, `/v1/models`) that forwards requests to the local NightHawk engine — the REST API (`/api/v1`, plus `/api/v2/sessions` and `/api/v2/mcp`) and the WebSocket event stream (`/api/v1/ws`) documented on this page were removed, but the protocol remains available for compatible implementations. For the current server, see [Local server and API](../guides/server.md).
 
 This page is a curated, human-readable reference: it documents every endpoint's parameters, request bodies, and response shapes below. The precise machine-readable schema of every endpoint is owned by the server's live specification documents: `GET /openapi.json` (OpenAPI) and `GET /asyncapi.json` (AsyncAPI), both generated from the same validation schemas the server enforces at runtime. Both require authentication; when this page and the live spec ever disagree, the live spec wins.
 

@@ -1,6 +1,6 @@
 # Local Server and API
 
-NightHawk CLI no longer ships a built-in local web server. The `nighthawk web` subcommand and the TUI `/web` command were removed, so the CLI no longer starts a foreground process that serves the web UI, a REST API (`/api/v1`), or a WebSocket event stream (`/api/v1/ws`).
+NightHawk CLI still ships a lightweight local web server via the `nighthawk web` subcommand: it serves the web UI from `dist-web/` and exposes an OpenAI-compatible proxy (`/v1/chat/completions` and `/v1/models`) that forwards requests to the local engine. The TUI `/web` command and the REST API (`/api/v1`) plus WebSocket event stream (`/api/v1/ws`) were removed — `nighthawk web` does not provide those programmatic surfaces.
 
 The REST and WebSocket protocol reference remains documented on the [Server API](../reference/server-api.md) page for integrations that still target the removed server's interface.
 

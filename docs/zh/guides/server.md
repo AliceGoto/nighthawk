@@ -1,6 +1,6 @@
 # 本地服务与 API
 
-NightHawk CLI 不再内置本地 web server。`nighthawk web` 子命令和 TUI 中的 `/web` 命令已移除，CLI 不再提供同时挂载 web UI、REST API（`/api/v1`）与 WebSocket 事件流（`/api/v1/ws`）的前台服务进程。
+NightHawk CLI 仍内置轻量级本地 web server 子命令 `nighthawk web`：它从 `dist-web/` 提供 Web UI，并暴露 OpenAI 兼容代理（`/v1/chat/completions` 与 `/v1/models`），把请求转发给本地引擎。TUI 中的 `/web` 命令以及 REST API（`/api/v1`）与 WebSocket 事件流（`/api/v1/ws`）已移除——`nighthawk web` 不再提供这两类程序化接口。
 
 REST 与 WebSocket 的协议文档仍保留在 [服务 API](../reference/server-api.md) 页面，供仍需要对接已移除服务的集成方参考。
 

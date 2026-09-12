@@ -17,7 +17,7 @@ The `type` field in the `providers` table determines which protocol implementati
 
 All providers communicate with models in streaming mode by default. Capabilities such as thinking, vision, and tool use are matched automatically by model name prefix — you typically do not need to declare them manually.
 
-**Credential priority**: `api_key` direct field > `[providers.<name>.env]` sub-table key > if both are absent, startup fails with an error. The CLI does not fall back to shell environment variables for credentials — see [Config overrides: provider credentials](./overrides.md#provider-credentials).
+**Credential priority**: `api_key` direct field > `[providers.<name>.env]` sub-table key > matching shell environment variable (`NIGHTHAWK_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, etc.) > if all are absent, startup fails with an error. See [Config overrides: provider credentials](./overrides.md#provider-credentials).
 
 ## `/provider` — interactive provider management
 
@@ -44,14 +44,14 @@ The same operations are also available in non-interactive environments via the s
 
 For connecting to NightHawk AI's OpenAI-compatible interface, including the NightHawk managed service and NightHawk Platform API keys.
 
-- Default `base_url`: `https://api.nighthawk.dev/v1`
+- Default `base_url`: `https://api.nighthawk.com/v1`
 - Credential key names: `NIGHTHAWK_API_KEY`, `NIGHTHAWK_BASE_URL`
 - Additional capability: supports video upload
 
 ```toml
 [providers.nighthawk]
 type = "nighthawk"
-base_url = "https://api.nighthawk.dev/v1"
+base_url = "https://api.nighthawk.com/v1"
 api_key = "sk-xxxxx"
 ```
 

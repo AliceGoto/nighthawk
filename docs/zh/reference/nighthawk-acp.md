@@ -23,6 +23,7 @@ nighthawk acp
 | `promptCapabilities.embeddedContext` | `true` | 客户端可发送 `resource`/`resource_link` 嵌入式资源块，文本内容会以 `<resource uri="...">...</resource>` 形式注入 prompt；blob 资源被丢弃并写 warn |
 | `mcpCapabilities.http` | `true` | 转发 IDE 配置的 HTTP MCP 服务 |
 | `mcpCapabilities.sse` | `true` | 转发 IDE 配置的旧式 SSE MCP 服务 |
+| `mcpCapabilities.acp` | `true` | 转发 IDE 配置的 ACP MCP 服务 |
 | `loadSession` | `true` | 支持 `session/load` 续接已有会话，加载时会同步回放历史 |
 | `sessionCapabilities.list` | `{}` | 支持 `session/list` 枚举当前用户的会话 |
 | `sessionCapabilities.close` | `{}` | 支持 `session/close` 关闭活跃会话 |
@@ -84,7 +85,7 @@ ACP 客户端在 `session/new` 或 `session/load` 中提供 `mcpServers` 时，�
 - `http` → NightHawk 的 `transport: 'http'` 配置
 - `stdio` → NightHawk 的 `transport: 'stdio'` 配置
 - `sse` → NightHawk 的 `transport: 'sse'` 配置
-- `acp` → 丢弃并写一条 warn 日志
+- `acp` → NightHawk 的 `transport: 'acp'` 配置，`serverId` 取自 ACP MCP server 的 `id` 字段
 
 ## 下一步
 

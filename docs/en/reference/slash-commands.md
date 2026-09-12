@@ -14,11 +14,11 @@ Some commands are only available in the idle state. Executing these commands whi
 | --- | --- | --- | --- |
 | `/provider` | — | Open the interactive provider manager to view, add, and remove configured providers. See [Platforms & Models — `/provider` and provider management](../configuration/providers.md#provider-—-interactive-provider-management) | Yes |
 | `/login` | `/connect` | Login to a model provider: mainstream providers and custom endpoints via API key | No |
-| `/logout` | — | Remove a configured provider or clear credentials for the currently selected account | No |
+| `/logout` | `/disconnect` | Remove a configured provider or clear credentials for the currently selected account | No |
 | `/model` | — | Switch the LLM model used in the current session | Yes |
 | `/secondary-model` | `/subagent-model` | Pick the default model for subagents (writes `[secondary_model] default_model`; see the [subagent model pool](../configuration/config-files.md#subagent-model-pool)). Visible when the subagent model pool experiment is enabled | Yes |
 | `/settings` | `/config` | Open the settings panel inside the TUI | Yes |
-| `/experiments` | `/experimental` | Open the experimental feature panel | Yes |
+| `/experiments` | `/experimental` | Open the experimental feature panel | No |
 | `/permission` | — | Select a permission mode | Yes |
 | `/editor` | — | Configure the external editor launched by `Ctrl-G` | Yes |
 | `/theme` | — | Switch the terminal UI color theme | Yes |
@@ -51,8 +51,11 @@ Some commands are only available in the idle state. Executing these commands whi
 | `/auto [on\|off]` | — | Toggle auto permission mode. When enabled, tool approvals are handled automatically and the Agent will not ask the user questions | Yes |
 | `/plan [on\|off]` | — | Toggle Plan mode. Without arguments, flips the current state; explicitly passing `on`/`off` forces the setting. Simply toggling does not create an empty plan file | Yes |
 | `/plan clear` | — | Clear the current plan | No |
-| `/swarm on\|off` | — | Turn swarm mode on or off without sending a prompt. | Yes |
+| `/effort [level]` | `/thinking` | Switch the thinking effort level (for example `low`, `medium`, `high`, `max`) | Yes |
+| `/swarm on\|off` | — | Turn swarm mode on or off without sending a prompt. | No |
 | `/swarm <task>` | — | Turn swarm mode on, then send `<task>` as a normal prompt. If the turn completes normally, swarm mode turns off automatically. In `manual` permission mode, NightHawk asks whether to switch to `auto` or `yolo` before starting. | No |
+| `/swarm-status` | — | Show swarm sub-task status in a new interactive panel | Yes |
+| `/tower [status\|teardown\|on\|off] \| <objective>` | — | Report tower status, toggle tower mode, or set the tower objective (experimental) | Yes |
 | `/goal [...]` | — | Start or manage an autonomous goal | See below |
 
 ::: warning
@@ -110,6 +113,7 @@ Prompt mode exits with code `0` when the goal completes, `3` when it blocks, and
 | `/version` | — | Display the NightHawk CLI version number | Yes |
 | `/feedback` | `/bug` | Submit feedback with optional diagnostic logs and codebase context | Yes |
 | `/trace` | `/tracing`, `/timeline` | Show session trace timeline: each turn's duration, tool call chain, and status | Yes |
+| `/personas` | — | List available persona cards | Yes |
 
 ## Exit
 
@@ -124,11 +128,11 @@ Pentest mode transforms NightHawk into a dedicated penetration testing workstati
 | Command | Alias | Description | Always available |
 | --- | --- | --- | --- |
 | `/pentest` | `/hack` | Toggle pentest mode | Yes |
-| `/pentest <target>` | `/hack <target>` | Enable mode and launch a 9-stage pentest | No |
-| `/scan [path]` | `/pentest-scan` | Security scan (pentest mode) | No |
-| `/recon <target>` | `/pentest-recon` | Reconnaissance: port scan, subdomain enum, security scan, WebSearch OSINT (pentest mode) | No |
-| `/exploit [finding-id]` | `/pentest-exploit` | Exploit analysis — generate PoC plans (pentest mode) | No |
-| `/report` | `/pentest-report` | Generate pentest report HTML/PDF (pentest mode) | No |
+| `/pentest <target>` | `/hack <target>` | Enable mode and launch a 9-stage pentest | Yes |
+| `/scan [path]` | `/pentest-scan` | Security scan (pentest mode) | Yes |
+| `/recon <target>` | `/pentest-recon` | Reconnaissance: port scan, subdomain enum, security scan, WebSearch OSINT (pentest mode) | Yes |
+| `/exploit [finding-id]` | `/pentest-exploit` | Exploit analysis — generate PoC plans (pentest mode) | Yes |
+| `/report` | `/pentest-report` | Generate pentest report HTML/PDF (pentest mode) | Yes |
 
 Pentest tools: `PortScanner` (port scanning), `DirBrute` (directory brute force), `PasswordBrute` (credential testing), `ThreatModel` (STRIDE threat modeling), `SubdomainEnum` (subdomain enumeration) + four core security tools.
 
@@ -149,6 +153,7 @@ NightHawk CLI ships with a set of built-in Skills that appear directly as `/<nam
 | `/update-config` | Inspect or edit `config.toml` (model, provider, permission, hooks) and `tui.toml` (theme, editor, notifications, auto-update) |
 | `/check-nighthawk-docs` | Answer NightHawk product questions (CLI usage, configuration, membership, error codes) against the official docs |
 | `/import-from-cc-codex` | Import Claude Code and Codex instructions, skills, and MCP settings into NightHawk |
+| `/write-goal` | Write a well-formed `/goal` objective with explicit completion criteria, verification, boundaries, and stop rules. See [Goals](../guides/goals.md) |
 | `/sub-skill` | Discover and reorganize the local skill inventory into hierarchical sub-skill bundles. Includes `/sub-skill.review` (read-only proposal) and `/sub-skill.consolidate` (apply the reorganization) |
 
 All built-in Skill commands are only available in the idle state.

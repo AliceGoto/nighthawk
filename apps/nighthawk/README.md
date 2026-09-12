@@ -6,7 +6,7 @@
 
 ## What is NightHawk CLI
 
-NightHawk CLI is an AI coding agent that runs in your terminal. It can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It works out of the box with Kimi models and can also be configured to use other compatible providers.
+NightHawk CLI is an AI coding agent that runs in your terminal. It can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It works out of the box with the NightHawk platform and can be configured for OpenAI/Anthropic-compatible providers.
 
 ## Install
 
@@ -43,7 +43,7 @@ nighthawk --version
 
 ### Alternative: npm
 
-If you prefer npm, use Node.js 22.19.0 or later:
+If you prefer npm, use Node.js 24.15.0 or later:
 
 ```sh
 npm install -g @nighthawk/nighthawk

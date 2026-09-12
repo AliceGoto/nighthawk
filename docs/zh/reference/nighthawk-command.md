@@ -133,7 +133,7 @@ nighthawk -p "List changed files" --output-format stream-json
 
 ## 子命令
 
-`nighthawk` 提供以下子命令：`acp`（ACP IDE 模式）、`doctor`（校验配置文件）、`export`（导出会话）、`migrate`（迁移旧版数据）、`upgrade`（检查更新）、`vis`（在浏览器中启动会话可视化工具）、`provider`（管理供应商）。
+`nighthawk` 提供以下子命令：`acp`（ACP IDE 模式）、`doctor`（校验配置文件）、`export`（导出会话）、`migrate`（迁移旧版数据）、`upgrade`（检查更新）、`vis`（在浏览器中启动会话可视化工具）、`web`（提供 NightHawk Web UI 与 OpenAI 兼容代理）、`provider`（管理供应商）。
 
 ### `nighthawk acp`
 
@@ -242,6 +242,28 @@ nighthawk vis 01HZ...XYZ
 
 # 绑定固定主机和端口且不打开浏览器（例如在远程主机上）
 nighthawk vis --host 0.0.0.0 --port 8123 --no-open
+```
+
+### `nighthawk web`
+
+启动一个轻量本地 web server：从 `dist-web/` 提供 NightHawk Web UI，并暴露 OpenAI 兼容 API 代理（`/v1/chat/completions` 与 `/v1/models`），把请求转发给本地 NightHawk 引擎。它不提供 REST 或 WebSocket API。
+
+```sh
+nighthawk web [options]
+```
+
+| 参数 / 选项 | 说明 |
+| --- | --- |
+| `--port <number>` | 绑定的端口。默认 `3000` |
+| `--host <host>` | 绑定的主机。默认 `127.0.0.1` |
+| `--no-open` | 不自动打开浏览器，仅打印访问地址 |
+
+```sh
+# 启动 Web UI 并打开浏览器
+nighthawk web
+
+# 绑定固定主机和端口且不打开浏览器（例如在远程主机上）
+nighthawk web --host 0.0.0.0 --port 8123 --no-open
 ```
 
 ### `nighthawk provider`

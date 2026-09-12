@@ -81,7 +81,7 @@ Plugins 把可复用的 NightHawk CLI 能力打包成可安装单元——可以
 
 - **[NightHawk Datasource](#nighthawk-datasource)**：用自然语言查询金融行情、财经资讯、宏观经济、企业工商、学术文献、法律法规和国际组织官方数据
 - **[NightHawk WebBridge](#nighthawk-webbridge)**：让 AI 直接操控你自己的浏览器，完成各类网页操作
-- **[NightHawk Computer Use](#nighthawk-computer-use)**：让 AI 操作你的桌面应用（macOS 和 Windows）
+- **[NightHawk Pentest](#nighthawk-pentest)**：授权渗透测试全流程方法论与专业报告生成
 
 ### 安装与升级
 
@@ -197,39 +197,15 @@ NightHawk WebBridge 让 AI 直接操控你的浏览器，带着你的登录状�
 - **竞品分析**：自动在多个 AI 产品间批量发问并采集回答，生成横向对比报告
 - **机票比价**：在多个旅行平台查询同一行程，按价格排序记录航司、起降时间和原始链接，给出推荐方案
 
-### NightHawk Computer Use <Badge type="tip" text="v0.5.4" />
+### NightHawk Pentest <Badge type="tip" text="v1.0.0" />
 
-NightHawk Computer Use 让 AI 直接操作你的桌面应用，可以完成点击、拖拽、滚动、输入等操作。macOS 版全程在后台静默运行，不抢占你的鼠标（少量弹窗操作仍会唤起前台 App）；Windows 版的差异见[下文注意事项](#windows-版注意事项)。
-
-#### 授权（macOS）
-
-安装后首次使用时，NightHawk Computer Use 会弹出授权窗口，按照提示操作即可：
-
-1. 点击**辅助功能**和**屏幕录制**右侧的**去授权**，在系统设置中开启这两项权限。前者用于执行点击、输入与滚动，后者用于读取屏幕内容、识别需要操作的位置
-2. 在**接入本地 Agent**中打开 **NightHawk** 开关，重启 NightHawk 后生效
-
-<div style="max-width: 380px; margin: 0 auto;">
-
-</div>
-
-#### Windows 版注意事项
-
-
-- **会短暂占用键鼠**：Windows 版无法像 macOS 版那样稳定地全程后台输入，执行操作时可能短暂激活目标窗口并使用你的鼠标键盘
-- **系统要求**：Windows 10 version 1903（Build 18362）或更新版本 / Windows 11，x64；需要真实交互式桌面会话，Windows Server 需要 Desktop Experience
-- **无需额外授权**：Windows 不需要 macOS 那样的**辅助功能**和**屏幕录制**权限
-- **权限对等**：目标应用以管理员权限运行时，NighthawkCU 也需要以同等权限运行
+NightHawk Pentest 是官方渗透测试插件：它把 NightHawk 变成一个有边界、仅限授权范围内工作的渗透测试工作台——完整流程方法论（范围确认、信息收集、攻击面分析、漏洞验证、范围内 PoC、后渗透评估、修复方案）加上专业报告生成（HTML 为源格式，可一键转 PDF）。全过程内置合规红线：不 exfiltrate、不破坏、不留持久化 payload、不碰范围外系统。
 
 #### 能做什么
 
-- **在桌面软件整理和录入信息**：让 AI 把散落在各处的信息整理进备忘录、表格或笔记软件，不用手动逐条输入
-- **测试网站和应用流程**：将重复的测试步骤交给AI，截图确认渲染和跳转是否正常
-- **处理重复操作**：反复打开、复制、粘贴、检查类型的工作，让AI在后台静默完成，不抢占鼠标
-- **搞定没有接口的软件**：操作没有 CLI 或 API 的桌面端应用，例如让它把剪映里这段视频的片头剪掉三秒再导出
-
-::: warning 注意
-涉及资金、账号和对外发布的操作不建议使用此能力。
-:::
+- **仅限授权测试**：任何测试开始前强制授权与范围确认，随后 Agent 按[渗透测试方法论](../guides/pentest-mode.md)执行
+- **专业报告生成**：基于 findings JSON 生成 HTML/PDF 报告，含证据与修复建议
+- **中文优先、双语支持**：流程、提示词与报告模板以中文为主，提供完整英文支持
 
 ## Plugin manifest
 

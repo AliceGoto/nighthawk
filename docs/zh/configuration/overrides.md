@@ -6,7 +6,7 @@ NightHawk CLI 有三个地方可以影响运行参数：配置文件、命令行
 - **命令行选项** 做本次启动的临时切换，退出后失效
 - **环境变量** 主要负责数据目录定位、OAuth 端点切换，以及少数运行时开关——**不是配置字段的通用后备来源**
 
-这个区别很关键：很多人会在 shell 里 `export NIGHTHAWK_API_KEY=xxx`，以为 CLI 会自动取到，但实际上不会。原因见下文[供应商凭证](#供应商凭证)。
+这个区别很关键：在 shell 里 `export NIGHTHAWK_API_KEY=xxx` 不是普通运行时参数的覆盖——只有在配置文件中未设置该密钥时，它才会作为供应商凭证的回退来源被读取。原因见下文[供应商凭证](#供应商凭证)。
 
 ## 环境变量的三类作用
 
@@ -26,7 +26,7 @@ NightHawk CLI 有三个地方可以影响运行参数：配置文件、命令行
 少数环境变量明确覆盖特定配置字段，例如 `NIGHTHAWK_BACKGROUND_KEEP_ALIVE_ON_EXIT` 的优先级高于 `[background].keep_alive_on_exit`。这类例外在[环境变量](./env-vars.md)和[配置文件](./config-files.md)对应字段里都有标注。
 
 ::: warning
-**普通运行参数不会从 shell 环境变量取后备值。** 供应商的 `api_key` / `base_url` 只从 `config.toml`（包括 `[providers.<name>.env]` 子表）读取，不会回退到 shell 里 `export` 的变量。唯一的例外是显式的 `NIGHTHAWK_MODEL_*` 通道——详见[用环境变量定义模型](./env-vars.md#用环境变量定义模型-nighthawk-model)。
+**普通运行参数不会从 shell 环境变量取后备值。** 供应商凭证是例外：当 `config.toml` 未设置供应商的 `api_key`（或 `base_url`）时——无论直接字段还是 `[providers.<name>.env]` 子表都没有——CLI 会回退到对应的 shell 环境变量（`NIGHTHAWK_API_KEY`、`OPENAI_API_KEY`、`GOOGLE_API_KEY` 等）。`NIGHTHAWK_MODEL_*` 家族是另一条显式通道——详见[用环境变量定义模型](./env-vars.md#用环境变量定义模型-nighthawk-model)。
 :::
 
 目前 CLI 只读取一份用户级配置文件，没有项目级配置文件机制。需要在不同项目间隔离配置时，用 `NIGHTHAWK_HOME` 指向不同的数据目录——见下文[典型场景](#典型场景)。
@@ -39,9 +39,10 @@ NightHawk CLI 有三个地方可以影响运行参数：配置文件、命令行
 
 1. `[providers.<name>].api_key` — 配置文件里直接写的密钥，优先级最高
 2. `[providers.<name>.env]` 子表里的对应键（`NIGHTHAWK_API_KEY`、`ANTHROPIC_API_KEY` 等）— `api_key` 为空时才读这里
-3. 两者都缺 → 启动报错，提示该供应商缺少凭证
+3. 对应的 shell 环境变量——配置文件任何位置都没设置时才读这里
+4. 全部缺失 → 启动报错，提示该供应商缺少凭证
 
-`base_url` 的解析方式相同：先读 `[providers.<name>].base_url`，再读 `[providers.<name>.env]` 里的 `*_BASE_URL` 键。
+`base_url` 的解析方式相同：先读 `[providers.<name>].base_url`，再读 `[providers.<name>.env]` 里的 `*_BASE_URL` 键，然后读对应的 shell 环境变量（如 `NIGHTHAWK_BASE_URL`）；全部未设置时，`nighthawk` 型供应商使用内置默认值（`https://api.nighthawk.com/v1`）。
 
 > `[providers.<name>.env]` 子表只是配置文件里的一段 TOML，不会真正写入 shell 环境变量。仅当对应的直接字段（`api_key` / `base_url`）为空时，CLI 才会查这里。
 
@@ -82,7 +83,7 @@ NightHawk CLI 有三个地方可以影响运行参数：配置文件、命令行
 NIGHTHAWK_HOME="$PWD/.nighthawk-sandbox" nighthawk
 ```
 
-**一次性使用测试密钥**——由于供应商凭证只从配置文件读，把测试密钥写进 `env` 子表：
+**一次性使用测试密钥**——供应商凭证优先读取配置文件、再回退到 shell，把测试密钥写进 `env` 子表即可在配置文件内管理，并优先于 shell：
 
 ```toml
 [providers.nighthawk.env]

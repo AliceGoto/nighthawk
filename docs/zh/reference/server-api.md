@@ -1,6 +1,6 @@
 # 服务 API
 
-NightHawk CLI 不再内置由 `nighthawk web` 启动的本地服务。该服务曾暴露两组程序化接口：REST API（`/api/v1`，另有 `/api/v2/sessions` 和 `/api/v2/mcp`）与 WebSocket 事件流（`/api/v1/ws`）。本页仍是这两组接口的协议参考，协议仍可供兼容实现使用；移除详情见 [本地服务与 API](../guides/server.md)。
+NightHawk CLI 通过 `nighthawk web` 子命令提供轻量本地 web server：它从 `dist-web/` 提供 Web UI，并暴露 OpenAI 兼容 API 代理（`/v1/chat/completions`、`/v1/models`），把请求转发给本地 NightHawk 引擎——本页记录的 REST API（`/api/v1`，另有 `/api/v2/sessions` 和 `/api/v2/mcp`）与 WebSocket 事件流（`/api/v1/ws`）已移除，但协议仍可供兼容实现使用。当前服务见 [本地服务与 API](../guides/server.md)。
 
 本页是一份经过整理、面向人阅读的参考：下文逐一记录每个端点的参数、请求体与响应结构。每个端点精确的机器可读 schema 以服务的在线规范文档为准：`GET /openapi.json`（OpenAPI）与 `GET /asyncapi.json`（AsyncAPI），两者都由服务运行时实际执行的校验 schema 生成。两者都需要鉴权；当本页与在线规范不一致时，以在线规范为准。
 

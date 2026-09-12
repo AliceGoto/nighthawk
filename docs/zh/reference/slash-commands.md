@@ -14,11 +14,11 @@
 | --- | --- | --- | --- |
 | `/provider` | — | 打开交互式供应商管理器，查看、添加和删除已配置的供应商。详见[平台与模型 — `/provider` 与供应商管理](../configuration/providers.md#provider-—-交互式供应商管理) | 是 |
 | `/login` | `/connect` | 登录 NightHawk 托管服务：验证码流程授权 | 否 |
-| `/logout` | — | 移除已配置的供应商，或清除当前账户的登录凭证 | 否 |
+| `/logout` | `/disconnect` | 移除已配置的供应商，或清除当前账户的登录凭证 | 否 |
 | `/model` | — | 切换当前会话使用的 LLM 模型 | 是 |
 | `/secondary-model` | `/subagent-model` | 选择 subagent 的默认模型（写入 `[secondary_model] default_model`，详见[subagent 模型池](../configuration/config-files.md#subagent-模型池)）。在 subagent 模型池实验功能启用时可见 | 是 |
 | `/settings` | `/config` | 打开 TUI 内的设置面板 | 是 |
-| `/experiments` | `/experimental` | 打开实验功能面板 | 是 |
+| `/experiments` | `/experimental` | 打开实验功能面板 | 否 |
 | `/permission` | — | 选择权限模式 | 是 |
 | `/editor` | — | 配置 `Ctrl-G` 调起的外部编辑器 | 是 |
 | `/theme` | — | 切换终端 UI 配色主题 | 是 |
@@ -49,8 +49,11 @@
 | `/auto [on\|off]` | — | 切换 auto 权限模式。开启后工具审批自动处理，Agent 不会向用户提问 | 是 |
 | `/plan [on\|off]` | — | 切换 Plan 模式。不带参数时翻转；显式传 `on`/`off` 时强制设置。单纯切换不会创建空计划文件 | 是 |
 | `/plan clear` | — | 清除当前 plan 方案 | 否 |
-| `/swarm on\|off` | — | 开启或关闭 swarm mode，但不发送提示词。 | 是 |
+| `/effort [等级]` | `/thinking` | 切换思考强度（例如 `low`、`medium`、`high`、`max`） | 是 |
+| `/swarm on\|off` | — | 开启或关闭 swarm mode，但不发送提示词。 | 否 |
 | `/swarm <task>` | — | 先开启 swarm mode，再把 `<task>` 作为普通提示词发送。如果该轮次正常完成，swarm mode 会自动关闭。若当前是 `manual` 权限模式，启动前会提示是否切换到 `auto` 或 `yolo`。 | 否 |
+| `/swarm-status` | — | 在新交互面板中查看 swarm 子任务状态 | 是 |
+| `/tower [status\|teardown\|on\|off] \| <objective>` | — | 查看 Tower 状态、切换模式或设定目标（实验性） | 是 |
 | `/goal [...]` | — | 开始或管理目标模式 | 见下文 |
 
 ::: warning 注意
@@ -108,6 +111,7 @@ Prompt 模式在目标完成时以退出码 `0` 退出，在目标阻塞时以 `
 | `/version` | — | 显示 NightHawk CLI 版本号 | 是 |
 | `/feedback` | `/bug` | 提交反馈，可附加诊断日志和代码库上下文 | 是 |
 | `/trace` | `/tracing`、`/timeline` | 查看会话追踪时间线：每个回合的耗时、工具调用链和状态 | 是 |
+| `/personas` | — | 列出可用角色卡片 | 是 |
 
 ## 退出
 
@@ -122,11 +126,11 @@ Prompt 模式在目标完成时以退出码 `0` 退出，在目标阻塞时以 `
 | 命令 | 别名 | 说明 | 随时可用 |
 | --- | --- | --- | --- |
 | `/pentest` | `/hack` | 切换渗透测试模式 | 是 |
-| `/pentest <target>` | `/hack <target>` | 开启模式并启动 9 阶段渗透测试 | 否 |
-| `/scan [path]` | `/pentest-scan` | 安全扫描（渗透模式） | 否 |
-| `/recon <target>` | `/pentest-recon` | 信息收集：端口扫描、子域名枚举、安全扫描、WebSearch OSINT（渗透模式） | 否 |
-| `/exploit [finding-id]` | `/pentest-exploit` | 漏洞利用分析，生成 PoC（渗透模式） | 否 |
-| `/report` | `/pentest-report` | 生成渗透测试报告 HTML/PDF（渗透模式） | 否 |
+| `/pentest <target>` | `/hack <target>` | 开启模式并启动 9 阶段渗透测试 | 是 |
+| `/scan [path]` | `/pentest-scan` | 安全扫描（渗透模式） | 是 |
+| `/recon <target>` | `/pentest-recon` | 信息收集：端口扫描、子域名枚举、安全扫描、WebSearch OSINT（渗透模式） | 是 |
+| `/exploit [finding-id]` | `/pentest-exploit` | 漏洞利用分析，生成 PoC（渗透模式） | 是 |
+| `/report` | `/pentest-report` | 生成渗透测试报告 HTML/PDF（渗透模式） | 是 |
 
 渗透测试工具：`PortScanner`（端口扫描）、`DirBrute`（目录爆破）、`PasswordBrute`（密码爆破）、`ThreatModel`（威胁建模）、`SubdomainEnum`（子域名枚举）+ 四个核心安全工具。
 
@@ -147,6 +151,7 @@ NightHawk CLI 随包内置了一组 Skill，直接以 `/<name>` 形式出现在�
 | `/update-config` | 查看或编辑 `config.toml`（模型、供应商、权限、hooks）和 `tui.toml`（主题、编辑器、通知、自动更新） |
 | `/check-nighthawk-docs` | 依据官方文档回答 NightHawk 产品问题（CLI 用法、配置、会员、错误码） |
 | `/import-from-cc-codex` | 从 Claude Code 和 Codex 导入 instructions、skills 和 MCP 设置 |
+| `/write-goal` | 将粗略意图转化为包含明确完成标准、验证方式、边界和停止规则的规范 `/goal` 目标。详见 [目标](../guides/goals.md) |
 | `/sub-skill` | 发现并将本地 skill 库存重组为分层子 skill 包。包含 `/sub-skill.review`（只读提案）和 `/sub-skill.consolidate`（执行重组） |
 
 所有内置 Skill 命令仅在空闲状态下可用。

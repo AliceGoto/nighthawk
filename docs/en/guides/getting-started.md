@@ -52,7 +52,7 @@ If `brew install` cannot find the formula yet, run `brew tap` explicitly first. 
 
 ### npm installation
 
-Requires Node.js 22.19.0 or later:
+Requires Node.js 24.15.0 or later:
 
 ```sh
 node --version

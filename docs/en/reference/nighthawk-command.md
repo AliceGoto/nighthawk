@@ -133,7 +133,7 @@ In `stream-json` mode, regular replies produce an Assistant message; when the mo
 
 ## Subcommands
 
-`nighthawk` provides the following subcommands: `acp` (ACP IDE mode), `doctor` (validate configuration files), `export` (export a session), `migrate` (migrate legacy data), `upgrade` (check for updates), `vis` (launch the session visualizer in the browser), and `provider` (manage providers).
+`nighthawk` provides the following subcommands: `acp` (ACP IDE mode), `doctor` (validate configuration files), `export` (export a session), `migrate` (migrate legacy data), `upgrade` (check for updates), `vis` (launch the session visualizer in the browser), `web` (serve the NightHawk Web UI with an OpenAI-compatible proxy), and `provider` (manage providers).
 
 ### `nighthawk acp`
 
@@ -242,6 +242,28 @@ nighthawk vis 01HZ...XYZ
 
 # Bind a fixed port and host without opening a browser (e.g. on a remote host)
 nighthawk vis --host 0.0.0.0 --port 8123 --no-open
+```
+
+### `nighthawk web`
+
+Launch a lightweight local web server that serves the NightHawk Web UI from `dist-web/` and exposes an OpenAI-compatible API proxy (`/v1/chat/completions` and `/v1/models`) that forwards requests to the local NightHawk engine. It does not expose a REST or WebSocket API.
+
+```sh
+nighthawk web [options]
+```
+
+| Parameter / Option | Description |
+| --- | --- |
+| `--port <number>` | Port to bind. Default: `3000` |
+| `--host <host>` | Host to bind. Default: `127.0.0.1` |
+| `--no-open` | Do not open the browser automatically; just print the URL |
+
+```sh
+# Start the web UI and open the browser
+nighthawk web
+
+# Bind a fixed port and host without opening a browser (e.g. on a remote host)
+nighthawk web --host 0.0.0.0 --port 8123 --no-open
 ```
 
 ### `nighthawk provider`

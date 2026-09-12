@@ -2,10 +2,10 @@
 
 NightHawk CLI uses environment variables to control a small number of runtime behaviors — relocating the data directory, turning off telemetry, and temporarily switching models without touching the config file.
 
-::: warning Important: API keys are not configured here
-Credential variables such as `NIGHTHAWK_API_KEY`, `ANTHROPIC_API_KEY`, and `OPENAI_API_KEY` are **not** read automatically from shell environment variables. Running `export NIGHTHAWK_API_KEY=xxx` in the terminal does not give any provider its key — they must be written in `config.toml` under `[providers.<name>]` or the `[providers.<name>.env]` sub-table.
+::: warning Provider credentials fall back to the matching shell variable
+Credential variables such as `NIGHTHAWK_API_KEY`, `ANTHROPIC_API_KEY`, and `OPENAI_API_KEY` **are** read by the CLI when the config file does not set a key: a provider falls back to the matching shell environment variable whenever its `api_key` (or `base_url`) is not set in `config.toml` — the `nighthawk` provider reads `NIGHTHAWK_API_KEY`, `openai` reads `OPENAI_API_KEY`, `google-genai` reads `GOOGLE_API_KEY`, and so on. The config file — `[providers.<name>].api_key` or the `[providers.<name>.env]` sub-table — always takes priority over the shell.
 
-The only exception is the `NIGHTHAWK_MODEL_*` family, which is an explicit channel that *does* read credentials from the shell — see [Define a model from environment variables](#define-a-model-from-environment-variables-nighthawk-model).
+The `NIGHTHAWK_MODEL_*` family is a separate explicit channel that *does* read credentials from the shell — see [Define a model from environment variables](#define-a-model-from-environment-variables-nighthawk-model).
 
 For background, see [Config overrides: provider credentials](./overrides.md#provider-credentials).
 :::
@@ -54,14 +54,14 @@ Added in 0.20.2.
 
 ## Provider credential key names (written in config.toml)
 
-The key names below are not read directly from the shell — they are key names written inside the `[providers.<name>.env]` sub-table of `config.toml`, serving as fallback values for `api_key` / `base_url`. The CLI reads only from the config file, not from `process.env`.
+The key names below are fallback values for `api_key` / `base_url`. You can write them inside the `[providers.<name>.env]` sub-table of `config.toml` to keep them in the config file — or simply `export` them in the shell: when a provider's `api_key` (or `base_url`) is not set in the config file, the CLI falls back to the matching environment variable.
 
 This design lets you keep familiar key name conventions while centralizing secret management in the config file:
 
 ```toml
 [providers.nighthawk.env]
 NIGHTHAWK_API_KEY = "sk-xxx"
-NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
+NIGHTHAWK_BASE_URL = "https://api.nighthawk.com/v1"
 ```
 
 Key names per provider:
@@ -69,7 +69,7 @@ Key names per provider:
 | Key | Applicable provider | Default |
 | --- | --- | --- |
 | `NIGHTHAWK_API_KEY` | NightHawk / NightHawk | None |
-| `NIGHTHAWK_BASE_URL` | NightHawk / NightHawk | `https://api.nighthawk.dev/v1` |
+| `NIGHTHAWK_BASE_URL` | NightHawk / NightHawk | `https://api.nighthawk.com/v1` |
 | `ANTHROPIC_API_KEY` | Anthropic | None |
 | `ANTHROPIC_BASE_URL` | Anthropic | Follows Anthropic SDK default |
 | `OPENAI_API_KEY` | OpenAI (`openai` and `openai_responses`) | None |
@@ -80,7 +80,7 @@ Key names per provider:
 | `GOOGLE_CLOUD_LOCATION` | Vertex AI | None |
 
 ::: warning
-`GOOGLE_APPLICATION_CREDENTIALS` (path to a service account JSON file) is the only exception that goes through the system environment variable mechanism — it is read by the Google SDK directly via the standard ADC flow, and the CLI does not participate. All other key names must be placed in the `[providers.<name>.env]` sub-table to take effect.
+`GOOGLE_APPLICATION_CREDENTIALS` (path to a service account JSON file) follows its own mechanism — it is read by the Google SDK directly via the standard ADC flow, and the CLI does not participate. All other key names are resolved by the CLI itself: write them in the `[providers.<name>.env]` sub-table or export them in the shell — the CLI falls back to the matching environment variable when the config does not set the value.
 :::
 
 For the full provider type and field reference, see [Providers and models](./providers.md).

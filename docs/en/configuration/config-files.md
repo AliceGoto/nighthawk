@@ -31,7 +31,7 @@ telemetry = true
 
 [providers."managed:nighthawk"]
 type = "nighthawk"
-base_url = "https://api.nighthawk.dev/v1"
+base_url = "https://api.nighthawk.com/v1"
 api_key = ""
 
 [models."nighthawk/k3"]
@@ -69,11 +69,11 @@ max_running_tasks = 4
 keep_alive_on_exit = false
 
 [services.nighthawk_search]
-base_url = "https://api.nighthawk.dev/v1/search"
+base_url = "https://api.nighthawk.com/v1/search"
 api_key = ""
 
 [services.nighthawk_fetch]
-base_url = "https://api.nighthawk.dev/v1/fetch"
+base_url = "https://api.nighthawk.com/v1/fetch"
 api_key = ""
 
 [[permission.rules]]
@@ -121,7 +121,7 @@ The following sections cover each of the nested tables in turn: `providers`, `mo
 
 ## `providers`
 
-Each entry in the `providers` table defines an API provider, keyed by a unique name. The CLI reads credentials only from here — it does **not** fall back to shell environment variables automatically. Running `export NIGHTHAWK_API_KEY` in the terminal does not give any provider its key; you must write it explicitly in the config file (see [Config overrides](./overrides.md#provider-credentials)).
+Each entry in the `providers` table defines an API provider, keyed by a unique name. When `api_key` (or `base_url`) is not set in the config file, the CLI falls back to the matching shell environment variable — `NIGHTHAWK_API_KEY` / `NIGHTHAWK_BASE_URL` for the `nighthawk` provider, `OPENAI_API_KEY` / `OPENAI_BASE_URL` for `openai`, `GOOGLE_API_KEY` for `google-genai`, and so on (see [Config overrides](./overrides.md#provider-credentials)). The config file always takes priority over the shell.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -131,15 +131,15 @@ Each entry in the `providers` table defines an API provider, keyed by a unique n
 | `env` | `table<string, string>` | No | Fallback source for provider credentials; see below |
 | `custom_headers` | `table<string, string>` | No | Custom HTTP headers attached to each request |
 
-**`env` sub-table**: You can write provider-conventional key names (such as `NIGHTHAWK_API_KEY`) inside `[providers.<name>.env]` as a fallback source for `api_key` / `base_url`. This sub-table is **read only from the config file** and does not modify the shell environment:
+**`env` sub-table**: You can write provider-conventional key names (such as `NIGHTHAWK_API_KEY`) inside `[providers.<name>.env]` as a fallback source for `api_key` / `base_url`. This sub-table is just a TOML section in the config file — it takes priority over the matching shell environment variable but does not modify the shell environment:
 
 ```toml
 [providers.nighthawk.env]
 NIGHTHAWK_API_KEY = "sk-xxx"
-NIGHTHAWK_BASE_URL = "https://api.nighthawk.dev/v1"
+NIGHTHAWK_BASE_URL = "https://api.nighthawk.com/v1"
 ```
 
-Priority: `api_key` field > `env` sub-table key > if both are absent, startup fails with an error.
+Priority: `api_key` field > `env` sub-table key > corresponding shell environment variable (for example `NIGHTHAWK_API_KEY`) > if all are absent, startup fails with an error.
 
 ## `models`
 
@@ -160,6 +160,12 @@ Each entry in the `models` table defines a model alias (the name used in `defaul
 | `display_name` | `string` | No | Name shown in the UI; falls back to `model` when unset |
 | `reasoning_key` | `string` | No | `openai` provider only. Override the field name used for reasoning content when the gateway returns it under a non-standard name; by default `reasoning_content`, `reasoning_details`, and `reasoning` are auto-detected |
 | `adaptive_thinking` | `boolean` | No | `anthropic` provider only. Force adaptive thinking on or off, overriding the version inference based on the model name. Omit to infer automatically (Claude ≥ 4.6 uses adaptive) |
+| `provider_id` | `string` | No | Provider identifier used to keep catalog-synced model entries matched to their provider |
+| `api_key` | `string` | No | API key for this model entry, overriding the provider's key |
+| `oauth` | `object` | No | OAuth credential reference: `storage` (`file` or `keyring`), `key`, and `oauth_host` |
+| `protocol` | `string` | No | Protocol override for this model: `anthropic`, `openai`, `openai_responses`, or `google-genai`. Written by catalog imports for gateway models; only takes effect together with `base_url` |
+| `aliases` | `string[]` | No | Additional names that resolve to this model entry |
+| `beta_api` | `boolean` | No | Route this model through the provider's beta API variant (e.g. the Anthropic beta Messages API) |
 
 When an alias contains `.`, use a quoted key:
 
@@ -324,6 +330,8 @@ Configuration errors fail loudly instead of falling back silently. Session creat
 | `max_steps_per_turn` | `integer` | — | Maximum steps per turn; unset or `0` means unlimited |
 | `max_attempts_per_step` | `integer` | `10` | Maximum total attempts for a failing step, including the initial attempt |
 | `reserved_context_size` | `integer` | — | Number of tokens reserved for model output; automatic compaction is triggered when the remaining context window falls below this value |
+| `max_ralph_iterations` | `integer` | — | Maximum number of iterations for a Ralph loop; `-1` disables the cap |
+| `compaction_trigger_ratio` | `number` | — | Automatic compaction is triggered when the used context reaches this ratio of the window; valid range `0.5`–`0.99` |
 
 `max_steps_per_turn` can be overridden by the `NIGHTHAWK_LOOP_MAX_STEPS_PER_TURN` environment variable, and `max_attempts_per_step` by `NIGHTHAWK_LOOP_MAX_ATTEMPTS_PER_STEP`; both take higher priority than the config file. The former `NIGHTHAWK_LOOP_MAX_RETRIES_PER_STEP` variable is deprecated but still honored (with a startup warning) when the new one is unset.
 
@@ -465,11 +473,11 @@ Like the `tools` / `disallowedTools` fields of an agent file, this section shape
 
 ```toml
 [services.nighthawk_search]
-base_url = "https://api.nighthawk.dev/v1/search"
+base_url = "https://api.nighthawk.com/v1/search"
 api_key = "sk-xxx"
 
 [services.nighthawk_fetch]
-base_url = "https://api.nighthawk.dev/v1/fetch"
+base_url = "https://api.nighthawk.com/v1/fetch"
 api_key = "sk-xxx"
 ```
 

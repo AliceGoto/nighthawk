@@ -174,7 +174,7 @@ The following tools are available only in pentest mode (`/pentest`):
 | `DirBrute` | `url`, `wordlist`, `extensions`, `concurrency` | Directory enumeration with 40+ built-in common paths |
 | `PasswordBrute` | `target_url`, `username`, `password_list`, `field_user`, `field_pass`, `failure_indicator` | Credential testing against login forms. Requires explicit authorization |
 | `ThreatModel` | `path`, `scope`, `output_format` | STRIDE-based threat modeling with trust boundary analysis and Mermaid diagrams. Read-only analysis tool |
-| `SubdomainEnum` | `domain`, `methods`, `wordlist` | Subdomain enumeration via DNS resolution and a 50+ subdomain wordlist |
+| `SubdomainEnum` | `domain`, `methods`, `wordlist` | Subdomain enumeration via DNS resolution and a 45+ subdomain wordlist |
 
 ## Scheduled Tasks
 

@@ -17,7 +17,7 @@ NightHawk CLI 支持同时接入多家 LLM 平台——用 NightHawk 托管服�
 
 所有供应商默认以流式方式与模型交互。thinking、视觉、工具调用等能力按模型名前缀自动匹配，通常不需要手动声明。
 
-**凭证优先级**：`api_key` 直接字段 > `[providers.<name>.env]` 子表键 > 两者都缺时启动报错。CLI 不会从 shell 环境变量自动取凭证——详见[配置覆盖：供应商凭证](./overrides.md#供应商凭证)。
+**凭证优先级**：`api_key` 直接字段 > `[providers.<name>.env]` 子表键 > 对应的 shell 环境变量（`NIGHTHAWK_API_KEY`、`OPENAI_API_KEY`、`GOOGLE_API_KEY` 等）> 全部缺失时启动报错。详见[配置覆盖：供应商凭证](./overrides.md#供应商凭证)。
 
 ## `/provider` — 交互式供应商管理
 
@@ -44,14 +44,14 @@ NightHawk CLI 支持同时接入多家 LLM 平台——用 NightHawk 托管服�
 
 用于对接 NightHawk AI 的 OpenAI 兼容接口，包括 NightHawk 托管服务和 NightHawk Platform API 密钥。
 
-- 默认 `base_url`：`https://api.nighthawk.dev/v1`
+- 默认 `base_url`：`https://api.nighthawk.com/v1`
 - 凭证键名：`NIGHTHAWK_API_KEY`、`NIGHTHAWK_BASE_URL`
 - 额外能力：支持视频上传
 
 ```toml
 [providers.nighthawk]
 type = "nighthawk"
-base_url = "https://api.nighthawk.dev/v1"
+base_url = "https://api.nighthawk.com/v1"
 api_key = "sk-xxxxx"
 ```
 

@@ -23,6 +23,7 @@ The table below lists the capabilities declared by the current ACP adapter layer
 | `promptCapabilities.embeddedContext` | `true` | Client may send `resource`/`resource_link` embedded resource blocks; text content is injected into the prompt as `<resource uri="...">...</resource>`; blob resources are dropped with a warn |
 | `mcpCapabilities.http` | `true` | Forwards HTTP MCP services configured by the IDE |
 | `mcpCapabilities.sse` | `true` | Forwards legacy SSE MCP services configured by the IDE |
+| `mcpCapabilities.acp` | `true` | Forwards ACP MCP services configured by the IDE |
 | `loadSession` | `true` | Supports `session/load` to resume an existing session, replaying history on load |
 | `sessionCapabilities.list` | `{}` | Supports `session/list` to enumerate the current user's sessions |
 
@@ -80,7 +81,7 @@ When an ACP client provides `mcpServers` in `session/new` or `session/load`, the
 - `http` → NightHawk's `transport: 'http'` configuration
 - `stdio` → NightHawk's `transport: 'stdio'` configuration
 - `sse` → NightHawk's `transport: 'sse'` configuration
-- `acp` → discarded with a warn log entry
+- `acp` → NightHawk's `transport: 'acp'` configuration, with `serverId` taken from the ACP MCP server's `id`
 
 ## Next steps
 
