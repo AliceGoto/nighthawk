@@ -51,7 +51,7 @@ export const gitLogTool: Tool = {
   },
   async run(args) {
     const n = (args.n as number) || 20;
-    const parts = [`log -n ${n}`, args.oneline !== false ? '--oneline --decorate' : '--pretty=format:%h %an %ad %s', args.file ? `-- ${args.file}` : ''];
+    const parts = [`log -n ${n}`, args.oneline !== false ? '--oneline --decorate' : '--pretty=format:%h %an %ad %s', args.file ? `-- ${args.file as string}` : ''];
     return git(parts.filter(Boolean).join(' '), args.path as string);
   },
 };
@@ -65,7 +65,7 @@ export const gitBlameTool: Tool = {
     }, required: ['file'] },
   },
   async run(args) {
-    const range = args.start && args.end ? `-L ${args.start},${args.end}` : '';
+    const range = args.start && args.end ? `-L ${args.start as number},${args.end as number}` : '';
     return git(`blame ${range} -- ${(args.file as string).replace(/["'`]/g, '')} | head -100`, args.path as string);
   },
 };

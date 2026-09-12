@@ -49,8 +49,8 @@ describe('provisionManagedNighthawkConfig', () => {
   it('keeps the legacy credential key for the default production environment', () => {
     expect(
       resolveNighthawkOAuthKey({
-        oauthHost: 'https://auth.kimi.com/',
-        baseUrl: 'https://api.kimi.com/coding/v1/',
+        oauthHost: 'https://auth.nighthawk.com/',
+        baseUrl: 'https://api.nighthawk.com/v1/',
       }),
     ).toBe(NIGHTHAWK_OAUTH_KEY);
   });
@@ -76,8 +76,8 @@ describe('provisionManagedNighthawkConfig', () => {
     // existing production credentials keep resolving to `nighthawk.json`.
     expect(
       resolveNighthawkOAuthRef({
-        oauthHost: 'https://auth.kimi.com/',
-        baseUrl: 'https://api.kimi.com/coding/v1/',
+        oauthHost: 'https://auth.nighthawk.com/',
+        baseUrl: 'https://api.nighthawk.com/v1/',
       }),
     ).toEqual({ storage: 'file', key: NIGHTHAWK_OAUTH_KEY, oauthHost: undefined });
 
@@ -87,10 +87,10 @@ describe('provisionManagedNighthawkConfig', () => {
     expect(defaultAuthCustomApiRef).toEqual({
       storage: 'file',
       key: resolveNighthawkOAuthKey({
-        oauthHost: 'https://auth.kimi.com',
+        oauthHost: 'https://auth.nighthawk.com',
         baseUrl: 'https://api.example.test/coding/v1',
       }),
-      oauthHost: 'https://auth.kimi.com',
+      oauthHost: 'https://auth.nighthawk.com',
     });
 
     // A non-default environment yields a scoped key AND the normalized host,
@@ -232,7 +232,7 @@ describe('provisionManagedNighthawkConfig', () => {
     expect(result.models[0]?.supportsToolUse).toBe(true);
     expect(result.models[1]?.supportsToolUse).toBe(false);
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.kimi.com/coding/v1/models',
+      'https://api.nighthawk.com/v1/models',
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer oauth-access-token',
@@ -254,7 +254,7 @@ describe('provisionManagedNighthawkConfig', () => {
     expect(config.models?.['nighthawk/stale']).toBeUndefined();
     expect(config.providers[NIGHTHAWK_PROVIDER_NAME]).toMatchObject({
       type: 'nighthawk',
-      baseUrl: 'https://api.kimi.com/coding/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
       apiKey: '',
       oauth: { storage: 'file', key: 'oauth/nighthawk' },
     });
@@ -267,7 +267,7 @@ describe('provisionManagedNighthawkConfig', () => {
     });
     expect(config.models?.['nighthawk/kimi-k2.5']?.capabilities).toBeUndefined();
     expect(config.services?.nighthawkSearch).toMatchObject({
-      baseUrl: 'https://api.kimi.com/coding/v1/search',
+      baseUrl: 'https://api.nighthawk.com/v1/search',
       apiKey: '',
       oauth: { storage: 'file', key: 'oauth/nighthawk' },
     });
@@ -339,7 +339,7 @@ describe('provisionManagedNighthawkConfig', () => {
       oauth: {
         storage: 'file',
         key: oauthKey,
-        oauthHost: 'https://auth.kimi.com',
+        oauthHost: 'https://auth.nighthawk.com',
       },
     });
   });
@@ -629,8 +629,8 @@ describe('provisionManagedNighthawkConfig', () => {
         },
       },
       services: {
-        nighthawkSearch: { baseUrl: 'https://api.kimi.com/coding/v1/search' },
-        nighthawkFetch: { baseUrl: 'https://api.kimi.com/coding/v1/fetch' },
+        nighthawkSearch: { baseUrl: 'https://api.nighthawk.com/v1/search' },
+        nighthawkFetch: { baseUrl: 'https://api.nighthawk.com/v1/fetch' },
         customService: { baseUrl: 'https://service.example.test' },
       },
       raw: {
@@ -650,8 +650,8 @@ describe('provisionManagedNighthawkConfig', () => {
           },
         },
         services: {
-          nighthawk_search: { base_url: 'https://api.kimi.com/coding/v1/search' },
-          nighthawk_fetch: { base_url: 'https://api.kimi.com/coding/v1/fetch' },
+          nighthawk_search: { base_url: 'https://api.nighthawk.com/v1/search' },
+          nighthawk_fetch: { base_url: 'https://api.nighthawk.com/v1/fetch' },
         },
       },
     };
@@ -806,12 +806,12 @@ describe('provisionManagedNighthawkConfig', () => {
       },
       services: {
         nighthawkSearch: {
-          baseUrl: 'https://api.kimi.com/coding/v1/search',
+          baseUrl: 'https://api.nighthawk.com/v1/search',
           apiKey: '',
           oauth: { storage: 'file', key: 'oauth/nighthawk' },
         },
         nighthawkFetch: {
-          baseUrl: 'https://api.kimi.com/coding/v1/fetch',
+          baseUrl: 'https://api.nighthawk.com/v1/fetch',
           apiKey: '',
           oauth: { storage: 'file', key: 'oauth/nighthawk' },
         },
@@ -1404,7 +1404,7 @@ function makeModelInfo(
   };
 }
 
-const NIGHTHAWK_BASE_URL = 'https://api.kimi.com/coding/v1';
+const NIGHTHAWK_BASE_URL = 'https://api.nighthawk.com/v1';
 
 describe('managed protocol routing', () => {
   it('reads protocol from the /models response', async () => {

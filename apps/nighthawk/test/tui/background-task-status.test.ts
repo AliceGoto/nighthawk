@@ -38,7 +38,7 @@ describe('formatBackgroundTaskTranscript', () => {
   it('renders a bash started entry', () => {
     const data = formatBackgroundTaskTranscript(task({ status: 'running' }));
     expect(data.phase).toBe('started');
-    expect(data.headline).toContain('bash task started');
+    expect(data.headline).toContain('命令任务 在后台启动');
     expect(data.detail).toBe('dev server');
   });
 
@@ -46,7 +46,7 @@ describe('formatBackgroundTaskTranscript', () => {
     const data = formatBackgroundTaskTranscript(
       task({ taskId: 'agent-deadbeef', status: 'running' }),
     );
-    expect(data.headline).toContain('agent task started');
+    expect(data.headline).toContain('代理任务 在后台启动');
   });
 
   it('renders a question started entry', () => {
@@ -58,7 +58,7 @@ describe('formatBackgroundTaskTranscript', () => {
         status: 'running',
       }),
     );
-    expect(data.headline).toContain('question task started');
+    expect(data.headline).toContain('询问任务 在后台启动');
   });
 
   it('renders a completed entry with exit code in detail', () => {
@@ -66,7 +66,7 @@ describe('formatBackgroundTaskTranscript', () => {
       task({ status: 'completed', exitCode: 0, endedAt: Date.now() }),
     );
     expect(data.phase).toBe('completed');
-    expect(data.headline).toContain('completed');
+    expect(data.headline).toContain('命令任务 在后台已完成');
     expect(data.detail).toContain('exit 0');
   });
 
@@ -75,7 +75,7 @@ describe('formatBackgroundTaskTranscript', () => {
       task({ status: 'failed', exitCode: 2, endedAt: Date.now() }),
     );
     expect(data.phase).toBe('failed');
-    expect(data.headline).toContain('failed');
+    expect(data.headline).toContain('命令任务 在后台失败');
     expect(data.detail).toContain('exit 2');
   });
 
@@ -84,14 +84,14 @@ describe('formatBackgroundTaskTranscript', () => {
       task({ status: 'killed', stopReason: 'user', endedAt: Date.now() }),
     );
     expect(data.phase).toBe('failed');
-    expect(data.headline).toContain('stopped');
+    expect(data.headline).toContain('命令任务 已终止');
     expect(data.detail).toContain('user');
   });
 
   it('renders a lost entry with restart note', () => {
     const data = formatBackgroundTaskTranscript(task({ status: 'lost', endedAt: Date.now() }));
     expect(data.phase).toBe('failed');
-    expect(data.headline).toContain('lost');
+    expect(data.headline).toContain('命令任务 已丢失');
     expect(data.detail).toContain('session restarted');
   });
 

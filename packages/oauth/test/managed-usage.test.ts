@@ -29,19 +29,19 @@ describe('nighthawkBaseUrl', () => {
 
 describe('isManagedNighthawkBaseUrl', () => {
   it('matches the default managed endpoint, with or without a trailing slash', () => {
-    expect(isManagedNighthawkBaseUrl('https://api.kimi.com/coding/v1')).toBe(true);
-    expect(isManagedNighthawkBaseUrl('https://api.kimi.com/coding/v1/')).toBe(true);
+    expect(isManagedNighthawkBaseUrl('https://api.nighthawk.com/v1')).toBe(true);
+    expect(isManagedNighthawkBaseUrl('https://api.nighthawk.com/v1/')).toBe(true);
   });
 
   it('matches against the NIGHTHAWK_BASE_URL override', () => {
     vi.stubEnv('NIGHTHAWK_BASE_URL', 'https://gw.example.com/coding/v1/');
     expect(isManagedNighthawkBaseUrl('https://gw.example.com/coding/v1')).toBe(true);
-    expect(isManagedNighthawkBaseUrl('https://api.kimi.com/coding/v1')).toBe(false);
+    expect(isManagedNighthawkBaseUrl('https://api.nighthawk.com/v1')).toBe(false);
   });
 
   it('is case-insensitive on the origin but strict on the path', () => {
-    expect(isManagedNighthawkBaseUrl('https://API.KIMI.COM/coding/v1')).toBe(true);
-    expect(isManagedNighthawkBaseUrl('https://api.kimi.com/CODING/v1')).toBe(false);
+    expect(isManagedNighthawkBaseUrl('https://API.NIGHTHAWK.COM/v1')).toBe(true);
+    expect(isManagedNighthawkBaseUrl('https://api.nighthawk.com/V1')).toBe(false);
   });
 
   it('rejects other paths on the managed host and other hosts entirely', () => {

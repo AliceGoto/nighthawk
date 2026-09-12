@@ -61,7 +61,7 @@ const cmdiFix = 'Avoid shell=True / eval. Use array-args APIs (subprocess with l
 
 // ── Path Traversal ────────────────────────────────────────────────
 const pathTemplates: Array<[string, RegExp, Severity, string]> = [
-  ['open user path', /open\s*\(\s*(?:req|params|query|args|request|input)[.\[]/g, 'high', 'CWE-22'],
+  ['open user path', /open\s*\(\s*(?:req|params|query|args|request|input)[.[]/g, 'high', 'CWE-22'],
   ['fs read user path', /fs\.(?:readFile|readFileSync|writeFile|createReadStream|createWriteStream)\s*\(\s*(?:req|params|query|request)\./g, 'high', 'CWE-22'],
   ['sendFile user path', /sendFile\s*\(\s*(?:req|params|query)\./g, 'high', 'CWE-22'],
   ['join user path', /path\.join\s*\([^)]*(?:req|params|query|\.\.\/)/g, 'medium', 'CWE-22'],
@@ -72,10 +72,10 @@ const pathFix = 'Normalize and canonicalize paths; verify prefix with path.resol
 
 // ── SSRF ──────────────────────────────────────────────────────────
 const ssrfTemplates: Array<[string, RegExp, Severity, string]> = [
-  ['requests user url', /requests\.(?:get|post|put|delete|head)\s*\(\s*(?:url|req|params|query|request|input)[.\[]/g, 'high', 'CWE-918'],
-  ['fetch user url', /fetch\s*\(\s*(?:req|params|query|request|url)[.\[]/g, 'high', 'CWE-918'],
-  ['urlopen', /urlopen\s*\(\s*(?:req|params|query|request|url)[.\[]/g, 'high', 'CWE-918'],
-  ['axios user url', /axios[.(?:get|post|put|delete)]*\s*\(\s*(?:req|params|query|request)[.\[]/g, 'high', 'CWE-918'],
+  ['requests user url', /requests\.(?:get|post|put|delete|head)\s*\(\s*(?:url|req|params|query|request|input)[.[]/g, 'high', 'CWE-918'],
+  ['fetch user url', /fetch\s*\(\s*(?:req|params|query|request|url)[.[]/g, 'high', 'CWE-918'],
+  ['urlopen', /urlopen\s*\(\s*(?:req|params|query|request|url)[.[]/g, 'high', 'CWE-918'],
+  ['axios user url', /axios[.(?:get|post|put|delete)]*\s*\(\s*(?:req|params|query|request)[.[]/g, 'high', 'CWE-918'],
   ['http.Get user url', /http\.(?:Get|Post)\s*\(\s*(?:req|params|query|r\.URL)/g, 'high', 'CWE-918'],
   ['HttpURLConnection', /new\s+URL\s*\(\s*request\./g, 'high', 'CWE-918'],
 ];

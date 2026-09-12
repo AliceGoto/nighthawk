@@ -109,7 +109,7 @@ describe('AgentActivityViewer', () => {
     const text = renderPlain(viewer, 120);
     expect(text).toContain('Agent activity');
     expect(text).toContain('explore › find things');
-    expect(text).toContain('running');
+    expect(text).toContain('运行中');
     expect(text).toContain('step 8–9 / 12');
     expect(text).toContain('earlier steps discarded');
   });
@@ -216,7 +216,7 @@ describe('AgentActivityViewer', () => {
       record: record({ status: 'completed', resultSummary: 'Found 3 call sites.' }),
     });
     const text = renderPlain(viewer);
-    expect(text).toContain('completed');
+    expect(text).toContain('已完成');
     expect(text).toContain('Result');
     expect(text).toContain('Found 3 call sites.');
   });

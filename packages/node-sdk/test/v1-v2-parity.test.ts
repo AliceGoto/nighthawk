@@ -458,7 +458,12 @@ function projectResumedAgents(
  *   profile also carries `TowerInit`/`TowerStatus`/`TowerTeardown` (the
  *   tower-mode control tools) and `WaitFor` (the background-task wait
  *   primitive); all are v2-only, so the tools are projected out of both
- *   rosters. A model-less
+ *   rosters. Likewise v1's default roster alone carries the four security
+ *   tools (`DepAudit`/`SecretScan`/`SecurityScan`/`TaintTrace`): the v2
+ *   engine registers them, but its builtin default `agent` profile
+ *   (AGENT_TOOLS) deliberately does not expose them, so a model-bound v2
+ *   fixture reports rosters without them — v1-only, projected out as well.
+ *   A model-less
  *   agent's roster is not compared at all (v1 initializes builtin tools
  *   only on a profiled agent; v2 exposes them unbound).
  */
@@ -480,6 +485,15 @@ function projectResumedAgent(agent: ResumedAgentState, home: HomePair): unknown 
       .filter((tool) => tool['name'] !== 'TowerStatus')
       .filter((tool) => tool['name'] !== 'TowerTeardown')
       .filter((tool) => tool['name'] !== 'WaitFor')
+      // The security-tool quartet is part of v1's default roster but not of
+      // v2's builtin default `agent` profile (AGENT_TOOLS in
+      // agent-core-v2/src/session/agentLifecycle/profile/profiles.ts), so the
+      // tools only exist on the v1 side of a model-bound fixture — v1-only,
+      // projected out like the tools above.
+      .filter((tool) => tool['name'] !== 'DepAudit')
+      .filter((tool) => tool['name'] !== 'SecretScan')
+      .filter((tool) => tool['name'] !== 'SecurityScan')
+      .filter((tool) => tool['name'] !== 'TaintTrace')
       .map((tool) => ({ name: tool['name'], active: tool['active'], source: tool['source'] }))
       .toSorted((a, b) => String(a.name).localeCompare(String(b.name)));
   }

@@ -92,7 +92,7 @@ export function parsePackageJson(manifestPath: string, content: string): DepAudi
   ];
 
   for (const [section, deps] of sections) {
-    if (deps == null) continue;
+    if (deps === null || deps === undefined) continue;
     for (const [name, range] of Object.entries(deps)) {
       const bare = name.startsWith('@') ? name.split('/')[1] ?? name : name;
       for (const risk of KNOWN_RISKS) {
@@ -211,17 +211,6 @@ export async function detectPackageManager(fs: IHostFileSystem, root: string): P
     } catch {}
   }
   return undefined;
-}
-
-function collectStream(stream: NodeJS.ReadableStream): Promise<string> {
-  const chunks: Buffer[] = [];
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk: any) => {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    stream.on('error', reject);
-  });
 }
 
 export function parseNpmAuditJson(

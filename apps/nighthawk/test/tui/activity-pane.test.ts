@@ -182,7 +182,7 @@ describe('updateActivityPane terminal progress', () => {
       // The spinner's inline text (frame + randomly picked working wit) is
       // embedded in the swarm progress row ahead of the status text.
       const rendered = strip(progress.render(80).join('\n'));
-      expect(rendered).toContain('Working...');
+      expect(rendered).toContain('工作中...');
       expect(rendered).toMatch(/[◇◈◆]/);
 
       state.activitySpinner?.instance.stop();
@@ -213,7 +213,7 @@ describe('updateActivityPane terminal progress', () => {
       expect(state.activitySpinner).not.toBeNull();
       expect(state.activityContainer.children).toHaveLength(1);
       const output = strip(progress.render(80).join('\n'));
-      expect(output).toContain('  Working...');
+      expect(output).toContain(' 工作中...');
       expect(output).not.toContain('◐ Working...');
 
       state.activitySpinner?.instance.stop();

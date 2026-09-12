@@ -108,7 +108,7 @@ beforeEach(() => {
   vi.stubEnv('NIGHTHAWK_LEGACY_FLAG', '1');
   // Pin region to cn: the telemetry endpoint assertion must not follow the
   // dev machine's own login/marker state.
-  vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.kimi.com');
+  vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.nighthawk.com');
   refreshNighthawkRegion();
   tmp = mkdtempSync(join(tmpdir(), 'nighthawk-export-'));
 });

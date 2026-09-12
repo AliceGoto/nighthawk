@@ -11,8 +11,8 @@ const SGR = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
 const strip = (s: string): string => s.replaceAll(SGR, '');
 const TAB = '\t';
 const RIGHT = `${ESC}[C`;
-// chalk.bgHex(colors.primary) → background truecolor for #00E5A0.
-const PRIMARY_BG = '48;2;0;229;160';
+// chalk.bgHex(colors.primary) → background truecolor for #F3F3F3.
+const PRIMARY_BG = '48;2;243;243;243';
 
 function model(displayName: string, provider: string): ModelAlias {
   return {
@@ -64,7 +64,7 @@ describe('TabbedModelSelectorComponent', () => {
   });
 
   it('highlights the active tab with a filled background (AskUserQuestion style)', () => {
-    // currentValue k2 → the active tab is "NightHawk"; its cell carries the
+    // The component opens on the All tab by default; its cell carries the
     // primary background SGR.
     const raw = make().component.render(120).join('\n');
     expect(raw).toContain(PRIMARY_BG);

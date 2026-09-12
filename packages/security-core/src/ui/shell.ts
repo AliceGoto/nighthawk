@@ -69,7 +69,7 @@ export class MoonLoader extends Text {
 // ── 流式消息组件（照搬 nighthawk assistant-message.ts）──────────────
 export class LiveMessage {
   private container = new Container();
-  private markdown: Markdown | undefined;
+  private markdown?: Markdown;
   private lastText = '';
 
   constructor(private ui: TUI, private showBullet = true) {}

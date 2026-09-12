@@ -271,7 +271,7 @@ describe('TasksBrowserApp — full-screen rendering', () => {
 
   it('shows empty-state copy in the Tasks pane when no tasks', () => {
     const out = strip(makeApp().render(120).join('\n'));
-    expect(out).toContain('No background tasks');
+    expect(out).toContain('此会话中没有后台任务。');
   });
 
   it('filters out terminal tasks when filter=active', () => {

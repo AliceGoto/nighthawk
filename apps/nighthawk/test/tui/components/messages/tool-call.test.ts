@@ -59,12 +59,12 @@ describe('ToolCallComponent', () => {
       );
 
       expect(strip(component.render(100).join('\n'))).not.toContain(
-        'Press Ctrl+B to run in background',
+        '按 Ctrl+B 后台运行',
       );
 
       vi.advanceTimersByTime(10_000);
       expect(strip(component.render(100).join('\n'))).toContain(
-        'Press Ctrl+B to run in background',
+        '按 Ctrl+B 后台运行',
       );
 
       component.dispose();
@@ -80,7 +80,7 @@ describe('ToolCallComponent', () => {
 
       // No timer advancement — Agents advertise Ctrl+B immediately.
       expect(strip(component.render(100).join('\n'))).toContain(
-        'Press Ctrl+B to run in background',
+        '按 Ctrl+B 后台运行',
       );
 
       component.dispose();
@@ -96,7 +96,7 @@ describe('ToolCallComponent', () => {
 
       vi.advanceTimersByTime(15_000);
       expect(strip(component.render(100).join('\n'))).not.toContain(
-        'Press Ctrl+B to run in background',
+        '按 Ctrl+B 后台运行',
       );
 
       component.dispose();
@@ -115,7 +115,7 @@ describe('ToolCallComponent', () => {
       vi.advanceTimersByTime(10_000);
 
       expect(strip(component.render(100).join('\n'))).not.toContain(
-        'Press Ctrl+B to run in background',
+        '按 Ctrl+B 后台运行',
       );
 
       component.dispose();
@@ -379,7 +379,7 @@ describe('ToolCallComponent', () => {
 
     const out = strip(component.render(120).join('\n'));
 
-    expect(out).toContain('Agent swarm: ✓ 1 completed · ✗ 1 failed · ⊘ 1 aborted');
+    expect(out).toContain('Agent swarm: ✓ 1 已完成 · ✗ 1 失败 · ⊘ 1 aborted');
     expect(out).not.toContain('<agent_swarm_result>');
     expect(out).not.toContain('Reviewed src/a.ts.');
     expect(out).not.toContain('Agent timed out.');

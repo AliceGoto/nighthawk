@@ -182,8 +182,8 @@ describe('requestDeviceAuthorization', () => {
       body: {
         user_code: 'WDJB-MJHT',
         device_code: 'devcode123',
-        verification_uri: 'https://auth.kimi.com/verify',
-        verification_uri_complete: 'https://auth.kimi.com/verify?user_code=WDJB-MJHT',
+        verification_uri: 'https://auth.nighthawk.com/verify',
+        verification_uri_complete: 'https://auth.nighthawk.com/verify?user_code=WDJB-MJHT',
         expires_in: 600,
         interval: 5,
       },
@@ -192,8 +192,8 @@ describe('requestDeviceAuthorization', () => {
     const auth = await requestAuth();
     expect(auth.userCode).toBe('WDJB-MJHT');
     expect(auth.deviceCode).toBe('devcode123');
-    expect(auth.verificationUri).toBe('https://auth.kimi.com/verify');
-    expect(auth.verificationUriComplete).toBe('https://auth.kimi.com/verify?user_code=WDJB-MJHT');
+    expect(auth.verificationUri).toBe('https://auth.nighthawk.com/verify');
+    expect(auth.verificationUriComplete).toBe('https://auth.nighthawk.com/verify?user_code=WDJB-MJHT');
     expect(auth.expiresIn).toBe(600);
     expect(auth.interval).toBe(5);
   });

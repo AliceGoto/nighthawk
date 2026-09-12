@@ -114,7 +114,7 @@ describe('parseManifest', () => {
     );
   });
 
-  it('reads a legacy kimi.plugin.json at the plugin root and loads its skills', async () => {
+  it('does not read a legacy kimi.plugin.json as a manifest', async () => {
     const root = await makePlugin(
       {
         'kimi.plugin.json': JSON.stringify({ name: 'kimi-demo', skills: './skills/' }),
@@ -123,23 +123,23 @@ describe('parseManifest', () => {
       { dirs: ['skills/kimi-skill'] },
     );
     const result = await parseManifest(root);
-    expect(result.manifestKind).toBe('legacy-plugin-root');
-    expect(result.manifestPath).toBe(path.join(root, 'kimi.plugin.json'));
-    expect(result.manifest?.name).toBe('kimi-demo');
-    expect(result.manifest?.skills).toEqual([path.join(root, 'skills')]);
-    expect(result.diagnostics).toContainEqual({
-      severity: 'info',
-      message: 'Using legacy manifest "kimi.plugin.json"',
-    });
+    expect(result.manifest).toBeUndefined();
+    expect(result.manifestKind).toBeUndefined();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('No manifest at'),
+      }),
+    );
 
     const skills = await discoverSkills({
-      roots: result.manifest?.skills?.map((dir) => ({ path: dir, source: 'extra' as const })) ?? [],
+      roots: [path.join(root, 'skills')].map((dir) => ({ path: dir, source: 'extra' as const })),
     });
     expect(skills.map((skill) => skill.name)).toEqual(['kimi-skill']);
     expect(skills[0]?.description).toBe('A kimi-format skill');
   });
 
-  it('falls back to .kimi-plugin/plugin.json when no root-level manifest exists', async () => {
+  it('does not read .kimi-plugin/plugin.json as a manifest', async () => {
     const root = await makePlugin(
       {
         '.kimi-plugin/plugin.json': JSON.stringify({ name: 'kimi-dir-demo', version: '1.0.0' }),
@@ -147,13 +147,13 @@ describe('parseManifest', () => {
       { dirs: ['.kimi-plugin'] },
     );
     const result = await parseManifest(root);
-    expect(result.manifestKind).toBe('legacy-plugin-dir');
-    expect(result.manifestPath).toBe(path.join(root, '.kimi-plugin/plugin.json'));
-    expect(result.manifest?.name).toBe('kimi-dir-demo');
-    expect(result.diagnostics).toContainEqual({
-      severity: 'info',
-      message: 'Using legacy manifest ".kimi-plugin/plugin.json"',
-    });
+    expect(result.manifest).toBeUndefined();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('No manifest at'),
+      }),
+    );
   });
 
   it('reads a generic plugin.json at the plugin root', async () => {
@@ -170,7 +170,7 @@ describe('parseManifest', () => {
     });
   });
 
-  it('prefers kimi.plugin.json over plugin.json and the directory-level manifests', async () => {
+  it('ignores kimi.plugin.json and .kimi-plugin/plugin.json, using plugin.json instead', async () => {
     const root = await makePlugin(
       {
         'kimi.plugin.json': JSON.stringify({ name: 'kimi-version' }),
@@ -180,12 +180,16 @@ describe('parseManifest', () => {
       { dirs: ['.kimi-plugin'] },
     );
     const result = await parseManifest(root);
-    expect(result.manifestKind).toBe('legacy-plugin-root');
-    expect(result.manifest?.name).toBe('kimi-version');
-    expect(result.shadowedManifestPath).toBe(path.join(root, 'plugin.json'));
+    expect(result.manifestKind).toBe('generic-plugin-root');
+    expect(result.manifest?.name).toBe('generic-version');
+    expect(result.shadowedManifestPath).toBeUndefined();
+    expect(result.diagnostics).toContainEqual({
+      severity: 'info',
+      message: 'Using generic manifest "plugin.json"',
+    });
   });
 
-  it('prefers a root-level manifest over .kimi-plugin/plugin.json', async () => {
+  it('does not treat .kimi-plugin/plugin.json as a shadowing manifest for plugin.json', async () => {
     const root = await makePlugin(
       {
         'plugin.json': JSON.stringify({ name: 'generic-version' }),
@@ -196,7 +200,7 @@ describe('parseManifest', () => {
     const result = await parseManifest(root);
     expect(result.manifestKind).toBe('generic-plugin-root');
     expect(result.manifest?.name).toBe('generic-version');
-    expect(result.shadowedManifestPath).toBe(path.join(root, '.kimi-plugin/plugin.json'));
+    expect(result.shadowedManifestPath).toBeUndefined();
   });
 
   it('resolves a single skills path', async () => {

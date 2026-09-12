@@ -57,7 +57,7 @@ class ThemeManager {
     this.paletteName = name;
     return true;
   }
-  color(token: keyof Palette | string): string {
+  color(token: string): string {
     const p = PALETTES[this.paletteName];
     return (p as any)[token] || p.text;
   }

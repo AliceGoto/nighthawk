@@ -25,7 +25,7 @@ describe('NIGHTHAWK_REGION_PROFILES', () => {
   });
 
   it('nighthawkRegionProfile returns the requested profile', () => {
-    expect(nighthawkRegionProfile('global', {}).oauthHost).toBe('https://auth.kimi.ai');
+    expect(nighthawkRegionProfile('global', {}).oauthHost).toBe('https://auth.nighthawk.ai');
     expect(nighthawkRegionProfile('mainland-cn', {})).toBe(NIGHTHAWK_REGION_PROFILES['mainland-cn']);
   });
 
@@ -92,10 +92,10 @@ describe('resolveNighthawkRegion', () => {
   });
 
   it('resolves a known env oauth host, NIGHTHAWK_OAUTH_HOST first', () => {
-    expect(resolveNighthawkRegion({ env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.kimi.ai' } })).toBe(
+    expect(resolveNighthawkRegion({ env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.nighthawk.ai' } })).toBe(
       'global',
     );
-    expect(resolveNighthawkRegion({ env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.kimi.com' } })).toBe(
+    expect(resolveNighthawkRegion({ env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.nighthawk.com' } })).toBe(
       'mainland-cn',
     );
   });
@@ -106,17 +106,17 @@ describe('resolveNighthawkRegion', () => {
     expect(
       resolveNighthawkRegion({
         env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.internal.example.com' },
-        configuredOAuthHost: 'https://auth.kimi.ai',
+        configuredOAuthHost: 'https://auth.nighthawk.ai',
         homeDir: await markerDir('global\n'),
       }),
     ).toBe('mainland-cn');
   });
 
   it('resolves the persisted login host, tolerating trailing slashes', () => {
-    expect(resolveNighthawkRegion({ env: {}, configuredOAuthHost: 'https://auth.kimi.ai/' })).toBe(
+    expect(resolveNighthawkRegion({ env: {}, configuredOAuthHost: 'https://auth.nighthawk.ai/' })).toBe(
       'global',
     );
-    expect(resolveNighthawkRegion({ env: {}, configuredOAuthHost: 'https://auth.kimi.com' })).toBe('mainland-cn');
+    expect(resolveNighthawkRegion({ env: {}, configuredOAuthHost: 'https://auth.nighthawk.com' })).toBe('mainland-cn');
   });
 
   it('ignores an unrecognized persisted host and continues down the chain', async () => {
@@ -154,15 +154,15 @@ describe('resolveNighthawkRegion', () => {
     const dir = await markerDir('global');
     expect(
       resolveNighthawkRegion({
-        env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.kimi.com' },
-        configuredOAuthHost: 'https://auth.kimi.ai',
+        env: { NIGHTHAWK_OAUTH_HOST: 'https://auth.nighthawk.com' },
+        configuredOAuthHost: 'https://auth.nighthawk.ai',
         homeDir: dir,
       }),
     ).toBe('mainland-cn');
     expect(
       resolveNighthawkRegion({
         env: {},
-        configuredOAuthHost: 'https://auth.kimi.ai',
+        configuredOAuthHost: 'https://auth.nighthawk.ai',
         homeDir: dir,
       }),
     ).toBe('global');
@@ -194,7 +194,7 @@ describe('resolveNighthawkRegion', () => {
     expect(
       resolveNighthawkRegion({
         env: {},
-        configuredOAuthHost: 'https://auth.kimi.ai',
+        configuredOAuthHost: 'https://auth.nighthawk.ai',
         configuredOAuthKey: NIGHTHAWK_OAUTH_KEY,
       }),
     ).toBe('global');
@@ -204,12 +204,12 @@ describe('resolveNighthawkRegion', () => {
 describe('nighthawkRegionLoginHosts', () => {
   it('returns both profile hosts, mainland-cn included (explicit beats stale config)', () => {
     expect(nighthawkRegionLoginHosts('mainland-cn', {})).toEqual({
-      oauthHost: 'https://auth.kimi.com',
-      baseUrl: 'https://api.kimi.com/coding/v1',
+      oauthHost: 'https://auth.nighthawk.com',
+      baseUrl: 'https://api.nighthawk.com/v1',
     });
     expect(nighthawkRegionLoginHosts('global', {})).toEqual({
-      oauthHost: 'https://auth.kimi.ai',
-      baseUrl: 'https://api.kimi.ai/coding/v1',
+      oauthHost: 'https://auth.nighthawk.ai',
+      baseUrl: 'https://api.nighthawk.com/v1',
     });
   });
 

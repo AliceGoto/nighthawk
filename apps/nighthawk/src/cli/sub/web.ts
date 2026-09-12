@@ -13,7 +13,7 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { extname, join, resolve } from 'node:path';
+import { extname, join, resolve, sep } from 'node:path';
 
 import {
   createNighthawkHarness,
@@ -93,14 +93,23 @@ async function serveStaticFile(
   // Strip query string
   const qIndex = urlPath.indexOf('?');
   if (qIndex !== -1) urlPath = urlPath.slice(0, qIndex);
+  try {
+    urlPath = decodeURIComponent(urlPath);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Bad request');
+    return true;
+  }
 
   // Default to index.html
   if (urlPath === '/') urlPath = '/index.html';
 
   const filePath = join(DIST_WEB_DIR, urlPath);
 
-  // Prevent directory traversal
-  if (!filePath.startsWith(DIST_WEB_DIR)) {
+  // Prevent directory traversal: after join normalization the resolved path
+  // must stay inside DIST_WEB_DIR (an exact match or a strict child), so a
+  // sibling directory sharing the prefix cannot slip past the check.
+  if (filePath !== DIST_WEB_DIR && !filePath.startsWith(DIST_WEB_DIR + sep)) {
     res.writeHead(403);
     res.end('Forbidden');
     return true;
@@ -121,7 +130,7 @@ async function serveStaticFile(
 /**
  * Create a session for the web chat completions proxy.
  */
-async function createWebSession(homeDir: string): Promise<Session> {
+async function createWebSession(): Promise<Session> {
   const identity = createNighthawkHostIdentity(getVersion());
   const harness = createNighthawkHarness({ identity, uiMode: 'web' });
   const session = await harness.createSession({ workDir: process.cwd(), permission: 'auto' });
@@ -391,14 +400,11 @@ function handleModels(res: ServerResponse): void {
 }
 
 export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> {
-  const homeDir = deps.getHomeDir();
-  let session: Session | undefined;
   let sessionPromise: Promise<Session> | undefined;
 
   async function getSession(): Promise<Session> {
-    if (session !== undefined) return session;
     if (sessionPromise === undefined) {
-      sessionPromise = createWebSession(homeDir).catch((error) => {
+      sessionPromise = createWebSession().catch((error) => {
         sessionPromise = undefined;
         throw error;
       });
@@ -406,10 +412,9 @@ export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> 
     return sessionPromise;
   }
 
-  const server = createServer(async (req, res) => {
+  async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = req.url ?? '/';
 
-    // API routes
     if (url === '/v1/chat/completions' || url === '/v1/chat/completions/') {
       const sess = await getSession().catch(() => undefined);
       if (sess === undefined) {
@@ -426,12 +431,15 @@ export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> 
       return;
     }
 
-    // Try static file serving
     const served = await serveStaticFile(req, res);
     if (!served) {
       res.writeHead(404);
       res.end('Not found');
     }
+  }
+
+  const server = createServer((req, res) => {
+    void handleRequest(req, res);
   });
 
   return new Promise<void>((resolvePromise, reject) => {
@@ -451,18 +459,19 @@ export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> 
 
       if (opts.open) {
         try {
-          deps.openUrl(url);
+          void deps.openUrl(url);
         } catch {
           deps.stderr.write(`Could not open a browser; visit ${url} manually.\n`);
         }
       }
     });
 
-    deps.waitForShutdown().then(async () => {
+    void deps.waitForShutdown().then(async () => {
       server.close();
-      if (session !== undefined) {
+      if (sessionPromise !== undefined) {
         try {
-          await session.close();
+          const current = await sessionPromise;
+          await current.close();
         } catch {
           // Ignore close errors
         }

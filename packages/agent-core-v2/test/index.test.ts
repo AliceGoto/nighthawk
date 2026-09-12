@@ -99,6 +99,8 @@ const V2_RECORD_TYPES: ReadonlySet<string> = new Set([
   'cron.delete',
   'cron.cursor',
   'token_counting.turn_recorded',
+  'pentest_mode.enter',
+  'pentest_mode.exit',
 ]);
 
 describe('package runtime exports', () => {

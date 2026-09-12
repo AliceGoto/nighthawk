@@ -82,11 +82,16 @@ describe('WelcomeComponent', () => {
     const codes = truecolorCodes(headerOf(new WelcomeComponent(appState).render(80)));
 
     // Brand primary→accent gradient wordmark plus the dim tagline — no
-    // rainbow palette colors in the default view.
+    // rainbow palette colors in the default view. The whole header stays
+    // between the primary and accent red channels (inclusive).
+    const primaryRed = Number.parseInt(darkColors.primary.slice(1, 3), 16);
+    const accentRed = Number.parseInt(darkColors.accent.slice(1, 3), 16);
+    const [minRed, maxRed] = primaryRed < accentRed ? [primaryRed, accentRed] : [accentRed, primaryRed];
     expect(codes.size).toBeGreaterThan(1);
     for (const code of codes) {
       const red = Number(code.split(',')[0]);
-      expect([0, 127]).toContain(red);
+      expect(red).toBeGreaterThanOrEqual(minRed);
+      expect(red).toBeLessThanOrEqual(maxRed);
     }
   });
 

@@ -401,7 +401,7 @@ describe('SessionPickerComponent', () => {
 
     expect(output).toContain('All sessions');
     expect(output).toContain(
-      '↑↓ navigate · Ctrl+A current cwd · Ctrl+E expand · Delete delete · Enter select · Esc cancel',
+      '↑↓ navigate · Ctrl+A current cwd · Ctrl+E expand · Delete/⌫ delete · Enter select · Esc cancel',
     );
   });
 
@@ -1043,6 +1043,6 @@ describe('SessionPickerComponent', () => {
 
     const output = renderPlain(component);
     expect(output).toContain('Ctrl+E expand');
-    expect(output).toContain('Delete delete');
+    expect(output).toContain('Delete/⌫ delete');
   });
 });

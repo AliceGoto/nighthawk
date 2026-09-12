@@ -185,7 +185,7 @@ describe('NighthawkOAuthToolkit', () => {
       now: () => 1_000,
       flowConfig: {
         name: 'nighthawk',
-        oauthHost: 'https://auth.kimi.com',
+        oauthHost: 'https://auth.nighthawk.com',
         clientId: 'test-client-id',
       },
     });
@@ -225,7 +225,7 @@ describe('NighthawkOAuthToolkit', () => {
       now: () => 1_000,
       flowConfig: {
         name: 'nighthawk',
-        oauthHost: 'https://auth.kimi.com',
+        oauthHost: 'https://auth.nighthawk.com',
         clientId: 'test-client-id',
       },
     });

@@ -101,13 +101,13 @@ describe('HarnessAPI session skills', () => {
 
     expect(mcpConfig).toMatchObject({
       name: 'mcp-config',
-      description: 'Configure MCP servers and handle MCP OAuth login.',
+      description: '配置 MCP 服务器并处理 MCP OAuth 登录。',
       source: 'builtin',
     });
     expect(mcpConfig?.path).toBe('builtin://mcp-config');
     expect(importer).toMatchObject({
       name: 'import-from-cc-codex',
-      description: 'Import Claude Code and Codex instructions, skills, and MCP settings into NightHawk.',
+      description: '将 Claude Code 和 Codex 的指令、技能和 MCP 设置导入到 NightHawk。',
       source: 'builtin',
       disableModelInvocation: true,
     });

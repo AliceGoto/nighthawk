@@ -27,7 +27,7 @@
 // references become '(circular)', and class instances collapse to a '(ClassName)'
 // marker — the wire shape of an entry is the JSON projection of the type here.
 //
-// Index (App: 0 keys · Workspace: 6 keys · Session: 9 keys · Agent: 80 keys)
+// Index (App: 0 keys · Workspace: 6 keys · Session: 9 keys · Agent: 81 keys)
 //   App
 //   Workspace
 //     workspaceDirs.ephemeralDirs          src/workspace/workspaceDirs/workspaceDirsService.ts
@@ -81,6 +81,7 @@
 //     mcp.mcpToolsByServer                            src/agent/mcp/mcpService.ts
 //     media.registeredKey                             src/agent/media/mediaToolsRegistrar.ts
 //     media.resolved                                  src/agent/media/mediaResolverService.ts
+//     pentestMode                                     src/agent/pentestMode/pentestModeOps.ts
 //     permissionMode                                  src/agent/permissionMode/permissionModeOps.ts
 //     permissionMode.configured                       src/agent/permissionMode/permissionModeOps.ts
 //     permissionMode.lastMode                         src/agent/permissionMode/injection/permissionModeInjection.ts
@@ -1233,6 +1234,9 @@ export interface AgentStateSnapshot {
   }>;
   // src/agent/media/mediaToolsRegistrar.ts
   'media.registeredKey': string | undefined;
+  // src/agent/pentestMode/pentestModeOps.ts
+  // replayable · durable — folds: PentestModeEnter, PentestModeExit
+  'pentestMode': boolean;
   // src/agent/permissionMode/injection/permissionModeInjection.ts
   'permissionMode.lastMode': 'manual' | 'auto' | 'yolo' | undefined;
   // src/agent/permissionMode/permissionModeOps.ts

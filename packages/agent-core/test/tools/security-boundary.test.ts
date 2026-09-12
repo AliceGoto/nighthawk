@@ -113,24 +113,21 @@ describe('boundary: symlink handling', () => {
         if (p === '/root/link-to-self') return { stMode: 0o120777 } as any;
         throw new Error(`not found: ${p}`);
       }),
-      iterdir: vi.fn().mockImplementation(async function* () {
-        if (p('/root')) {
+      iterdir: vi.fn().mockImplementation(async function* (dir: string) {
+        if (dir === '/root') {
           yield '/root/real-dir';
           yield '/root/link-to-self';
-        }
-        if (p('/root/real-dir')) {
+        } else if (dir === '/root/real-dir') {
           yield '/root/real-dir/file.ts';
         }
       }),
     });
 
-    // Verify stat with followSymlinks is passed
-    const stat = kaos.stat as any;
-    // We can't directly verify the argument due to mock, but we can check
-    // that the symlink entry doesn't cause infinite recursion
-    // by verifying stat is called a finite number of times
-    function p(_path: string) { return true; }
-    // Simplified: just verify stat was called with some limit
+    const { collectFiles } = await import('../../src/tools/builtin/security/engine.js');
+    const files = await collectFiles(kaos, '/root');
+
+    // The symlink (0o120777) is not a directory, so walk does not recurse into it
+    expect(files).toEqual(['/root/real-dir/file.ts', '/root/link-to-self']);
   });
 
   it('collectFiles handles symlink cycles gracefully', async () => {

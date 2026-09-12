@@ -961,6 +961,8 @@ importers:
         specifier: ^5.4.1
         version: 5.6.2
 
+  packages/plugin-sdk: {}
+
   packages/protocol:
     dependencies:
       ulid:

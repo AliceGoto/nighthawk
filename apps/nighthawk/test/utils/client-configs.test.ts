@@ -363,7 +363,7 @@ describe('getClientConfig disk cache', () => {
 
 describe('region awareness', () => {
   beforeEach(() => {
-    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.kimi.ai');
+    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.nighthawk.ai');
     refreshNighthawkRegion();
   });
 
@@ -419,7 +419,7 @@ describe('region awareness', () => {
     expect(peekClientConfig('estimated_cache_duration', configSchema)).toEqual(CONFIG);
 
     // A region switch must not serve the other deployment's cached entry.
-    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.kimi.com');
+    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.nighthawk.com');
     refreshNighthawkRegion();
     expect(peekClientConfig('estimated_cache_duration', configSchema)).toBeUndefined();
   });

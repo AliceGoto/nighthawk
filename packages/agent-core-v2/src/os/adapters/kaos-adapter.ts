@@ -114,7 +114,7 @@ export class KaosHostFileSystemAdapter implements IHostFileSystem {
           isDirectory = (s.stMode & 0o170000) === 0o040000;
           isSymbolicLink = (s.stMode & 0o170000) === 0o120000;
         } catch {
-          // stat failed for this entry, mark as unknown
+          void 0;
         }
         entries.push({ name, isFile, isDirectory, isSymbolicLink });
       }

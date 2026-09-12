@@ -334,7 +334,7 @@ describe('NighthawkTUI startup', () => {
     ).finishStartup(false);
 
     const transcript = driver.state.transcriptContainer.render(160).join('\n');
-    expect(transcript).toContain('No session yet — one will be created on your first message.');
+    expect(transcript).toContain('尚未创建会话——您的第一条消息将自动创建。');
   });
 
   it('shows config defaults in appState before the lazy session exists (v2)', async () => {

@@ -237,7 +237,7 @@ oauth = { storage = "file", key = "${oauthKey}", oauth_host = "https://auth.dev.
       defaultThinking: true,
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.kimi.com/coding/v1/models',
+      'https://api.nighthawk.com/v1/models',
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer oauth-access-token',
@@ -347,8 +347,8 @@ oauth = { storage = "file", key = "${oauthKey}", oauth_host = "${oauthHost}" }
   });
 
   it('logs in against the global region hosts when region is global', async () => {
-    const baseUrl = 'https://api.kimi.ai/coding/v1';
-    const oauthHost = 'https://auth.kimi.ai';
+    const baseUrl = 'https://api.nighthawk.com/v1';
+    const oauthHost = 'https://auth.nighthawk.ai';
     const oauthKey = resolveNighthawkOAuthKey({ oauthHost, baseUrl });
     const storageName = resolveNighthawkTokenStorageName({ oauthKey });
     const storage = new FileTokenStorage(join(homeDir, 'credentials'));
@@ -411,8 +411,8 @@ oauth = { storage = "file", key = "${oauthKey}", oauth_host = "${oauthHost}" }
   });
 
   it('logs back into the mainland-cn region over a persisted global login', async () => {
-    const globalBaseUrl = 'https://api.kimi.ai/coding/v1';
-    const globalOauthHost = 'https://auth.kimi.ai';
+    const globalBaseUrl = 'https://api.nighthawk.com/v1';
+    const globalOauthHost = 'https://auth.nighthawk.ai';
     const globalKey = resolveNighthawkOAuthKey({
       oauthHost: globalOauthHost,
       baseUrl: globalBaseUrl,
@@ -437,7 +437,7 @@ oauth = { storage = "file", key = "${globalKey}", oauth_host = "${globalOauthHos
     });
     const fetchMock = vi.fn<FetchMock>(async (input, init) => {
       const url = fetchInputUrl(input);
-      if (url === 'https://auth.kimi.com/api/oauth/token') {
+      if (url === 'https://auth.nighthawk.com/api/oauth/token') {
         if (typeof init?.body !== 'string') throw new TypeError('expected form body');
         const body = new URLSearchParams(init.body);
         expect(body.get('refresh_token')).toBe('cn-refresh-token');
@@ -452,7 +452,7 @@ oauth = { storage = "file", key = "${globalKey}", oauth_host = "${globalOauthHos
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
       }
-      if (url === 'https://api.kimi.com/coding/v1/models') {
+      if (url === 'https://api.nighthawk.com/v1/models') {
         return new Response(
           JSON.stringify({
             data: [{ id: 'nighthawk', context_length: 262144, supports_reasoning: true }],
@@ -475,8 +475,8 @@ oauth = { storage = "file", key = "${globalKey}", oauth_host = "${globalOauthHos
     // Back on the default hosts, the persisted oauth ref carries no host trace.
     expect(provider?.oauth?.oauthHost).toBeUndefined();
     expect(fetchMock.mock.calls.map((call) => fetchInputUrl(call[0]))).toEqual([
-      'https://auth.kimi.com/api/oauth/token',
-      'https://api.kimi.com/coding/v1/models',
+      'https://auth.nighthawk.com/api/oauth/token',
+      'https://api.nighthawk.com/v1/models',
     ]);
   });
 
@@ -529,7 +529,7 @@ oauth = { storage = "file", key = "oauth/nighthawk" }
     const config = await harness.getConfig({ reload: true });
     expect(config.providers[NIGHTHAWK_PROVIDER_NAME]).toMatchObject({
       baseUrl,
-      oauth: { storage: 'file', key: oauthKey, oauthHost: 'https://auth.kimi.com' },
+      oauth: { storage: 'file', key: oauthKey, oauthHost: 'https://auth.nighthawk.com' },
     });
   });
 
@@ -555,7 +555,7 @@ oauth = { storage = "file", key = "oauth/nighthawk" }
 type = "nighthawk"
 base_url = "${configuredBaseUrl}"
 api_key = ""
-oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https://auth.kimi.com" }
+oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https://auth.nighthawk.com" }
 `,
     );
     vi.stubEnv('NIGHTHAWK_BASE_URL', envBaseUrl);
@@ -667,12 +667,12 @@ model = "custom-model"
 max_context_size = 1000
 
 [services.nighthawk_search]
-base_url = "https://api.kimi.com/coding/v1/search"
+base_url = "https://api.nighthawk.com/v1/search"
 api_key = ""
 oauth = { storage = "file", key = "oauth/nighthawk" }
 
 [services.nighthawk_fetch]
-base_url = "https://api.kimi.com/coding/v1/fetch"
+base_url = "https://api.nighthawk.com/v1/fetch"
 api_key = ""
 oauth = { storage = "file", key = "oauth/nighthawk" }
 `,
@@ -894,7 +894,7 @@ oauth = { storage = "file", key = "${oauthKey}", oauth_host = "https://auth.dev.
 type = "nighthawk"
 base_url = "${configuredBaseUrl}"
 api_key = ""
-oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https://auth.kimi.com" }
+oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https://auth.nighthawk.com" }
 `,
     );
     vi.stubEnv('NIGHTHAWK_BASE_URL', envBaseUrl);
@@ -927,7 +927,7 @@ oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https:/
         .resolveOAuthTokenProvider(NIGHTHAWK_PROVIDER_NAME, {
           storage: 'file',
           key: configuredOauthKey,
-          oauthHost: 'https://auth.kimi.com',
+          oauthHost: 'https://auth.nighthawk.com',
         })
         .getAccessToken(),
     ).resolves.toBe('env-access-token');
@@ -977,7 +977,7 @@ oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https:/
 
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit?][];
     const [url, init] = calls[0]!;
-    expect(url).toBe('https://api.kimi.com/coding/v1/feedback');
+    expect(url).toBe('https://api.nighthawk.com/v1/feedback');
     expect(init?.method).toBe('POST');
 
     const headers = new Headers((init?.headers ?? {}) as Record<string, string>);
@@ -1040,7 +1040,7 @@ oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https:/
 
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit?][];
     const [url, init] = calls[0]!;
-    expect(url).toBe('https://api.kimi.com/coding/v1/feedback/upload_url');
+    expect(url).toBe('https://api.nighthawk.com/v1/feedback/upload_url');
     expect(init?.method).toBe('POST');
     expect(JSON.parse(init?.body as string)).toEqual({
       feedback_id: 3,

@@ -571,7 +571,7 @@ describe('handleGoalCommand', () => {
       expect.objectContaining({ objective: 'Ship release notes', replace: false }),
     );
     expect(host.showStatus).toHaveBeenCalledWith(
-      'No active goal. Starting this goal now.',
+      '没有活跃目标。立即开始此目标。',
     );
     expect(host.sendNormalUserInput).toHaveBeenCalledWith('Ship release notes');
   });

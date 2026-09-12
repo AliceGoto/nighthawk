@@ -2886,7 +2886,7 @@ command = "vim"
 
     await vi.waitFor(() => {
       const transcript = stripSgr(renderTranscript(driver));
-      expect(transcript).toContain('bash task started in background');
+      expect(transcript).toContain('命令任务 在后台启动');
       expect(transcript).toContain('Run tests in background');
     });
 
@@ -2900,7 +2900,7 @@ command = "vim"
     const transcript = stripSgr(renderTranscript(driver));
     expect(driver.state.transcriptEntries).toEqual([]);
     expect(transcript).not.toContain('hello');
-    expect(transcript).not.toContain('bash task started in background');
+    expect(transcript).not.toContain('命令任务 在后台启动');
     expect(transcript).not.toContain('Run tests in background');
     expect(
       driver.state.transcriptContainer.children.filter(
@@ -6068,7 +6068,7 @@ command = "vim"
 
     transcript = stripSgr(renderTranscript(driver));
     expect(transcript).toContain('001 [');
-    expect(transcript).toContain('Queued...');
+    expect(transcript).toContain('排队中...');
     expect(transcript).not.toContain('Provider rate limit');
     expect(transcript).not.toContain('Failed');
 
@@ -6107,7 +6107,7 @@ command = "vim"
     expect(transcript).toContain('001 [');
     expect(transcript).toContain('Reviewing src/a.ts');
     expect(transcript).not.toContain('Completed');
-    expect(transcript).toContain('002 Queued...');
+    expect(transcript).toContain('002 排队中...');
     expect(transcript).not.toContain('002 [');
 
     driver.sessionEventHandler.handleEvent(
@@ -6186,7 +6186,7 @@ command = "vim"
     );
 
     const transcript = stripSgr(driver.state.transcriptContainer.render(200).join('\n'));
-    expect(transcript).toContain('⊘ Cancelled.');
+    expect(transcript).toContain('⊘ 已取消。');
     expect(transcript).toContain('✗ The user manually interrupted this subagent x.');
   });
 
@@ -6429,7 +6429,7 @@ command = "vim"
     const renderSwarm = (): string =>
       stripSgr(swarmProgress.render(transcriptWidth).join('\n'));
 
-    expect(renderSwarm()).toContain('001 Queued...');
+    expect(renderSwarm()).toContain('001 排队中...');
 
     driver.sessionEventHandler.handleEvent(
       {
@@ -6455,7 +6455,7 @@ command = "vim"
       .reduce((sum, child) => sum + child.render(transcriptWidth).length, 0);
     expect(rowsAfterSwarmInTranscript).toBeGreaterThan(0);
 
-    expect(renderSwarm()).toContain('001 Queued...');
+    expect(renderSwarm()).toContain('001 排队中...');
     const transcript = stripSgr(
       driver.state.transcriptContainer.render(terminalColumns).join('\n'),
     );
@@ -6502,7 +6502,7 @@ command = "vim"
     );
 
     const transcript = stripSgr(renderTranscript(driver));
-    const totalStatusLine = transcript.split('\n').find((line) => line.includes('Completed.'));
+    const totalStatusLine = transcript.split('\n').find((line) => line.includes('已完成。'));
     expect(totalStatusLine).toBeDefined();
     expect(totalStatusLine).not.toContain('Failed.');
     expect(transcript).toContain('✓ Imports are stable.');
@@ -6528,7 +6528,7 @@ command = "vim"
 
     let transcript = stripSgr(renderTranscript(driver));
     expect(transcript).toContain('Agent Swarm');
-    expect(transcript).toContain('Orchestrating...');
+    expect(transcript).toContain('编排中...');
     expect(transcript).not.toContain('01');
 
     driver.sessionEventHandler.handleEvent(
@@ -6565,7 +6565,7 @@ command = "vim"
     );
 
     transcript = stripSgr(renderTranscript(driver));
-    expect(transcript).toContain('001 Queued...');
+    expect(transcript).toContain('001 排队中...');
     expect(transcript).not.toContain('001 [');
     expect(transcript).toContain('002 src/b');
 
@@ -6587,8 +6587,8 @@ command = "vim"
     );
 
     transcript = stripSgr(renderTranscript(driver));
-    expect(transcript).toContain('001 Queued...');
-    expect(transcript).toContain('002 Queued...');
+    expect(transcript).toContain('001 排队中...');
+    expect(transcript).toContain('002 排队中...');
     expect(transcript).not.toContain('001 [');
     expect(transcript).not.toContain('002 [');
   });
@@ -6741,20 +6741,20 @@ command = "vim"
       expect(listMcpServers).toHaveBeenCalledTimes(previousCalls + 1);
       const output = stripSgr(driver.state.transcriptContainer.render(140).join('\n'));
       expect(output).toContain(' MCP (4) ');
-      expect(output).toContain('Servers');
+      expect(output).toContain('服务器');
       expect(output).toContain('local-tools');
-      expect(output).toContain('connected');
+      expect(output).toContain('已连接');
       expect(output).toContain('stdio');
-      expect(output).toContain('2 tools');
+      expect(output).toContain('2 个工具');
       expect(output).toContain('remote-tools');
-      expect(output).toContain('failed');
+      expect(output).toContain('失败');
       expect(output).toContain('connection refused');
       expect(output).toContain('linear');
-      expect(output).toContain('needs auth');
+      expect(output).toContain('需要认证');
       expect(output).toContain('/mcp-config login linear');
       expect(output).toContain('disabled-tools');
-      expect(output).toContain('disabled');
-      expect(output).toContain('1 connected · 1 needs auth · 1 failed · 1 disabled · 2 tools available');
+      expect(output).toContain('已禁用');
+      expect(output).toContain('1 已连接 · 1 需要认证 · 1 失败 · 1 已禁用 · 2 个工具可用');
     });
   });
 
@@ -6768,7 +6768,7 @@ command = "vim"
 
     await vi.waitFor(() => {
       const output = stripSgr(driver.state.transcriptContainer.render(120).join('\n'));
-      expect(output).toContain('No MCP servers configured. Run /mcp-config to add one.');
+      expect(output).toContain('未配置 MCP 服务器。运行 /mcp-config 添加一个。');
     });
   });
 

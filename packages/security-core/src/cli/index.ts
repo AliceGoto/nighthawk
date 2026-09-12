@@ -95,7 +95,7 @@ if (opts.prompt) {
     console.error('Error: AUDIT_AGENT_API_KEY not set'); process.exit(1);
   }
   const registry = buildRegistry();
-  const { llm, loop } = createAgent(registry);
+  const { loop } = createAgent(registry);
   const rag = await buildRagContext(opts.prompt, config.workspace);
   const result = await loop.runTurn(rag ? `${opts.prompt}\n\n${rag}` : opts.prompt, {
     onPhase: p => process.stderr.write(`[${p}] `),

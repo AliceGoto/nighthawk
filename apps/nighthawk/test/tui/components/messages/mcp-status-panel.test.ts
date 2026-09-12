@@ -27,9 +27,9 @@ describe('buildMcpStatusReportLines', () => {
       expect(line).not.toContain('\n');
     }
 
-    const errorLine = lines.find((line) => line.includes('error:'));
+    const errorLine = lines.find((line) => line.includes('错误：'));
     expect(errorLine).toContain(
-      'MCP error -32000: Connection closed stderr: usage: bridge_mcp_ghidra.py [-h] [--mcp-host MCP_HOST]',
+      '错误： MCP error -32000: Connection closed stderr: usage: bridge_mcp_ghidra.py [-h] [--mcp-host MCP_HOST]',
     );
   });
 
@@ -46,7 +46,7 @@ describe('buildMcpStatusReportLines', () => {
       ],
     }).map(strip);
 
-    const errorLine = lines.find((line) => line.includes('error:'));
-    expect(errorLine).toContain('error: fetch failed');
+    const errorLine = lines.find((line) => line.includes('错误：'));
+    expect(errorLine).toContain('错误： fetch failed');
   });
 });

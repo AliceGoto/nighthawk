@@ -64,7 +64,7 @@ describe('applyEnvModelConfig', () => {
     expect(config.providers[ENV_MODEL_PROVIDER_KEY]).toEqual({
       type: 'nighthawk',
       apiKey: 'sk-test',
-      baseUrl: 'https://api.moonshot.ai/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
     });
     expect(config.models?.[ENV_MODEL_ALIAS_KEY]).toEqual({
       provider: ENV_MODEL_PROVIDER_KEY,

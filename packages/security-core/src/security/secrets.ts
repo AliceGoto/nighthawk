@@ -17,7 +17,7 @@ const PATTERNS: SecretPattern[] = [
   { type: 'AWS Secret Key', re: /(?<=["'`\s])[A-Za-z0-9/+=]{40}(?=["'`\s])/g, confidence: 'medium', minEntropy: 3.5 },
   { type: 'GitHub Token', re: /gh[pousr]_[A-Za-z0-9]{36,}/g, confidence: 'high' },
   { type: 'GitLab Token', re: /glpat-[A-Za-z0-9\-_]{20,}/g, confidence: 'high' },
-  { type: 'Slack Token', re: /xox[baprs]-[A-Za-z0-9\-]{10,}/g, confidence: 'high' },
+  { type: 'Slack Token', re: /xox[baprs]-[A-Za-z0-9-]{10,}/g, confidence: 'high' },
   { type: 'Google API Key', re: /AIza[0-9A-Za-z\-_]{35}/g, confidence: 'high' },
   { type: 'Private Key Block', re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g, confidence: 'high' },
   { type: 'JWT', re: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}/g, confidence: 'medium' },
@@ -45,7 +45,6 @@ function shannonEntropy(s: string): number {
 
 export function scanSecretsInContent(content: string, file: string): SecretFinding[] {
   const findings: SecretFinding[] = [];
-  const lines = content.split('\n');
   for (const p of PATTERNS) {
     p.re.lastIndex = 0;
     for (const m of content.matchAll(p.re)) {

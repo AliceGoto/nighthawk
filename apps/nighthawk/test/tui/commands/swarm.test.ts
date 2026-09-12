@@ -159,7 +159,7 @@ describe('handleSwarmCommand', () => {
     expect(session.setSwarmMode).not.toHaveBeenCalled();
     expect(host.setAppState).not.toHaveBeenCalledWith({ swarmMode: true });
     expect(markerAddChild(host)).not.toHaveBeenCalled();
-    expect(host.showStatus).toHaveBeenCalledWith('Swarm mode is already on.');
+    expect(host.showStatus).toHaveBeenCalledWith('集群模式已开启。');
     expect(host.sendNormalUserInput).not.toHaveBeenCalled();
   });
 
@@ -198,7 +198,7 @@ describe('handleSwarmCommand', () => {
     expect(session.setSwarmMode).not.toHaveBeenCalled();
     expect(host.setAppState).not.toHaveBeenCalledWith({ swarmMode: false });
     expect(markerAddChild(host)).not.toHaveBeenCalled();
-    expect(host.showStatus).toHaveBeenCalledWith('Swarm mode is already off.');
+    expect(host.showStatus).toHaveBeenCalledWith('集群模式已关闭。');
     expect(host.sendNormalUserInput).not.toHaveBeenCalled();
   });
 

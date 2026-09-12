@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import type { Tool } from '../core/types.js';
 import { runScan, formatScanReport } from '../security/scanner.js';
 import { scanSecrets } from '../security/secrets.js';

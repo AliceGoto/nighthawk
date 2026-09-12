@@ -467,7 +467,7 @@ const PATTERNS: SecretPattern[] = [
   { type: 'AWS Secret Key', re: /(?<=["'`\s])[A-Za-z0-9/+=]{40}(?=["'`\s])/g, confidence: 'medium', minEntropy: 3.5 },
   { type: 'GitHub Token', re: /gh[pousr]_[A-Za-z0-9]{36,}/g, confidence: 'high' },
   { type: 'GitLab Token', re: /glpat-[A-Za-z0-9\-_]{20,}/g, confidence: 'high' },
-  { type: 'Slack Token', re: /xox[baprs]-[A-Za-z0-9\-]{10,}/g, confidence: 'high' },
+  { type: 'Slack Token', re: /xox[baprs]-[A-Za-z0-9-]{10,}/g, confidence: 'high' },
   { type: 'Google API Key', re: /AIza[0-9A-Za-z\-_]{35}/g, confidence: 'high' },
   { type: 'Private Key Block', re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g, confidence: 'high' },
   { type: 'JWT', re: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}/g, confidence: 'medium' },
@@ -695,20 +695,6 @@ export async function taintAnalyze(kaos: Kaos, file: string): Promise<TaintFindi
   } catch {
     return [];
   }
-}
-
-/**
- * Extract module import specifiers (ESM `import ... from 'x'` plus
- * side-effect `import 'x'`, and CJS `require('x')`). Returns the raw
- * specifier strings; relative specifiers are resolved by the caller.
- */
-function extractImportSpecifiers(content: string): string[] {
-  const specs: string[] = [];
-  const esm = /import\s+(?:[^;]*?\bfrom\s+)?(['"])([^'"]+)\1/g;
-  const cjs = /require\s*\(\s*(['"])([^'"]+)\1\s*\)/g;
-  for (const m of content.matchAll(esm)) if (m[2]) specs.push(m[2]);
-  for (const m of content.matchAll(cjs)) if (m[2]) specs.push(m[2]);
-  return specs;
 }
 
 /** Name given to an exported symbol in the importing module. */

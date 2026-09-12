@@ -197,7 +197,7 @@ describe('handleTowerCommand', () => {
 
     await handleTowerCommand(host, 'on');
 
-    expect(host.showError).toHaveBeenCalledWith(expect.stringContaining('session'));
+    expect(host.showError).toHaveBeenCalledWith(expect.stringContaining('会话'));
     expect(host.ensureSession).not.toHaveBeenCalled();
     expect(session.setTowerMode).not.toHaveBeenCalled();
     expect(host.sendNormalUserInput).not.toHaveBeenCalled();

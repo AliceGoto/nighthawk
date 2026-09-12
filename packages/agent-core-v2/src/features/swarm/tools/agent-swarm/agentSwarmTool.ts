@@ -285,7 +285,6 @@ async function createAgentSwarmSpecs(
     const itemPromptTemplate = promptTemplate!;
     items.forEach(({ item, personaName }, index) => {
       let prompt = itemPromptTemplate.split(PROMPT_TEMPLATE_PLACEHOLDER).join(item);
-      // Resolve persona and prepend its content to the prompt
       let resolvedPersonaName: string | undefined;
       const persona = resolvePersona(personaName, item, personaCards);
       if (persona !== undefined) {
@@ -430,10 +429,6 @@ export function resolvePersona(
   return matchPersonaForTask(taskDescription, cards);
 }
 
-/**
- * Discover persona card files from the workspace and user agent directories.
- * Scans .agents/personas/ in the workspace and ~/.nighthawk/personas/.
- */
 function discoverPersonaCards(workspaceCwd: string): readonly PersonaCard[] {
   const cards: PersonaCard[] = [];
   const personaDirs = [
@@ -450,7 +445,6 @@ function discoverPersonaCards(workspaceCwd: string): readonly PersonaCard[] {
           const filePath = join(dir, file);
           const content = readFileSync(filePath, 'utf-8');
           const name = file.replace(/\.md$/, '').toLowerCase();
-          // Extract description from first heading or first line
           const lines = content.split('\n');
           const description = lines.length > 0 ? lines[0]!.replace(/^#\s*/, '').trim() : name;
           cards.push({
@@ -460,11 +454,11 @@ function discoverPersonaCards(workspaceCwd: string): readonly PersonaCard[] {
             content,
           });
         } catch {
-          // Skip unreadable files
+          void 0;
         }
       }
     } catch {
-      // Skip unreadable directories
+      void 0;
     }
   }
   return cards;

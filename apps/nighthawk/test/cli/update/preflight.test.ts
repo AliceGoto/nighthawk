@@ -240,7 +240,7 @@ describe('runUpdatePreflight', () => {
     vi.stubEnv('NIGHTHAWK_EXPERIMENTAL_FLAG', '');
     // Pin the region to cn so address assertions don't follow the dev
     // machine's own login/marker state; global tests override below.
-    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.kimi.com');
+    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.nighthawk.com');
     refreshNighthawkRegion();
     mocks.readUpdateInstallState.mockResolvedValue(emptyUpdateInstallState());
     mocks.writeUpdateInstallState.mockResolvedValue(undefined);
@@ -552,7 +552,7 @@ describe('runUpdatePreflight', () => {
   });
 
   it('global region: install commands and site links follow the region profile', async () => {
-    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.kimi.ai');
+    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', 'https://auth.nighthawk.ai');
     refreshNighthawkRegion();
     mocks.readUpdateCache.mockResolvedValue(cacheWith('0.5.0'));
     mocks.refreshUpdateCache.mockResolvedValue(cacheWith('0.5.0'));

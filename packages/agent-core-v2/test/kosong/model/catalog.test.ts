@@ -95,7 +95,7 @@ function createHost(
 
 const nighthawkSections: Record<string, unknown> = {
   providers: {
-    nighthawk: { type: 'nighthawk', apiKey: 'sk-test', baseUrl: 'https://api.moonshot.ai/v1' },
+    nighthawk: { type: 'nighthawk', apiKey: 'sk-test', baseUrl: 'https://api.nighthawk.com/v1' },
   },
   models: {
     k1: { provider: 'nighthawk', model: 'kimi-k2', maxContextSize: 262144 },
@@ -128,7 +128,7 @@ describe('Model assembly (pure data)', () => {
       expect(model.protocol).toBe('openai');
       expect(model.providerType).toBe('nighthawk');
       expect(model.providerName).toBe('nighthawk');
-      expect(model.baseUrl).toBe('https://api.moonshot.ai/v1');
+      expect(model.baseUrl).toBe('https://api.nighthawk.com/v1');
       expect(model.maxContextSize).toBe(262144);
       expect(model.capabilities.max_context_tokens).toBe(262144);
       expect(model.headers).toMatchObject({
@@ -487,7 +487,7 @@ describe('Model assembly (pure data)', () => {
     const { host, catalog } = createHost(
       {
         providers: {
-          nighthawk: { type: 'nighthawk', oauth: { storage: 'file', key: 'nighthawk' }, baseUrl: 'https://api.moonshot.ai/v1' },
+          nighthawk: { type: 'nighthawk', oauth: { storage: 'file', key: 'nighthawk' }, baseUrl: 'https://api.nighthawk.com/v1' },
         },
         models: { k1: { provider: 'nighthawk', model: 'kimi-k2', maxContextSize: 1 } },
       },
@@ -560,7 +560,7 @@ describe('headers merge order', () => {
         nighthawk: {
           type: 'nighthawk',
           apiKey: 'sk',
-          baseUrl: 'https://api.moonshot.ai/v1',
+          baseUrl: 'https://api.nighthawk.com/v1',
           customHeaders: { 'User-Agent': 'custom-ua', 'X-Custom': 'c' },
         },
       },
@@ -780,7 +780,7 @@ describe('ModelCatalog inspect', () => {
     });
     try {
       const view = catalog.inspect('k1');
-      expect(view.resolved.baseUrl).toBe('https://api.moonshot.ai/v1');
+      expect(view.resolved.baseUrl).toBe('https://api.nighthawk.com/v1');
       expect(view.sources['resolved.baseUrl']).toMatchObject({
         kind: 'builtin',
         detail: expect.stringContaining('defaultBaseUrl'),

@@ -22,7 +22,7 @@ describe('providers TOML transforms', () => {
     const from = providersFromToml({
       'my-provider': {
         type: 'nighthawk',
-        base_url: 'https://api.moonshot.ai/v1',
+        base_url: 'https://api.nighthawk.com/v1',
         custom_headers: { 'x-a': 'b' },
         default_model: 'nighthawk-k2',
         oauth: { storage: 'file', key: 'k', oauth_host: 'example.com' },
@@ -30,7 +30,7 @@ describe('providers TOML transforms', () => {
     }) as Record<string, Record<string, unknown>>;
     expect(from['my-provider']).toEqual({
       type: 'nighthawk',
-      baseUrl: 'https://api.moonshot.ai/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
       customHeaders: { 'x-a': 'b' },
       defaultModel: 'nighthawk-k2',
       oauth: { storage: 'file', key: 'k', oauthHost: 'example.com' },
@@ -39,7 +39,7 @@ describe('providers TOML transforms', () => {
     const back = providersToToml(from, undefined) as Record<string, Record<string, unknown>>;
     expect(back['my-provider']).toEqual({
       type: 'nighthawk',
-      base_url: 'https://api.moonshot.ai/v1',
+      base_url: 'https://api.nighthawk.com/v1',
       custom_headers: { 'x-a': 'b' },
       default_model: 'nighthawk-k2',
       oauth: { storage: 'file', key: 'k', oauth_host: 'example.com' },
@@ -81,7 +81,7 @@ describe('ProviderService', () => {
       events.push({ added: e.added, removed: e.removed, changed: e.changed }),
     );
 
-    const nighthawk: ProviderConfig = { type: 'nighthawk', baseUrl: 'https://api.moonshot.ai/v1' };
+    const nighthawk: ProviderConfig = { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1' };
     await service.set('nighthawk', nighthawk);
     expect(service.get('nighthawk')).toEqual(nighthawk);
     expect(service.list()).toEqual({ nighthawk });

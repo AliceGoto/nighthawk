@@ -23,7 +23,7 @@ const SAMPLE_BODY: SubmitFeedbackBody = {
 
 describe('nighthawkFeedbackUrl', () => {
   it('appends /feedback to the default base URL', () => {
-    expect(nighthawkFeedbackUrl()).toBe('https://api.kimi.com/coding/v1/feedback');
+    expect(nighthawkFeedbackUrl()).toBe('https://api.nighthawk.com/v1/feedback');
   });
 
   it('honours NIGHTHAWK_BASE_URL and trims trailing slashes', () => {

@@ -15,7 +15,9 @@ import { createFakeKaos, PERMISSIVE_WORKSPACE } from './fixtures/fake-kaos.js';
 /** Run a previously resolved execution, narrowing the ToolExecution union. */
 async function runExecution(execution: ToolExecution) {
   if (execution.isError === true) {
-    throw new Error(`resolveExecution returned an error: ${String(execution.output)}`);
+    const output =
+      typeof execution.output === 'string' ? execution.output : JSON.stringify(execution.output);
+    throw new Error(`resolveExecution returned an error: ${output}`);
   }
   return execution.execute({
     turnId: 'test-turn',

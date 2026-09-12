@@ -78,7 +78,7 @@ describe('refreshAllProviderModels', () => {
           oauth: {
             storage: 'file',
             key: configuredOauthKey,
-            oauthHost: 'https://auth.kimi.com',
+            oauthHost: 'https://auth.nighthawk.com',
           },
         },
       },

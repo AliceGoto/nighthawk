@@ -47,12 +47,11 @@ describe('builtin skill: check-nighthawk-docs', () => {
 
   it('pins the official docs site and the module routing list', () => {
     const content = CHECK_NIGHTHAWK_DOCS_SKILL.content;
-    expect(content).toContain('https://www.kimi.com/code/docs/en/');
-    expect(content).toContain('nighthawk-cli/configuration/');
-    expect(content).toContain('nighthawk-cli/customization/');
-    expect(content).toContain('nighthawk/membership.html');
-    expect(content).toContain('nighthawk/error-reference.html');
-    expect(content).toContain('FetchURL');
+    expect(content).toContain('https://github.com/AliceGoto/nighthawk/tree/main/docs');
+    expect(content).toContain('docs/en/');
+    expect(content).toContain('docs/zh/');
+    expect(content).toContain('never from memory');
+    expect(content).toContain('Never invent config keys, command names, model IDs, or product behaviors.');
   });
 
   it('registers through registerBuiltinSkills and shows up as model-invocable', () => {

@@ -123,13 +123,13 @@ describe('AgentGroupComponent', () => {
     group.attach('call_agent_1', a);
     group.attach('call_agent_2', b);
 
-    expect(renderText(group)).toContain('Press Ctrl+B to run in background');
+    expect(renderText(group)).toContain('按 Ctrl+B 后台运行');
 
     a.markBackgrounded();
-    expect(renderText(group)).toContain('Press Ctrl+B to run in background');
+    expect(renderText(group)).toContain('按 Ctrl+B 后台运行');
 
     b.markBackgrounded();
-    expect(renderText(group)).not.toContain('Press Ctrl+B to run in background');
+    expect(renderText(group)).not.toContain('按 Ctrl+B 后台运行');
 
     group.dispose();
     a.dispose();

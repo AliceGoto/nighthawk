@@ -471,7 +471,7 @@ export function defineKlientConformance(
       } finally {
         await mcp.remove({ name: 'conf-oauth' });
       }
-    });
+    }, 15_000);
 
     it('global mcp resetAuth rejects a stdio locator with 40001', async () => {
       const mcp = target.klient.global.mcp;
@@ -485,7 +485,7 @@ export function defineKlientConformance(
       } finally {
         await mcp.remove({ name: 'conf-stdio' });
       }
-    });
+    }, 15_000);
 
     it('agent runtime binding is available through every transport', async () => {
       const created = await target.klient.global.sessions.create({

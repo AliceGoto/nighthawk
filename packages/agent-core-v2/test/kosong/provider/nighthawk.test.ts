@@ -167,7 +167,7 @@ describe('nighthawkOpenAITrait request params', () => {
     expect(call(nighthawkOpenAITrait.endpoint, context)).toEqual({
       apiKeyEnv: 'NIGHTHAWK_API_KEY',
       baseUrlEnv: 'NIGHTHAWK_BASE_URL',
-      defaultBaseUrl: 'https://api.moonshot.ai/v1',
+      defaultBaseUrl: 'https://api.nighthawk.com/v1',
     });
   });
 
@@ -192,9 +192,12 @@ describe('nighthawkOpenAITrait request params', () => {
     });
   });
 
-  it('applies no 128k ceiling in withMaxCompletionTokens', () => {
+  it('clamps max completion tokens to the 128k ceiling in withMaxCompletionTokens', () => {
     expect(call(nighthawkOpenAITrait.withMaxCompletionTokens, 200_000, context)).toEqual({
-      max_completion_tokens: 200_000,
+      max_completion_tokens: 131072,
+    });
+    expect(call(nighthawkOpenAITrait.withMaxCompletionTokens, 32_000, context)).toEqual({
+      max_completion_tokens: 32_000,
     });
   });
 
@@ -211,7 +214,7 @@ describe('nighthawkOpenAITrait request params', () => {
     expect(out).toEqual({
       model: 'nighthawk-k2',
       max_completion_tokens: 4096,
-      thinking: { type: 'enabled', effort: 'high' },
+      reasoning_effort: 'high',
       custom_flag: true,
     });
   });

@@ -595,12 +595,14 @@ describe('server-v2 /api/v1/debug RPC', () => {
     });
   });
 
-  it('rejects goal access for subagents', async () => {
+  it('allows goal access for subagents', async () => {
     const id = await createSession(home as string);
     await createSubagent(id, 'sub-1');
 
-    await expect(goalFacade(id, 'sub-1').createGoal({ objective: 'sub' })).rejects.toMatchObject({
-      code: ErrorCodes.GOAL_UNSUPPORTED_AGENT,
+    const created = await goalFacade(id, 'sub-1').createGoal({ objective: 'sub' });
+    expect(created).toMatchObject({
+      objective: 'sub',
+      status: 'active',
     });
   });
 

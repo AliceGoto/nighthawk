@@ -47,16 +47,16 @@ function makeModelsResponse(): Response {
 describe('OPEN_PLATFORMS', () => {
   it('contains moonshot.cn and moonshot.ai', () => {
     expect(getOpenPlatformById('nighthawk-cn')).toMatchObject({
-      name: 'OpenAI-compatible API · CN (api.moonshot.cn)',
-      baseUrl: 'https://api.moonshot.cn/v1',
-      consoleUrl: 'https://platform.kimi.com',
-      allowedPrefixes: ['kimi-k'],
+      name: 'OpenAI-compatible API · CN',
+      baseUrl: 'https://api.nighthawk.com/v1',
+      consoleUrl: 'https://github.com/AliceGoto/nighthawk',
+      allowedPrefixes: ['nighthawk-'],
     });
     expect(getOpenPlatformById('nighthawk-ai')).toMatchObject({
-      name: 'OpenAI-compatible API · Global (api.moonshot.ai)',
-      baseUrl: 'https://api.moonshot.ai/v1',
-      consoleUrl: 'https://platform.kimi.ai',
-      allowedPrefixes: ['kimi-k'],
+      name: 'OpenAI-compatible API · Global',
+      baseUrl: 'https://api.nighthawk.com/v1',
+      consoleUrl: 'https://github.com/AliceGoto/nighthawk',
+      allowedPrefixes: ['nighthawk-'],
     });
     expect(getOpenPlatformById('unknown')).toBeUndefined();
   });
@@ -88,7 +88,7 @@ describe('fetchOpenPlatformModels', () => {
     expect(models[2]?.id).toBe('non-nighthawk-model');
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.moonshot.cn/v1/models',
+      'https://api.nighthawk.com/v1/models',
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer sk-test',
@@ -157,13 +157,13 @@ describe('filterModelsByPrefix', () => {
   it('filters by allowedPrefixes when present', () => {
     const platform = getOpenPlatformById('nighthawk-cn')!;
     const models = [
-      { id: 'kimi-k2-0712-preview', contextLength: 256000, supportsReasoning: true, supportsImageIn: true, supportsVideoIn: true },
+      { id: 'nighthawk-k2-0712-preview', contextLength: 256000, supportsReasoning: true, supportsImageIn: true, supportsVideoIn: true },
       { id: 'gpt-4', contextLength: 1000, supportsReasoning: false, supportsImageIn: false, supportsVideoIn: false },
     ];
 
     const filtered = filterModelsByPrefix(models as unknown as import('../src/managed-nighthawk').ManagedNighthawkModelInfo[], platform);
     expect(filtered).toHaveLength(1);
-    expect(filtered[0]?.id).toBe('kimi-k2-0712-preview');
+    expect(filtered[0]?.id).toBe('nighthawk-k2-0712-preview');
   });
 
   it('returns all models when allowedPrefixes is absent', () => {
@@ -305,7 +305,7 @@ describe('applyOpenPlatformConfig', () => {
 
     expect(config.providers['nighthawk-cn']).toMatchObject({
       type: 'nighthawk',
-      baseUrl: 'https://api.moonshot.cn/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
       apiKey: 'sk-test',
     });
     expect(config.models?.['nighthawk-cn/kimi-k2-0712-preview']).toMatchObject({
@@ -323,7 +323,7 @@ describe('applyOpenPlatformConfig', () => {
   it('clears stale models for the same provider', () => {
     const config: ManagedNighthawkConfigShape = {
       providers: {
-        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.moonshot.cn/v1', apiKey: 'sk-old' },
+        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1', apiKey: 'sk-old' },
       },
       models: {
         'nighthawk-cn/stale': { provider: 'nighthawk-cn', model: 'stale', maxContextSize: 1000 },
@@ -350,7 +350,7 @@ describe('applyOpenPlatformConfig', () => {
   it('preserves hand-edited fields that upstream does not declare', () => {
     const config: ManagedNighthawkConfigShape = {
       providers: {
-        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.moonshot.cn/v1', apiKey: 'sk-old' },
+        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1', apiKey: 'sk-old' },
       },
       models: {
         'nighthawk-cn/kimi-k2-0712-preview': {
@@ -389,7 +389,7 @@ describe('applyOpenPlatformConfig', () => {
   it('preserves open-platform overrides during refresh', () => {
     const config: ManagedNighthawkConfigShape = {
       providers: {
-        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.moonshot.cn/v1', apiKey: 'sk-old' },
+        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1', apiKey: 'sk-old' },
       },
       models: {
         'nighthawk-cn/kimi-k2-0712-preview': {
@@ -480,7 +480,7 @@ describe('removeOpenPlatformConfig', () => {
   it('removes provider, its models, and defaultModel when matched', () => {
     const config: ManagedNighthawkConfigShape = {
       providers: {
-        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.moonshot.cn/v1', apiKey: 'sk-test' },
+        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1', apiKey: 'sk-test' },
         'other': { type: 'nighthawk', baseUrl: 'https://other.test/v1', apiKey: 'sk-other' },
       },
       models: {
@@ -502,7 +502,7 @@ describe('removeOpenPlatformConfig', () => {
   it('leaves defaultModel intact when it belongs to another provider', () => {
     const config: ManagedNighthawkConfigShape = {
       providers: {
-        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.moonshot.cn/v1', apiKey: 'sk-test' },
+        'nighthawk-cn': { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1', apiKey: 'sk-test' },
       },
       models: {
         'nighthawk-cn/kimi-k2': { provider: 'nighthawk-cn', model: 'kimi-k2', maxContextSize: 256000 },

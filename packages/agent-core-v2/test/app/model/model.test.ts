@@ -351,7 +351,7 @@ describe('nighthawkModelEnvOverlay', () => {
       },
     });
     expect(effective['providers']).toEqual({
-      [ENV_MODEL_PROVIDER_KEY]: { type: 'nighthawk', baseUrl: 'https://api.moonshot.ai/v1' },
+      [ENV_MODEL_PROVIDER_KEY]: { type: 'nighthawk', baseUrl: 'https://api.nighthawk.com/v1' },
     });
   });
 

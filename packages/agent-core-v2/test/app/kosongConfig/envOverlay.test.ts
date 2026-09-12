@@ -49,7 +49,7 @@ describe('nighthawkModelEnvOverlay.apply', () => {
     });
     expect((effective['providers'] as Record<string, unknown>)[ENV_MODEL_PROVIDER_KEY]).toEqual({
       type: 'nighthawk',
-      baseUrl: 'https://api.moonshot.ai/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
     });
     expect(effective['defaultModel']).toBe(ENV_MODEL_ALIAS_KEY);
   });

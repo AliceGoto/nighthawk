@@ -849,7 +849,7 @@ describe('NighthawkTUI resume message replay', () => {
     const driver = await replayIntoDriver(replay);
     const transcript = stripAnsi(driver.state.transcriptContainer.render(140).join('\n'));
 
-    expect(transcript).toContain('Agent swarm: ✓ 1 completed · ✗ 1 failed');
+    expect(transcript).toContain('Agent swarm: ✓ 1 已完成 · ✗ 1 失败');
     expect(transcript).not.toContain('<agent_swarm_result>');
     expect(transcript).not.toContain('Reviewed src/a.ts.');
     expect(transcript).not.toContain('Agent timed out.');
@@ -889,7 +889,7 @@ describe('NighthawkTUI resume message replay', () => {
     const driver = await replayIntoDriver(replay);
     const transcript = stripAnsi(driver.state.transcriptContainer.render(140).join('\n'));
 
-    expect(transcript).toContain('Agent swarm: ✗ 1 failed · ⊘ 1 aborted');
+    expect(transcript).toContain('Agent swarm: ✗ 1 失败 · ⊘ 1 aborted');
     expect(transcript).not.toContain('Agent swarm: ✓ Completed.');
     expect(transcript).not.toContain('<agent_swarm_result>');
   });
@@ -959,7 +959,7 @@ describe('NighthawkTUI resume message replay', () => {
     expect(
       driver.sessionEventHandler.subAgentEventHandler.backgroundAgentMetadata.has('agent-bg1'),
     ).toBe(false);
-    expect(status?.backgroundAgentStatus?.headline).toBe('agent completed in background');
+    expect(status?.backgroundAgentStatus?.headline).toBe('代理 在后台已完成');
     expect(status?.backgroundAgentStatus?.detail).toContain('Review long-running work');
   });
 
@@ -1036,7 +1036,7 @@ describe('NighthawkTUI resume message replay', () => {
       (entry) => entry.backgroundAgentStatus !== undefined,
     );
 
-    expect(status?.backgroundAgentStatus?.headline).toBe('bash task lost');
+    expect(status?.backgroundAgentStatus?.headline).toBe('命令任务 已丢失');
     expect(status?.backgroundAgentStatus?.detail).toContain('Background timestamp logger');
     expect(status?.backgroundAgentStatus?.headline).not.toContain('agent');
   });
@@ -1071,7 +1071,7 @@ describe('NighthawkTUI resume message replay', () => {
       (entry) => entry.backgroundAgentStatus !== undefined,
     );
 
-    expect(status?.backgroundAgentStatus?.headline).toBe('bash task completed in background');
+    expect(status?.backgroundAgentStatus?.headline).toBe('命令任务 在后台已完成');
     expect(status?.backgroundAgentStatus?.detail).toContain('Codex comment poller');
     // The raw notification XML must not leak into the visible transcript.
     expect(

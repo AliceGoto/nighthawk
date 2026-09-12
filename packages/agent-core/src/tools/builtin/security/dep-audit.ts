@@ -126,7 +126,7 @@ export function parsePackageJson(manifestPath: string, content: string): DepAudi
   ];
 
   for (const [section, deps] of sections) {
-    if (deps == null) continue;
+    if (deps === null || deps === undefined) continue;
     for (const [name, range] of Object.entries(deps)) {
       const bare = name.startsWith('@') ? name.split('/')[1] ?? name : name;
       for (const risk of KNOWN_RISKS) {

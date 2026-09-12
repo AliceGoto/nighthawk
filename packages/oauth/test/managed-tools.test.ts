@@ -17,7 +17,7 @@ afterEach(() => {
 
 describe('nighthawkToolsUrl', () => {
   it('appends /tools to the default base URL', () => {
-    expect(nighthawkToolsUrl()).toBe('https://api.kimi.com/coding/v1/tools');
+    expect(nighthawkToolsUrl()).toBe('https://api.nighthawk.com/v1/tools');
   });
 
   it('honours NIGHTHAWK_BASE_URL and trims trailing slashes', () => {

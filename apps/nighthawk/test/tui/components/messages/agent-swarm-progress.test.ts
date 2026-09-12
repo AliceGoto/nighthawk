@@ -163,7 +163,7 @@ describe('AgentSwarmProgressComponent', () => {
 
     expect(output).toContain('Agent Swarm');
     expect(output).toContain('Review changed files');
-    expect(output).toContain('Orchestrating...');
+    expect(output).toContain('编排中...');
     expect(output).not.toContain('01');
   });
 
@@ -248,8 +248,8 @@ describe('AgentSwarmProgressComponent', () => {
 
     const output = renderText(component);
 
-    expect(output).toContain('001 Queued...');
-    expect(output).toContain('002 Queued...');
+    expect(output).toContain('001 排队中...');
+    expect(output).toContain('002 排队中...');
     expect(output).not.toContain('001 [');
     expect(output).not.toContain('002 [');
     expect(output).not.toContain('agents=2');
@@ -261,11 +261,11 @@ describe('AgentSwarmProgressComponent', () => {
     registerSubagents(component, 3);
 
     const lines = renderLines(component, 97);
-    const queuedLine = lines.find((line) => line.includes('001 Queued...'));
+    const queuedLine = lines.find((line) => line.includes('001 排队中...'));
 
     expect(queuedLine).toBeDefined();
-    expect(queuedLine).toContain('002 Queued...');
-    expect(queuedLine).toContain('003 Queued...');
+    expect(queuedLine).toContain('002 排队中...');
+    expect(queuedLine).toContain('003 排队中...');
   });
 
   it('omits subagent text when the compact grid is needed to fit available height', () => {
@@ -314,7 +314,7 @@ describe('AgentSwarmProgressComponent', () => {
 
     expect(cellLine).toBeDefined();
     expect(cellLine).toContain('⊘ Inspecting src/a.ts');
-    expect(cellLine).not.toContain('⊘ Aborted.');
+    expect(cellLine).not.toContain('⊘ 已中止。');
   });
 
   it('shows a cancelled label without a progress bar for queued subagents', () => {
@@ -328,9 +328,9 @@ describe('AgentSwarmProgressComponent', () => {
     const cellLine = output.split('\n').find((line) => line.includes('001 '));
 
     expect(cellLine).toBeDefined();
-    expect(cellLine).toContain('⊘ Cancelled.');
+    expect(cellLine).toContain('⊘ 已取消。');
     expect(cellLine).not.toContain('[');
-    expect(cellLine).not.toContain('⊘ Aborted.');
+    expect(cellLine).not.toContain('⊘ 已中止。');
   });
 
   it('renders terminal marks against compact bars when subagent text is hidden', () => {
@@ -349,9 +349,9 @@ describe('AgentSwarmProgressComponent', () => {
 
     expect(gridLine).toBeDefined();
     expect(gridLine).toMatch(/001 \[[^\]]+\]✓ +002 \[[^\]]+\]✗ +003 \[[^\]]+\]⊘/);
-    expect(gridLine).not.toContain('Completed');
-    expect(gridLine).not.toContain('Failed');
-    expect(gridLine).not.toContain('Aborted');
+    expect(gridLine).not.toContain('已完成');
+    expect(gridLine).not.toContain('失败');
+    expect(gridLine).not.toContain('已中止');
   });
 
   it('advances from queued when a subagent tool call starts and marks terminal states', () => {
@@ -362,8 +362,8 @@ describe('AgentSwarmProgressComponent', () => {
 
     let output = renderText(component);
     expect(output).toContain('001 [');
-    expect(output).toContain('Running');
-    expect(output).toContain('002 Queued...');
+    expect(output).toContain('运行中');
+    expect(output).toContain('002 排队中...');
     expect(output).not.toContain('002 [');
 
     component.markCompleted('agent-1');
@@ -372,9 +372,9 @@ describe('AgentSwarmProgressComponent', () => {
     output = renderText(component);
     expect(output).toContain('001 [');
     expect(output).toContain('✓');
-    expect(output).toContain('Completed.');
+    expect(output).toContain('已完成。');
     expect(output).toContain('002 [');
-    expect(output).toContain('Failed');
+    expect(output).toContain('失败');
   });
 
   it('renders completed subagent output with a success mark', () => {
@@ -386,7 +386,7 @@ describe('AgentSwarmProgressComponent', () => {
     const output = renderText(component);
 
     expect(output).toContain('✓ Reviewed imports and found no regressions');
-    expect(output).toContain('Completed.');
+    expect(output).toContain('已完成。');
   });
 
   it('renders failure details from live subagent failures', () => {
@@ -412,16 +412,16 @@ describe('AgentSwarmProgressComponent', () => {
     });
 
     let output = renderText(component);
-    expect(output).toContain('Rate limited...');
-    expect(output).not.toContain('Queued...');
+    expect(output).toContain('速率受限...');
+    expect(output).not.toContain('排队中...');
     expect(output).not.toContain('Provider rate limit');
-    expect(output).not.toContain('Failed');
+    expect(output).not.toContain('失败');
 
     component.markStarted('agent-1');
 
     output = renderText(component);
-    expect(output).toContain('Running');
-    expect(output).not.toContain('Rate limited...');
+    expect(output).toContain('运行中');
+    expect(output).not.toContain('速率受限...');
   });
 
   it('renders rate-limited subagents as cancelled when cancelled', () => {
@@ -439,8 +439,8 @@ describe('AgentSwarmProgressComponent', () => {
       .find((line) => line.includes('001 ['));
 
     expect(cellLine).toBeDefined();
-    expect(cellLine).toContain('⊘ Cancelled.');
-    expect(cellLine).not.toContain('Rate limited...');
+    expect(cellLine).toContain('⊘ 已取消。');
+    expect(cellLine).not.toContain('速率受限...');
   });
 
   it('renders failure details from AgentSwarm result output', () => {
@@ -484,9 +484,9 @@ describe('AgentSwarmProgressComponent', () => {
 
     expect(applied).toBe(true);
     expect(output).toContain('✗ Agent timed out after 30s.');
-    expect(output).toContain('⊘ Cancelled.');
+    expect(output).toContain('⊘ 已取消。');
     expect(output).not.toContain('002 [');
-    expect(output).not.toContain('Completed.');
+    expect(output).not.toContain('已完成。');
   });
 
   it('strips nested AgentSwarm prefixes from failure details', () => {
@@ -536,7 +536,7 @@ describe('AgentSwarmProgressComponent', () => {
     const output = renderText(component);
 
     expect(output).toContain('✓ Reviewed src/a.ts and confirmed imports are stable.');
-    expect(output).toContain('Completed.');
+    expect(output).toContain('已完成。');
   });
 
   it('shows completed total status when only some subagents fail', () => {
@@ -555,10 +555,10 @@ describe('AgentSwarmProgressComponent', () => {
     ].join('\n'));
 
     const output = renderText(component, 120);
-    const totalStatusLine = output.split('\n').find((line) => line.includes('Completed.'));
+    const totalStatusLine = output.split('\n').find((line) => line.includes('已完成。'));
 
     expect(totalStatusLine).toBeDefined();
-    expect(totalStatusLine).not.toContain('Failed.');
+    expect(totalStatusLine).not.toContain('失败。');
     expect(output).toContain('✓ Reviewed src/a.ts');
     expect(output).toContain('✗ Agent timed out after 30s.');
   });
@@ -576,7 +576,7 @@ describe('AgentSwarmProgressComponent', () => {
     const output = renderText(component);
 
     expect(output).toContain('✓ Imports look stable');
-    expect(output).toContain('Completed.');
+    expect(output).toContain('已完成。');
   });
 
   it('shows latest assistant text after the progress bar with ellipsis truncation', () => {
@@ -605,7 +605,7 @@ describe('AgentSwarmProgressComponent', () => {
     });
 
     const promptLine = renderLines(prompting, 80)
-      .find((line) => line.includes('Prompting...'));
+      .find((line) => line.includes('提示中...'));
     expect(promptLine).toBeDefined();
 
     const working = createComponent();
@@ -613,15 +613,15 @@ describe('AgentSwarmProgressComponent', () => {
     startSubagents(working, 1);
 
     const workingLine = renderLines(working, 80)
-      .find((line) => line.includes('Working...'));
+      .find((line) => line.includes('工作中...'));
     expect(workingLine).toBeDefined();
 
     const promptTextIndex = promptLine?.indexOf('Review the changed') ?? -1;
     const progressBarIndex = workingLine?.indexOf('━') ?? -1;
     expect(promptTextIndex).toBeGreaterThan(0);
     expect(progressBarIndex).toBeGreaterThan(0);
-    expect(promptTextIndex).toBe(visibleWidth('  Prompting... '));
-    expect(progressBarIndex).toBe(visibleWidth('  Working...  '));
+    expect(promptTextIndex).toBe('  提示中... '.length);
+    expect(progressBarIndex).toBe('  工作中...  '.length);
   });
 
   it('renders the activity spinner before the total status line', () => {
@@ -632,10 +632,10 @@ describe('AgentSwarmProgressComponent', () => {
     component.setActivitySpinnerText(() => '🌗');
 
     const statusLine = renderLines(component, 80)
-      .find((line) => line.includes('Working...'));
+      .find((line) => line.includes('工作中...'));
 
     expect(statusLine).toBeDefined();
-    expect(statusLine?.startsWith(' 🌗 Working...')).toBe(true);
+    expect(statusLine?.startsWith(' 🌗 工作中...')).toBe(true);
   });
 
   it('keeps a two-cell placeholder after the AgentSwarm tool call ends', () => {
@@ -648,10 +648,10 @@ describe('AgentSwarmProgressComponent', () => {
     component.setActivitySpinnerText(() => '◒');
 
     const statusLine = renderLines(component, 80)
-      .find((line) => line.includes('Working...'));
+      .find((line) => line.includes('工作中...'));
 
     expect(statusLine).toBeDefined();
-    expect(statusLine?.startsWith('    Working...')).toBe(true);
+    expect(statusLine?.startsWith('    工作中...')).toBe(true);
     expect(statusLine).not.toContain('◑');
     expect(statusLine).not.toContain('◒');
   });
@@ -663,7 +663,7 @@ describe('AgentSwarmProgressComponent', () => {
     completed.markCompleted('agent-1', 'Imports are stable');
     completed.markToolCallEnded();
 
-    expect(renderLines(completed, 80).some((line) => line.startsWith('  ✓ Completed.'))).toBe(true);
+    expect(renderLines(completed, 80).some((line) => line.startsWith('  ✓ 已完成。'))).toBe(true);
 
     const failed = createComponent();
     registerSubagents(failed, 1);
@@ -671,7 +671,7 @@ describe('AgentSwarmProgressComponent', () => {
     failed.markFailed('agent-1', 'Agent timed out');
     failed.markToolCallEnded();
 
-    expect(renderLines(failed, 80).some((line) => line.startsWith('  ✗ Failed.'))).toBe(true);
+    expect(renderLines(failed, 80).some((line) => line.startsWith('  ✗ 失败。'))).toBe(true);
 
     const aborted = createComponent();
     registerSubagents(aborted, 1);
@@ -681,8 +681,8 @@ describe('AgentSwarmProgressComponent', () => {
     aborted.markToolCallEnded();
 
     const abortedOutput = renderText(aborted, 80);
-    expect(abortedOutput).toContain('⊘ Aborted.');
-    expect(abortedOutput).not.toContain('Cancelled.');
+    expect(abortedOutput).toContain('⊘ 已中止。');
+    expect(abortedOutput).not.toContain('已取消。');
   });
 
   it('reserves one trailing cell for prompting streaming text', () => {
@@ -694,7 +694,7 @@ describe('AgentSwarmProgressComponent', () => {
     });
 
     const promptLine = renderLines(prompting, 50)
-      .find((line) => line.includes('Prompting...'));
+      .find((line) => line.includes('提示中...'));
 
     expect(promptLine).toBeDefined();
     expect(visibleWidth(promptLine ?? '')).toBeLessThan(50);
@@ -813,12 +813,73 @@ describe('AgentSwarmProgressComponent', () => {
     expect(output).not.toContain('003');
   });
 
+  it('trims over-counted members once the final argument list arrives', () => {
+    const component = createComponent({
+      description: '',
+    });
+
+    component.updateArgs({}, {
+      streamingArguments:
+        '{"description":"Review changed files","items":["src/a.ts","src/b.ts","src/c.ts","src/d.ts","src/e.ts","src/f.ts","src/g.ts","src/h.ts","src/i.ts","src/j',
+    });
+    expect(component.getMembers()).toHaveLength(10);
+
+    component.updateArgs({
+      description: 'Review changed files',
+      items: ['src/a.ts', 'src/b.ts', 'src/c.ts', 'src/d.ts'],
+    });
+    expect(component.getMembers()).toHaveLength(4);
+  });
+
+  it('keeps bound members when trimming over-counted tails', () => {
+    const component = createComponent({
+      description: '',
+    });
+
+    component.updateArgs({}, {
+      streamingArguments: '{"items":["a","b","c","d","e',
+    });
+    expect(component.getMembers()).toHaveLength(5);
+    component.registerSubagent({
+      agentId: 'agent-2',
+      swarmIndex: 2,
+    });
+
+    component.updateArgs({
+      items: ['a', 'b', 'c'],
+    });
+    const members = component.getMembers();
+    expect(members).toHaveLength(3);
+    expect(members[1]?.agentId).toBe('agent-2');
+  });
+
+  it('does not trim members that already started', () => {
+    const component = createComponent({
+      description: '',
+    });
+
+    component.updateArgs({}, {
+      streamingArguments: '{"items":["a","b","c","d","e',
+    });
+    expect(component.getMembers()).toHaveLength(5);
+    component.registerSubagent({
+      agentId: 'agent-5',
+      swarmIndex: 5,
+    });
+    component.markStarted('agent-5');
+
+    component.updateArgs({
+      items: ['a', 'b', 'c'],
+    });
+    expect(component.getMembers()).toHaveLength(5);
+  });
+
   it('adds subagent rows incrementally as spawn events arrive', () => {
     const component = createComponent();
 
     registerSubagents(component, 1);
     let output = renderText(component);
-    expect(output).toContain('001 Queued...');
+    expect(output).toContain('001 排队中...');
     expect(output).not.toContain('001 [');
     expect(output).not.toContain('002');
 
@@ -827,15 +888,15 @@ describe('AgentSwarmProgressComponent', () => {
       description: `${DEFAULT_DESCRIPTION} #2 (coder)`,
     });
     output = renderText(component);
-    expect(output).toContain('001 Queued...');
-    expect(output).toContain('002 Queued...');
+    expect(output).toContain('001 排队中...');
+    expect(output).toContain('002 排队中...');
     expect(output).not.toContain('001 [');
     expect(output).not.toContain('002 [');
 
     component.markInputComplete();
     output = renderText(component);
-    expect(output).toContain('001 Queued...');
-    expect(output).toContain('002 Queued...');
+    expect(output).toContain('001 排队中...');
+    expect(output).toContain('002 排队中...');
     expect(output).not.toContain('001 [');
   });
 

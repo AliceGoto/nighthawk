@@ -103,7 +103,7 @@ export const complexityTool: Tool = {
         while (j < Math.min(lines.length, i + 100)) {
           const line = lines[j];
           depth += (line.match(/{/g) || []).length - (line.match(/}/g) || []).length;
-          for (const m of line.matchAll(branches)) cc++;
+          for (const _m of line.matchAll(branches)) cc++;
           if (depth <= 0 && j > i) break;
           j++;
         }

@@ -22,14 +22,14 @@ const SAMPLE_BODY: CreateFeedbackUploadUrlBody = {
 
 describe('nighthawkFeedbackUploadUrl', () => {
   it('uses the feedback upload_url path', () => {
-    expect(nighthawkFeedbackUploadUrl()).toBe('https://api.kimi.com/coding/v1/feedback/upload_url');
+    expect(nighthawkFeedbackUploadUrl()).toBe('https://api.nighthawk.com/v1/feedback/upload_url');
   });
 });
 
 describe('nighthawkFeedbackUploadCompleteUrl', () => {
   it('uses the feedback upload_complete path', () => {
     expect(nighthawkFeedbackUploadCompleteUrl()).toBe(
-      'https://api.kimi.com/coding/v1/feedback/upload_complete',
+      'https://api.nighthawk.com/v1/feedback/upload_complete',
     );
   });
 });
@@ -65,7 +65,7 @@ describe('fetchCreateFeedbackUploadUrl', () => {
 
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit?][];
     const [calledUrl, init] = calls[0]!;
-    expect(calledUrl).toBe('https://api.kimi.com/coding/v1/feedback/upload_url');
+    expect(calledUrl).toBe('https://api.nighthawk.com/v1/feedback/upload_url');
     expect(init?.method).toBe('POST');
 
     const headers = new Headers((init?.headers ?? {}) as Record<string, string>);
@@ -142,7 +142,7 @@ describe('fetchCompleteFeedbackUpload', () => {
     expect(result).toEqual({ kind: 'ok' });
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit?][];
     const [calledUrl, init] = calls[0]!;
-    expect(calledUrl).toBe('https://api.kimi.com/coding/v1/feedback/upload_complete');
+    expect(calledUrl).toBe('https://api.nighthawk.com/v1/feedback/upload_complete');
     expect(JSON.parse(init?.body as string)).toEqual({
       upload_id: 28,
       parts: [

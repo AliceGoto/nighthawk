@@ -67,7 +67,7 @@ export const NIGHTHAWK_REGION_PROFILES: Record<NighthawkRegion, NighthawkRegionP
     siteBase: NIGHTHAWK_DEFAULT_SITE_BASE,
   },
   global: {
-    oauthHost: 'https://auth.nighthawk.com',
+    oauthHost: 'https://auth.nighthawk.ai',
     baseUrl: 'https://api.nighthawk.com/v1',
     cdnBase: NIGHTHAWK_DEFAULT_CDN_BASE,
     siteBase: NIGHTHAWK_DEFAULT_SITE_BASE,

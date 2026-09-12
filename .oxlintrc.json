@@ -51,7 +51,7 @@
     "import/no-mutable-exports": "warn",
     "unicorn/error-message": "warn",
     "unicorn/throw-new-error": "warn",
-    "unicorn/catch-error-name": "warn",
+    "unicorn/catch-error-name": "off",
     "unicorn/prefer-add-event-listener": "off",
     "node/no-new-require": "warn",
     "node/no-path-concat": "warn",

@@ -318,7 +318,7 @@ describe('ensureRgPath download branch', () => {
 
   it('downloads from the official BurntSushi releases when the env pins the global region', async () => {
     const savedHost = process.env['NIGHTHAWK_OAUTH_HOST'];
-    process.env['NIGHTHAWK_OAUTH_HOST'] = 'https://auth.kimi.ai';
+    process.env['NIGHTHAWK_OAUTH_HOST'] = 'https://auth.nighthawk.ai';
     try {
       const body = bodyFromBuffer(Buffer.from('not a real archive', 'utf8'));
       const fetchMock = vi.fn().mockResolvedValue({

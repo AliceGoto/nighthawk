@@ -4,13 +4,6 @@
 // ═══════════════════════════════════════════════════════════════════
 import type { SecurityRule, Severity } from '../core/types.js';
 
-interface RuleTemplate {
-  id: string; name: string; nameZh: string; severity: Severity;
-  category: string; cwe?: string; owasp?: string; languages: string[];
-  patterns: RegExp[]; description: string; descriptionZh: string;
-  fix: string; fixZh: string;
-}
-
 // ── SQL 注入 ──────────────────────────────────────────────────────
 const sqliLangs = ['python', 'javascript', 'typescript', 'java', 'php', 'go', 'ruby'];
 const sqliTemplates: Array<[string, RegExp, Severity, string]> = [
@@ -56,21 +49,21 @@ const cmdiFix = 'Avoid shell=True / eval. Use array-args APIs (subprocess with l
 
 // ── 路径穿越 ──────────────────────────────────────────────────────
 const pathTemplates: Array<[string, RegExp, Severity, string]> = [
-  ['open user path', /open\s*\(\s*(?:req|params|query|args|request|input)[.\[]/g, 'high', 'CWE-22'],
+  ['open user path', /open\s*\(\s*(?:req|params|query|args|request|input)[.[]/g, 'high', 'CWE-22'],
   ['fs read user path', /fs\.(?:readFile|readFileSync|writeFile|createReadStream|createWriteStream)\s*\(\s*(?:req|params|query|request)\./g, 'high', 'CWE-22'],
   ['sendFile user path', /sendFile\s*\(\s*(?:req|params|query)\./g, 'high', 'CWE-22'],
   ['join user path', /path\.join\s*\([^)]*(?:req|params|query|\.\.\/)/g, 'medium', 'CWE-22'],
-  ['../ traversal literal', /["'`]\.\.[\/\\]["'`]?|\.\.\/\.\.\//g, 'medium', 'CWE-22'],
+  ['../ traversal literal', /["'`]\.\.[/\\]["'`]?|\.\.\/\.\.\//g, 'medium', 'CWE-22'],
   ['File user path', /new\s+File\s*\(\s*request\./g, 'high', 'CWE-22'],
 ];
 const pathFix = 'Normalize and canonicalize paths; verify prefix with path.resolve; never trust raw user input as path.';
 
 // ── SSRF ──────────────────────────────────────────────────────────
 const ssrfTemplates: Array<[string, RegExp, Severity, string]> = [
-  ['requests user url', /requests\.(?:get|post|put|delete|head)\s*\(\s*(?:url|req|params|query|request|input)[.\[]/g, 'high', 'CWE-918'],
-  ['fetch user url', /fetch\s*\(\s*(?:req|params|query|request|url)[.\[]/g, 'high', 'CWE-918'],
-  ['urlopen', /urlopen\s*\(\s*(?:req|params|query|request|url)[.\[]/g, 'high', 'CWE-918'],
-  ['axios user url', /axios[.(?:get|post|put|delete)]*\s*\(\s*(?:req|params|query|request)[.\[]/g, 'high', 'CWE-918'],
+  ['requests user url', /requests\.(?:get|post|put|delete|head)\s*\(\s*(?:url|req|params|query|request|input)[.[]/g, 'high', 'CWE-918'],
+  ['fetch user url', /fetch\s*\(\s*(?:req|params|query|request|url)[.[]/g, 'high', 'CWE-918'],
+  ['urlopen', /urlopen\s*\(\s*(?:req|params|query|request|url)[.[]/g, 'high', 'CWE-918'],
+  ['axios user url', /axios[.(?:get|post|put|delete)]*\s*\(\s*(?:req|params|query|request)[.[]/g, 'high', 'CWE-918'],
   ['http.Get user url', /http\.(?:Get|Post)\s*\(\s*(?:req|params|query|r\.URL)/g, 'high', 'CWE-918'],
   ['HttpURLConnection', /new\s+URL\s*\(\s*request\./g, 'high', 'CWE-918'],
 ];
@@ -199,7 +192,7 @@ const depTemplates: Array<[string, RegExp, Severity, string]> = [
   ['chmod 777', /chmod\s+[-R]*\s*777/g, 'medium', 'CWE-732'],
   ['docker privileged', /privileged\s*:\s*true/g, 'high', 'CWE-250'],
   ['docker latest tag', /FROM\s+\S+:latest/g, 'low', 'CWE-1104'],
-  ['password in url', /:\/\/[^:\/\s]+:[^@\/\s]{3,}@/g, 'high', 'CWE-798'],
+  ['password in url', /:\/\/[^:/\s]+:[^@/\s]{3,}@/g, 'high', 'CWE-798'],
 ];
 const depFix = 'Pin dependencies, avoid piping downloads to shell, least privilege for containers.';
 

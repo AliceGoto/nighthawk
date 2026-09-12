@@ -86,7 +86,7 @@ describe('TaskOutputViewer — rendering', () => {
     );
     expect(out).toContain('Task output');
     expect(out).toContain('bash-zzzzzzzz');
-    expect(out).toContain('running');
+    expect(out).toContain('运行中');
     expect(out).toContain('demo svc');
   });
 

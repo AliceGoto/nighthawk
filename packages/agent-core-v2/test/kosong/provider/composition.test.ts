@@ -391,7 +391,7 @@ describe('resolveProviderEndpoint', () => {
     process.env['NIGHTHAWK_API_KEY'] = 'sk-nighthawk-env';
     expect(resolveProviderEndpoint('nighthawk')).toEqual({
       apiKey: 'sk-nighthawk-env',
-      baseUrl: 'https://api.moonshot.ai/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
     });
   });
 
@@ -442,7 +442,7 @@ describe('nighthawk provider definitions', () => {
       expect(definition?.endpoint).toEqual({
         apiKeyEnv: 'NIGHTHAWK_API_KEY',
         baseUrlEnv: 'NIGHTHAWK_BASE_URL',
-        defaultBaseUrl: 'https://api.moonshot.ai/v1',
+        defaultBaseUrl: 'https://api.nighthawk.com/v1',
       });
       expect(definition?.hostHeaders).toBe('full');
       expect(definition?.modelSource).toBe('oauth-catalog');
@@ -647,7 +647,7 @@ async function captureResponsesBody(
 }
 
 describe('per-turn intent wire encoding (behavior probes)', () => {
-  it('encodes cacheKey + thinking + budget on the NightHawk wire as prompt_cache_key + expanded thinking, never reasoning_effort', async () => {
+  it('encodes thinking + budget on the NightHawk wire as reasoning_effort + expanded thinking, dropping prompt_cache_key', async () => {
     const provider = registry.createChatProvider({
       protocol: 'openai',
       providerType: 'nighthawk',
@@ -661,12 +661,12 @@ describe('per-turn intent wire encoding (behavior probes)', () => {
       maxCompletionTokens: 5000,
     });
 
-    expect(body['prompt_cache_key']).toBe('session-probe');
-    expect(body['thinking']).toEqual({ type: 'enabled', effort: 'high', keep: 'all' });
+    expect(body).not.toHaveProperty('prompt_cache_key');
+    expect(body['reasoning_effort']).toBe('high');
+    expect(body['thinking']).toEqual({ type: 'enabled', keep: 'all' });
     expect(body).not.toHaveProperty('extra_body');
     expect(body['max_completion_tokens']).toBe(5000);
     expect(body).not.toHaveProperty('max_tokens');
-    expect(body).not.toHaveProperty('reasoning_effort');
   });
 
   it('encodes cacheKey on plain OpenAI as the native prompt_cache_key', async () => {

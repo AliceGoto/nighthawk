@@ -49,7 +49,7 @@ describe('currentNighthawkRegion', () => {
         '[providers."managed:nighthawk".oauth]',
         'storage = "file"',
         'key = "oauth/nighthawk-env-0123456789abcdef"',
-        'oauthHost = "https://auth.kimi.ai"',
+        'oauthHost = "https://auth.nighthawk.ai"',
         '',
       ].join('\n'),
     );
@@ -78,7 +78,7 @@ describe('regionForBareLogin', () => {
     expect(
       regionForBareLogin({
         key: 'oauth/nighthawk-env-0123456789abcdef',
-        oauthHost: 'https://auth.kimi.ai',
+        oauthHost: 'https://auth.nighthawk.ai',
       }),
     ).toBeUndefined();
   });

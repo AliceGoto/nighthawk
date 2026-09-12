@@ -59,7 +59,7 @@ const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 
 const EXAMPLE_COM_SCOPED_REF = {
   storage: 'file',
   key: resolveNighthawkOAuthKey({ baseUrl: 'https://api.example.com' }),
-  oauthHost: 'https://auth.kimi.com',
+  oauthHost: 'https://auth.nighthawk.com',
 } as const;
 
 const ENV_SCOPED_REF = {
@@ -74,10 +74,10 @@ const ENV_SCOPED_REF = {
 const OVERSEAS_SCOPED_REF = {
   storage: 'file',
   key: resolveNighthawkOAuthKey({
-    oauthHost: 'https://auth.kimi.ai',
-    baseUrl: 'https://api.kimi.ai/coding/v1',
+    oauthHost: 'https://auth.nighthawk.ai',
+    baseUrl: 'https://api.nighthawk.com/v1',
   }),
-  oauthHost: 'https://auth.kimi.ai',
+  oauthHost: 'https://auth.nighthawk.ai',
 } as const;
 
 interface FakeToolkit {
@@ -316,7 +316,7 @@ describe('OAuthService', () => {
   it('startLogin reuses the configured oauth ref when it matches the login environment', async () => {
     providers[OAUTH_PROVIDER] = {
       type: 'nighthawk',
-      baseUrl: 'https://api.kimi.com/coding/v1',
+      baseUrl: 'https://api.nighthawk.com/v1',
       oauth: { storage: 'file', key: 'oauth/nighthawk' },
     };
     stubManagedModelsFetch();
@@ -331,7 +331,7 @@ describe('OAuthService', () => {
       OAUTH_PROVIDER,
       expect.objectContaining({
         oauthRef: { storage: 'file', key: 'oauth/nighthawk' },
-        baseUrl: 'https://api.kimi.com/coding/v1',
+        baseUrl: 'https://api.nighthawk.com/v1',
       }),
     );
   });
@@ -379,8 +379,8 @@ describe('OAuthService', () => {
       OAUTH_PROVIDER,
       expect.objectContaining({
         oauthRef: OVERSEAS_SCOPED_REF,
-        baseUrl: 'https://api.kimi.ai/coding/v1',
-        oauthHost: 'https://auth.kimi.ai',
+        baseUrl: 'https://api.nighthawk.com/v1',
+        oauthHost: 'https://auth.nighthawk.ai',
       }),
     );
     await flush();
@@ -388,7 +388,7 @@ describe('OAuthService', () => {
       OAUTH_PROVIDER,
       expect.objectContaining({
         type: 'nighthawk',
-        baseUrl: 'https://api.kimi.ai/coding/v1',
+        baseUrl: 'https://api.nighthawk.com/v1',
         oauth: OVERSEAS_SCOPED_REF,
       }),
     );
@@ -420,7 +420,7 @@ describe('OAuthService', () => {
 
     providers[OAUTH_PROVIDER] = {
       type: 'nighthawk',
-      oauth: { storage: 'file', key: OVERSEAS_SCOPED_REF.key, oauthHost: 'https://auth.kimi.ai' },
+      oauth: { storage: 'file', key: OVERSEAS_SCOPED_REF.key, oauthHost: 'https://auth.nighthawk.ai' },
     };
     expect(svc.getRegion()).toBe('global');
   });

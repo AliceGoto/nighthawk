@@ -373,13 +373,13 @@ describe('current builtin collaboration tools', () => {
     expect(
       AgentSwarmToolInputSchema.safeParse({
         ...input,
-        items: Array.from({ length: 128 }, (_, index) => `src/${String(index + 1)}.ts`),
+        items: Array.from({ length: 2000 }, (_, index) => `src/${String(index + 1)}.ts`),
       }).success,
     ).toBe(true);
     expect(
       AgentSwarmToolInputSchema.safeParse({
         ...input,
-        items: Array.from({ length: 129 }, (_, index) => `src/${String(index + 1)}.ts`),
+        items: Array.from({ length: 2001 }, (_, index) => `src/${String(index + 1)}.ts`),
       }).success,
     ).toBe(false);
     expect(tool.parameters).toMatchObject({
@@ -481,7 +481,7 @@ describe('current builtin collaboration tools', () => {
     expect(properties['model']?.enum).toEqual(['primary', 'secondary']);
   });
 
-  it('AgentSwarm rejects more than 128 subagents at execution time', async () => {
+  it('AgentSwarm rejects more than 2000 subagents at execution time', async () => {
     const host = mockSubagentHost({ runQueued: vi.fn() });
     const swarmMode = mockSwarmMode();
     const tool = new AgentSwarmTool(host, swarmMode);
@@ -491,11 +491,11 @@ describe('current builtin collaboration tools', () => {
       context({
         description: 'Review files',
         prompt_template: 'Review {{item}}',
-        items: Array.from({ length: 129 }, (_, index) => `src/${String(index + 1)}.ts`),
+        items: Array.from({ length: 2001 }, (_, index) => `src/${String(index + 1)}.ts`),
       }),
     );
 
-    expect(result.output).toBe('AgentSwarm supports at most 128 subagents.');
+    expect(result.output).toBe('AgentSwarm supports at most 2000 subagents.');
     expect(result.isError).toBe(true);
     expect(host.runQueued).not.toHaveBeenCalled();
   });

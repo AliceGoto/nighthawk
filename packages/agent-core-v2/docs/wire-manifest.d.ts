@@ -24,7 +24,7 @@
 // cross-reducers), blobs (the folding states whose blob codec offloads inline
 // media to blob storage), owner (the source file declaring the class).
 
-// Index (55 record types)
+// Index (57 record types)
 //   config.update                      profile                                         src/agent/profile/profileOps.ts
 //   context.append_loop_event          contextMemory, turn                             src/agent/contextMemory/contextEvents.ts
 //   context.append_message             contextMemory, plan, task.notificationDelivery  src/agent/contextMemory/contextEvents.ts
@@ -47,6 +47,8 @@
 //   llm.request                        llm.requestTrace                                src/agent/llmRequester/llmRequestOps.ts
 //   llm.tools_snapshot                 llm.requestTrace                                src/agent/llmRequester/llmRequestOps.ts
 //   mcp.tools_discovered               mcp.discovery                                   src/agent/mcp/mcpDiscoveryOps.ts
+//   pentest_mode.enter                 pentestMode                                     src/agent/pentestMode/pentestModeOps.ts
+//   pentest_mode.exit                  pentestMode                                     src/agent/pentestMode/pentestModeOps.ts
 //   permission.record_approval_result  permissionRules                                 src/agent/permissionRules/permissionRulesOps.ts
 //   permission.set_mode                permissionMode, permissionMode.configured       src/agent/permissionMode/permissionModeOps.ts
 //   plan_mode.cancel                   plan                                            src/features/plan/planOps.ts
@@ -398,6 +400,24 @@ interface McpToolsDiscoveredPayload {
     toolName: string;
     collidesWith: { kind: 'same_server', toolName: string } | { kind: 'other_server', serverName: string };
   }[];
+}
+
+/**
+ * states: pentestMode
+ * owner: src/agent/pentestMode/pentestModeOps.ts
+ */
+interface PentestModeEnterPayload {
+  _name: 'pentest_mode.enter';
+  agentId: string;
+}
+
+/**
+ * states: pentestMode
+ * owner: src/agent/pentestMode/pentestModeOps.ts
+ */
+interface PentestModeExitPayload {
+  _name: 'pentest_mode.exit';
+  agentId: string;
 }
 
 /**
@@ -850,6 +870,8 @@ interface WirePayloadMap {
   "llm.request": LlmRequestPayload;
   "llm.tools_snapshot": LlmToolsSnapshotPayload;
   "mcp.tools_discovered": McpToolsDiscoveredPayload;
+  "pentest_mode.enter": PentestModeEnterPayload;
+  "pentest_mode.exit": PentestModeExitPayload;
   "permission.record_approval_result": PermissionRecordApprovalResultPayload;
   "permission.set_mode": PermissionSetModePayload;
   "plan_mode.cancel": PlanModeCancelPayload;

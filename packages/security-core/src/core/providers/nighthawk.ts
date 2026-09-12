@@ -1,4 +1,3 @@
-import type { ChatProvider, ProviderMessage, ProviderTool, ProviderResponse, ToolCall } from '../types.js';
 import { OpenAIProvider } from './openai.js';
 
 // NightHawk uses OpenAI-compatible API format

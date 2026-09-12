@@ -5,7 +5,6 @@ import type { ExtensionConfig } from "shared/types";
 import type { MCPServerConfig, ModelConfig, ThinkingMode, SlashCommandInfo } from "shared/legacy-sdk";
 
 let settingsSaveRevision = 0;
-const MANAGED_NIGHTHAWK_PROVIDER = "managed:nighthawk";
 
 function saveConfigWithRollback(
   config: Parameters<typeof bridge.saveConfig>[0],
