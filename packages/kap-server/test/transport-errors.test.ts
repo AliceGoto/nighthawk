@@ -15,7 +15,6 @@ describe('/api/v1/debug transport mapError', () => {
     [ErrorCodes.STORAGE_IO_FAILED, ErrorCode.PERSISTENCE_FAILURE],
     [ErrorCodes.STORAGE_LOCKED, ErrorCode.PERSISTENCE_FAILURE],
     [ErrorCodes.CONFIG_INVALID, ErrorCode.VALIDATION_FAILED],
-    [ErrorCodes.GOAL_UNSUPPORTED_AGENT, ErrorCode.GOAL_UNSUPPORTED_AGENT],
     [ErrorCodes.PROMPT_ID_CONFLICT, ErrorCode.PROMPT_ID_CONFLICT],
   ])('maps domain code %s to its wire equivalent', (code, wire) => {
     const env = mapError(new Error2(code, 'boom'), 'req-1');

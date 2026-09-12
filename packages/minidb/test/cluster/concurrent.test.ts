@@ -86,14 +86,14 @@ test(
 
 test(
   'a reader process observes commits from a concurrently running writer process',
-  { timeout: 180_000 },
+  { timeout: 300_000 },
   async () => {
     const dir = await tmpDir('minidb-cluster-mp-');
     try {
       // Start a long-polling reader BEFORE the data exists. The inner wait
       // budget must absorb writer process startup on heavily loaded CI
       // runners (writer spawn + first open can take tens of seconds there).
-      const waiter = runWorkerOk(['wait-read', dir, '4', 'live:k', '42', '120000'], { timeoutMs: 150_000 });
+      const waiter = runWorkerOk(['wait-read', dir, '4', 'live:k', '42', '240000'], { timeoutMs: 260_000 });
       // Give the reader a head start so it really polls with a cold cache.
       await new Promise((r) => setTimeout(r, 500));
 
