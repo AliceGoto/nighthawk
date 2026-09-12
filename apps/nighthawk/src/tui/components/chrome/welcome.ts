@@ -19,16 +19,13 @@ import {
 import { NightHawkLogoComponent } from '#/tui/components/chrome/nighthawk-logo';
 import type { AppState } from '#/tui/types';
 import { currentTheme } from '#/tui/theme';
-import { gradientText } from '#/tui/theme/gradient-text';
 
 export class WelcomeComponent implements Component {
   private state: AppState;
-  private readonly logo: NightHawkLogoComponent;
-  private logoStarted = false;
+  private readonly logo = new NightHawkLogoComponent();
 
-  constructor(state: AppState, requestRender?: () => void) {
+  constructor(state: AppState) {
     this.state = state;
-    this.logo = new NightHawkLogoComponent(requestRender ?? (() => {}));
   }
 
   invalidate(): void {}
@@ -60,11 +57,6 @@ export class WelcomeComponent implements Component {
     const brandLines = isRainbowDancing()
       ? [rainbowText('NightHawk', getDanceRainbowPalette(), getRainbowDanceView()?.phase ?? 0)]
       : this.logo.render(currentTheme.palette);
-
-    if (!this.logoStarted && !isRainbowDancing()) {
-      this.logoStarted = true;
-      this.logo.start();
-    }
 
     const tips = this.buildTips(isLoggedOut, primary, dim);
     const headerLines: string[] = [...brandLines, '', ...tips];

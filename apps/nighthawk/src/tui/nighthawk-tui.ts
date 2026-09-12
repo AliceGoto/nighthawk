@@ -2921,7 +2921,7 @@ export class NighthawkTUI {
     ) {
       return;
     }
-    const welcome = new WelcomeComponent(this.state.appState, () => this.state.ui.requestRender());
+    const welcome = new WelcomeComponent(this.state.appState);
     this.state.transcriptContainer.addChild(welcome);
   }
 
