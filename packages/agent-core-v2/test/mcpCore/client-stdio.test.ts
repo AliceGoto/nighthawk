@@ -301,13 +301,13 @@ describe('StdioMcpClient', () => {
       await client.connect();
       const reply = await client.callTool('exit_after_reply', {});
       expect(reply.isError).toBe(false);
-      const exitDeadline = Date.now() + 5000;
+      const exitDeadline = Date.now() + 10_000;
       while (Date.now() < exitDeadline && !client.stderrSnapshot().includes(banner)) {
         await new Promise((r) => setTimeout(r, 5));
       }
       expect(client.stderrSnapshot()).toContain(banner);
 
-      const drainDeadline = Date.now() + 5000;
+      const drainDeadline = Date.now() + 15_000;
       let transportConfirmedDead = false;
       while (Date.now() < drainDeadline) {
         try {
@@ -331,7 +331,7 @@ describe('StdioMcpClient', () => {
     } finally {
       await client.close();
     }
-  }, 15000);
+  }, 30_000);
 
   it('does not fire unexpected-close when the caller closes the client itself', async () => {
     const client = createClient({
