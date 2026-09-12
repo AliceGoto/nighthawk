@@ -37,7 +37,8 @@
 import { z } from 'zod';
 
 import { readApiErrorMessage } from './api-error';
-import { nighthawkBaseUrl } from './managed-usage';
+import {
+  DEFAULT_MANAGED_REQUEST_TIMEOUT_MS, nighthawkBaseUrl } from './managed-usage';
 import { isRecord } from './utils';
 
 // The cloud path stays `/me` (owned by the backend); only the local
@@ -165,7 +166,7 @@ export async function fetchManagedUserInfo(
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort();
-  }, opts.timeoutMs ?? 8000);
+  }, opts.timeoutMs ?? DEFAULT_MANAGED_REQUEST_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       headers: {

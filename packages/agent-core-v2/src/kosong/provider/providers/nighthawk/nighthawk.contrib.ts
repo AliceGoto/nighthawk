@@ -6,6 +6,8 @@ import type {
   TraitContext,
 } from '#/kosong/protocol/protocolTrait';
 
+import { DEFAULT_NIGHTHAWK_BASE_URL } from '@nighthawk/nighthawk-oauth';
+
 import { type OpenAIToolParam, toolToOpenAI } from '../../bases/openai/openai-common';
 import { registerProviderDefinition } from '../../providerDefinition';
 import { classifyNighthawkQuotaError } from './nighthawk-errors';
@@ -14,7 +16,7 @@ import { normalizeNighthawkToolSchema } from './nighthawk-schema';
 
 export const NIGHTHAWK_API_KEY_ENV = 'NIGHTHAWK_API_KEY';
 export const NIGHTHAWK_BASE_URL_ENV = 'NIGHTHAWK_BASE_URL';
-export const NIGHTHAWK_DEFAULT_BASE_URL = 'https://api.nighthawk.com/v1';
+export { DEFAULT_NIGHTHAWK_BASE_URL as NIGHTHAWK_DEFAULT_BASE_URL };
 
 const INTERLEAVED_THINKING_BETA = 'interleaved-thinking-2025-05-14';
 
@@ -83,7 +85,7 @@ function resolveFiles(ctx: TraitContext): NighthawkFiles {
   if (files === undefined) {
     files = new NighthawkFiles({
       apiKey: ctx.config.apiKey ?? firstEnv(NIGHTHAWK_API_KEY_ENV),
-      baseUrl: ctx.config.baseUrl ?? firstEnv(NIGHTHAWK_BASE_URL_ENV) ?? NIGHTHAWK_DEFAULT_BASE_URL,
+      baseUrl: ctx.config.baseUrl ?? firstEnv(NIGHTHAWK_BASE_URL_ENV) ?? DEFAULT_NIGHTHAWK_BASE_URL,
       defaultHeaders:
         ctx.config.defaultHeaders === undefined ? undefined : { ...ctx.config.defaultHeaders },
     });
@@ -98,7 +100,7 @@ export const nighthawkOpenAITrait: ProtocolTrait = {
   endpoint: () => ({
     apiKeyEnv: NIGHTHAWK_API_KEY_ENV,
     baseUrlEnv: NIGHTHAWK_BASE_URL_ENV,
-    defaultBaseUrl: NIGHTHAWK_DEFAULT_BASE_URL,
+    defaultBaseUrl: DEFAULT_NIGHTHAWK_BASE_URL,
   }),
 
   convertError: (error) => classifyNighthawkQuotaError(error),
@@ -237,7 +239,7 @@ export const nighthawkAnthropicTrait: ProtocolTrait = {
 const nighthawkEndpoint: ProtocolEndpoint = {
   apiKeyEnv: NIGHTHAWK_API_KEY_ENV,
   baseUrlEnv: NIGHTHAWK_BASE_URL_ENV,
-  defaultBaseUrl: NIGHTHAWK_DEFAULT_BASE_URL,
+  defaultBaseUrl: DEFAULT_NIGHTHAWK_BASE_URL,
 };
 
 registerProviderDefinition({

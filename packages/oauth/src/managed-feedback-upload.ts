@@ -1,5 +1,6 @@
 import { readApiErrorMessage } from './api-error';
-import { nighthawkBaseUrl } from './managed-usage';
+import {
+  DEFAULT_MANAGED_REQUEST_TIMEOUT_MS, nighthawkBaseUrl } from './managed-usage';
 
 export interface CreateFeedbackUploadUrlBody {
   readonly file_hash: string;
@@ -89,7 +90,7 @@ async function postJson(
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort();
-  }, opts.timeoutMs ?? 8000);
+  }, opts.timeoutMs ?? DEFAULT_MANAGED_REQUEST_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       method: 'POST',

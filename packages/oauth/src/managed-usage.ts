@@ -27,6 +27,7 @@ import { isRecord } from './utils';
 const MANAGED_PREFIX = 'managed:';
 const NIGHTHAWK_PLATFORM_ID = 'nighthawk';
 export const DEFAULT_NIGHTHAWK_BASE_URL = 'https://api.nighthawk.com/v1';
+export const DEFAULT_MANAGED_REQUEST_TIMEOUT_MS = 8000;
 
 export function isManagedNighthawk(providerKey?: string | null): boolean {
   if (!providerKey) return false;

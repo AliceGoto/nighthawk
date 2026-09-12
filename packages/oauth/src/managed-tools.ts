@@ -10,7 +10,8 @@
  */
 
 import { readApiErrorMessage } from './api-error';
-import { nighthawkBaseUrl } from './managed-usage';
+import {
+  DEFAULT_MANAGED_REQUEST_TIMEOUT_MS, nighthawkBaseUrl } from './managed-usage';
 import { isRecord } from './utils';
 
 export interface FetchChatTitleOk {
@@ -46,7 +47,7 @@ export async function fetchChatTitle(
   }
   const timer = setTimeout(() => {
     controller.abort();
-  }, opts.timeoutMs ?? 8000);
+  }, opts.timeoutMs ?? DEFAULT_MANAGED_REQUEST_TIMEOUT_MS);
   try {
     const headers = new Headers(opts.headers);
     headers.set('Authorization', `Bearer ${accessToken}`);

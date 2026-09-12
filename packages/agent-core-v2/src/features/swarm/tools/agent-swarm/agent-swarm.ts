@@ -4,7 +4,7 @@ import { createDecorator } from '#/_base/di/instantiation';
 import { type AgentTool } from '#/tool/toolContract';
 
 export const PROMPT_TEMPLATE_PLACEHOLDER = '{{item}}';
-export const MAX_AGENT_SWARM_SUBAGENTS = 128;
+export const MAX_AGENT_SWARM_SUBAGENTS = 2000;
 
 export const SwarmItemEntrySchema = z.union([
   z.string().trim().min(1).describe('Simple item value, filled into the prompt template.'),

@@ -1,4 +1,5 @@
 import { ErrorCodes, NighthawkError } from '#/errors';
+import { DEFAULT_NIGHTHAWK_BASE_URL } from '@nighthawk/nighthawk-oauth';
 import { parseBooleanEnv } from './resolve';
 import {
   validateConfig,
@@ -16,7 +17,7 @@ export const ENV_MODEL_ALIAS_KEY = '__nighthawk_env_model__';
 const ALLOWED_TYPES: readonly ProviderType[] = ['nighthawk', 'anthropic', 'openai'];
 
 const DEFAULT_BASE_URL: Partial<Record<ProviderType, string>> = {
-  nighthawk: 'https://api.nighthawk.com/v1',
+  nighthawk: DEFAULT_NIGHTHAWK_BASE_URL,
   openai: 'https://api.openai.com/v1',
   // anthropic: omitted -> let the Anthropic SDK pick its default
 };

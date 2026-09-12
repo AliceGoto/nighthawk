@@ -1,3 +1,5 @@
+import { NIGHTHAWK_DEFAULT_SITE_BASE } from '@nighthawk/nighthawk-oauth';
+
 import type { NormalizedFinding, FindingEvidence, ScanMetrics } from './engine';
 import type { Severity } from './rules';
 
@@ -197,7 +199,7 @@ export function formatToSarif(
       driver: {
         name: 'NightHawk SecurityScan',
         version: toolVersion,
-        informationUri: 'https://nighthawk.dev/docs/security',
+        informationUri: NIGHTHAWK_DEFAULT_SITE_BASE,
         rules,
       },
     },

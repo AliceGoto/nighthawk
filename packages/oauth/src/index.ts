@@ -43,6 +43,8 @@ export type { NighthawkHostIdentity, NighthawkIdentityOptions } from './identity
 export { NIGHTHAWK_FLOW_CONFIG } from './constants';
 
 export {
+  NIGHTHAWK_DEFAULT_CDN_BASE,
+  NIGHTHAWK_DEFAULT_SITE_BASE,
   NIGHTHAWK_REGION_MARKER_FILENAME,
   NIGHTHAWK_REGION_PROFILES,
   nighthawkCdnContentUrl,
@@ -107,6 +109,7 @@ export type {
 } from './managed-userinfo';
 
 export {
+  DEFAULT_NIGHTHAWK_BASE_URL,
   fetchManagedUsage,
   formatDuration,
   isManagedNighthawk,

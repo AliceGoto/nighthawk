@@ -1,8 +1,9 @@
+import { nighthawkRegionSchema } from '@nighthawk/nighthawk-oauth';
 import { z } from 'zod';
 
 export const oauthLoginStartRequestSchema = z.object({
   provider: z.string().min(1).optional(),
-  region: z.enum(['mainland-cn', 'global']).optional(),
+  region: nighthawkRegionSchema.optional(),
 });
 export type OAuthLoginStartRequest = z.infer<typeof oauthLoginStartRequestSchema>;
 

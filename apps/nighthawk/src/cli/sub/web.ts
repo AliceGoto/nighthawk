@@ -10,6 +10,7 @@
  *   nighthawk web --port 3000 --no-open
  */
 
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
@@ -65,6 +66,30 @@ export interface WebOptions {
   readonly port: number;
   readonly host: string;
   readonly open: boolean;
+  /**
+   * Require a bearer token on the /v1/* proxy endpoints. On by default;
+   * `--no-auth` disables it, only permitted on a loopback host.
+   */
+  readonly auth?: boolean;
+}
+
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
+
+function isLoopbackHost(host: string): boolean {
+  return LOOPBACK_HOSTS.has(host.toLowerCase());
+}
+
+function headersMatch(expected: string, supplied: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(supplied);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function authorized(request: IncomingMessage, token: string | undefined): boolean {
+  if (token === undefined) return true;
+  const header = request.headers['authorization'];
+  if (typeof header !== 'string' || !header.startsWith('Bearer ')) return false;
+  return headersMatch(token, header.slice('Bearer '.length).trim());
 }
 
 const MIME_MAP: Record<string, string> = {
@@ -402,6 +427,17 @@ function handleModels(res: ServerResponse): void {
 export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> {
   let sessionPromise: Promise<Session> | undefined;
 
+  const useAuth = opts.auth !== false;
+  if (!useAuth && !isLoopbackHost(opts.host)) {
+    deps.stderr.write(
+      `Refusing to start without auth on non-loopback host "${opts.host}". ` +
+        `Bind to a loopback address or drop --no-auth.\n`,
+    );
+    deps.exit(1);
+    throw new Error('refused to start without auth on non-loopback host');
+  }
+  const authToken = useAuth ? randomBytes(24).toString('hex') : undefined;
+
   async function getSession(): Promise<Session> {
     if (sessionPromise === undefined) {
       sessionPromise = createWebSession().catch((error) => {
@@ -414,6 +450,14 @@ export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> 
 
   async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = req.url ?? '/';
+
+    if (url.startsWith('/v1/')) {
+      if (!authorized(req, authToken)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unauthorized. Send "Authorization: Bearer <token>".' }));
+        return;
+      }
+    }
 
     if (url === '/v1/chat/completions' || url === '/v1/chat/completions/') {
       const sess = await getSession().catch(() => undefined);
@@ -455,6 +499,12 @@ export async function handleWeb(deps: WebDeps, opts: WebOptions): Promise<void> 
       const url = `http://${opts.host}:${port}`;
 
       deps.stdout.write(`NightHawk Web is running at ${url}\n`);
+      if (useAuth && authToken !== undefined) {
+        deps.stdout.write(
+          `Auth token: ${authToken}\n` +
+            'Send it as "Authorization: Bearer <token>" on /v1/chat/completions and /v1/models.\n',
+        );
+      }
       deps.stdout.write('Press Ctrl-C to stop.\n');
 
       if (opts.open) {
@@ -488,12 +538,14 @@ export function registerWebCommand(parent: Command, overrides?: Partial<WebDeps>
     .option('--port <number>', 'Port to bind. Default: 3000.')
     .option('--host <host>', 'Host to bind. Default: 127.0.0.1.')
     .option('--no-open', 'Do not open the browser automatically.')
-    .action(async (options: { port?: string; host?: string; open?: boolean }) => {
+    .option('--no-auth', 'Disable the bearer-token requirement on /v1/* (loopback hosts only).')
+    .action(async (options: { port?: string; host?: string; open?: boolean; auth?: boolean }) => {
       const port = options.port === undefined ? 3000 : Number.parseInt(options.port, 10);
       await handleWeb(createDefaultWebDeps(overrides), {
         port: Number.isNaN(port) ? 3000 : port,
         host: options.host ?? '127.0.0.1',
         open: options.open !== false,
+        auth: options.auth !== false,
       });
     });
 }
