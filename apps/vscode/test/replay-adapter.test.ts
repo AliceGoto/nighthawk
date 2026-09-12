@@ -72,6 +72,7 @@ function resumedAgent(
       },
       thinkingEffort: options.thinkingEffort ?? "off",
       systemPrompt: "",
+      pentestMode: false,
     },
     context: { history: [], tokenCount: options.contextTokenCount ?? 0 },
     replay,
