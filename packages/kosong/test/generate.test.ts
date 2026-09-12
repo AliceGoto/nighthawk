@@ -1108,7 +1108,7 @@ describe('generate()', () => {
             { type: 'text', text: 'slow first token' },
             { type: 'text', text: ' fast tail' },
           ],
-          { finishReason: 'stop' },
+          { finishReason: 'completed' },
         );
         const iterator = stream[Symbol.asyncIterator]();
         const originalNext = iterator.next.bind(iterator);

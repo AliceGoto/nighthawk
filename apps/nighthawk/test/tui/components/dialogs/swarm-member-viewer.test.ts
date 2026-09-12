@@ -53,9 +53,11 @@ function record(): SubagentActivityRecord {
     agentId: 'agent-1',
     agentName: 'explore',
     description: 'Review src/a.ts',
+    parentToolCallId: 'call_1',
     status: 'running',
     steps: [{ step: 1, textTail: 'reading module', toolCalls: [] }],
     totalSteps: 1,
+    version: 1,
   } satisfies SubagentActivityRecord;
 }
 

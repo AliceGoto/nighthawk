@@ -67,6 +67,16 @@ export interface MigrationReport {
   readonly notices: MigrationNotices;
 }
 
+export interface PluginsMigrationSummary {
+  readonly migrated: readonly string[];
+  readonly alreadyInstalled: readonly string[];
+  readonly conflicts: readonly string[];
+  readonly failed: readonly {
+    readonly sourcePath: string;
+    readonly reason: string;
+  }[];
+}
+
 export interface MigrationSummary {
   readonly config: {
     readonly migrated: boolean;
