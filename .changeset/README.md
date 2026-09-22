@@ -109,7 +109,7 @@ The release PR runs:
 
 - `pnpm changeset version`: bumps publishable package versions and updates changelogs;
 - Deletes the consumed `.changeset/*.md` files;
-- Uses the title `[CI]: Release packages`.
+- Uses the title `ci: release packages`.
 
 ### 5. Merge the release PR
 

@@ -23,7 +23,7 @@ try {
   // execSync runs through the platform shell, which is required on Windows:
   // pnpm's launcher is `pnpm.cmd`, which a bare argv exec cannot resolve (no
   // PATHEXT without a shell). The win32 native binary IS built on Windows
-  // runners (.github/workflows/_native-build.yml), which run this generator.
+  // runners (.github/workflows/release.yml), which run this generator.
   // A single command string (not an args array) avoids the args+shell
   // deprecation; the command is static (no injection surface).
   execSync('pnpm --filter @nighthawk/vis-web exec vite build', {

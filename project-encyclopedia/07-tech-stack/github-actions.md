@@ -4,7 +4,7 @@ GitHub Actions 做构建、分片测试、lint、typecheck、安全 smoke。
 
 ## Workflows
 
-`.github/workflows/` 包含 PR 和 push 流水线。
+全部 CI/CD 统一在 `.github/workflows/release.yml` 一个文件里。文件名必须保持 `release.yml`：npm Trusted Publishing 绑定的是该文件路径。PR 触发检查、Nix 构建、pkg.pr.new 预览包与 PR 标题检查；push 到 `main` 时额外触发 changesets 发布、GitHub Pages 部署、原生包构建与 Homebrew formula 更新。
 
 ## 测试分片
 
@@ -16,7 +16,7 @@ oxlint + sherif + 仓库守卫。
 
 ## 发布
 
-Changesets action 管理版本 PR 和 npm publish。
+Changesets action 管理版本 PR 和 npm publish。原生包与 Homebrew formula 只在发布时（或手动 dispatch 指定 tag 时）构建，不再随每次 push 触发。
 
 ## 专业实现要点（开发流程视角）
 

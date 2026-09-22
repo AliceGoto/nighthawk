@@ -139,21 +139,27 @@ Every source/engineering directory has a local `CONSTRAINTS.md` (root, packages,
 
 ## Release and CI/CD Pipeline
 
-Every push to `main` triggers:
-1. **Docs Deploy**: Builds and deploys VitePress docs to GitHub Pages.
-2. **Manual Native Bundle**: Builds native binaries for all 6 platforms (linux-x64, linux-arm64, darwin-x64, darwin-arm64, win32-x64, win32-arm64), uploads to GitHub Release, updates Homebrew formula at `AliceGoto/homebrew-nighthawk`.
+All CI/CD lives in one workflow: `.github/workflows/release.yml`. The file name must stay `release.yml` — npm Trusted Publishing binds to the workflow file path (see `.changeset/README.md`); only the display name is free. It carries the pull-request checks, the Nix build, the changesets release, the GitHub Pages deploy, and the native bundle + Homebrew formula publish.
+
+On a pull request it runs `pr-title-checker`, `build` (with the CLI smoke test), the 5 shards of `test`, `test-pi-tui`, `test-vscode-legacy`, `lint`, `typecheck`, `check-workspace-sync` + `nix-build`, and `pkg-pr-new`.
+
+Every push to `main` runs the same checks plus the release chain:
+1. **Release**: `changesets/action` opens or updates the release PR, or publishes when a release PR is merged.
+2. **Docs deploy**: builds and deploys VitePress docs to GitHub Pages — only when a publication happened.
+3. **Native bundle**: after a publication, builds binaries for all 6 platforms (linux-x64, linux-arm64, darwin-x64, darwin-arm64, win32-x64, win32-arm64), uploads them to the GitHub Release, and updates the Homebrew formula at `AliceGoto/homebrew-nighthawk`. It no longer runs on ordinary pushes — only on a publication or a manual dispatch.
 
 ### Release Process
 1. Create a changeset via `pnpm changeset` (or `gen-changesets` skill).
-2. Push to main. The Release workflow will create a Release PR.
+2. Push to main. The Release job will create a Release PR.
 3. Merge the Release PR. Changesets publishes packages and triggers native builds.
 4. The native builds upload binaries to the GitHub Release.
 5. The Homebrew formula is updated automatically.
 6. Docs are deployed automatically.
 
 ### Manual Native Build
+Rebuilds the native assets for an explicit tag — the only path that does not require a publication:
 ```sh
-gh workflow run "Manual Native Bundle" --repo AliceGoto/nighthawk --ref main -f release-tag=v0.41.0
+gh workflow run release.yml --repo AliceGoto/nighthawk --ref main -f release-tag=v0.42.0
 ```
 
 ### Homebrew Installation
