@@ -1,5 +1,15 @@
 # @nighthawk/nighthawk
 
+## 0.42.1
+
+### Patch Changes
+
+- [`33a08b8`](https://github.com/AliceGoto/nighthawk/commit/33a08b8228638f40d5239b921c97dd6dd1c0ee48) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Cap the compacted conversation summary at 16k tokens instead of 128k.
+
+- [`6b9526e`](https://github.com/AliceGoto/nighthawk/commit/6b9526ed81ffe76941d0b0194b477a1cca2238c2) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Replace the looping welcome-screen logo animation with a static brand-gradient wordmark.
+
+- [#4](https://github.com/AliceGoto/nighthawk/pull/4) [`fadb6ab`](https://github.com/AliceGoto/nighthawk/commit/fadb6ab1e068b854562acb6210c7d53173e078f6) Thanks [@AliceGoto](https://github.com/AliceGoto)! - Scale conversation compaction to the model's context window instead of fixed token limits.
+
 ## 0.42.0
 
 ### Minor Changes
