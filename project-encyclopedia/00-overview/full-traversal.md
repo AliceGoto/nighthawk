@@ -129,14 +129,7 @@ scripts/PROMPTS.md
 
 ## CI/CD
 
-- `.github/workflows/ci.yml`
-- `.github/workflows/release.yml`
-- `.github/workflows/nix-build.yml`
-- `.github/workflows/docs-deploy.yml`
-- `.github/workflows/_native-build.yml`
-- `.github/workflows/manual-native-bundle.yml`
-- `.github/workflows/pkg-pr-new.yml`
-- `.github/workflows/pr-title-checker.yml`
+- `.github/workflows/release.yml`（唯一的 CI/CD workflow：PR 检查、Nix 构建、changesets 发布、GitHub Pages 部署、原生包与 Homebrew formula 发布）
 
 ## 文档体系
 

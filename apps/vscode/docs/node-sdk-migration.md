@@ -111,7 +111,7 @@ into runtime code or packaging scripts.
 | File changes and baselines | `apps/vscode/src/managers` |
 | Legacy migration coordination | `apps/vscode/src/migration` |
 | React UI | `apps/vscode/webview-ui` |
-| Packaging and smoke tests | `apps/vscode/scripts`, `.github/workflows/ci.yml` |
+| Packaging and smoke tests | `apps/vscode/scripts`, `.github/workflows/release.yml` |
 
 ## Data ownership
 

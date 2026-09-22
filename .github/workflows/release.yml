@@ -1,18 +1,448 @@
-name: Release
+name: CI/CD
+
+# Every CI/CD path in this repository lives in this one file: pull-request
+# checks, the Nix build, changesets release, GitHub Pages deploy, and the native
+# bundle + Homebrew formula publish. Keep it that way — a second workflow file
+# splits the pipeline's permissions, concurrency and secrets across files again.
+#
+# The FILE NAME must stay `release.yml`: npm Trusted Publishing binds to the
+# workflow file path (see .changeset/README.md). Only the display name is free.
 
 on:
+  pull_request:
+    # Union of the event types the individual pipelines used to subscribe to.
+    # The heavy jobs guard against `edited` / `labeled` themselves so that
+    # editing a title or adding a label does not re-run the whole suite.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
+      - labeled
   push:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      release-tag:
+        description: 'Existing GitHub Release tag to (re)publish native assets for'
+        required: true
+        type: string
+      sign-macos:
+        description: 'Sign + notarize macOS native builds (requires Apple secrets)'
+        required: false
+        type: boolean
+        default: false
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+# Serialize runs on a branch, but not pull-request runs. release.yml's original
+# group keyed on the ref alone; applied to the whole unified pipeline that would
+# make a second push to a PR queue behind the first instead of reporting, so
+# pull requests key on the head SHA as well.
+concurrency: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'shared' }}
+
+permissions:
+  contents: read
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Pull-request checks
+  # ---------------------------------------------------------------------------
+
+  pr-title-checker:
+    name: pr-title-checker
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'edited' || github.event.action == 'labeled')
+    steps:
+      - uses: thehanimo/pr-title-checker@v1.4.3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          configuration_path: ".github/pr-title-checker-config.json"
+
+  build:
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - name: Smoke test CLI bundle
+        run: pnpm -C apps/nighthawk run smoke
+
+  test:
+    name: test (${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test --shard=${{ matrix.shard }}/5
+
+  # pi-tui's suite runs on node:test (not vitest), so the root `pnpm run test`
+  # does not execute it; it needs its own job.
+  test-pi-tui:
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @nighthawk/pi-tui test
+
+  # The VS Code extension suite runs on the default (v2) engine as part of the
+  # sharded root run above; this job reruns it on the legacy v1 engine, which
+  # the extension selects through the rollback env var.
+  test-vscode-legacy:
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter nighthawk test
+        env:
+          NIGHTHAWK_LEGACY_FLAG: "1"
+
+  test-windows:
+    runs-on: windows-latest
+    # Temporarily disabled while Windows tests are being stabilized.
+    if: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      # Windows runners are slower and run the whole suite (including
+      # in-process e2e tests) under more contention, so the default 5s test
+      # timeout causes flaky failures. Give it more headroom.
+      - run: pnpm run test -- --testTimeout=30000
+
+  lint:
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run sherif
+
+  typecheck:
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: |
+          pnpm dlx --package @typescript/native-preview@beta tsgo --version
+          for config in packages/*/tsconfig.json apps/nighthawk/tsconfig.json; do
+            echo "Typechecking ${config}"
+            pnpm dlx --package @typescript/native-preview@beta tsgo -p "${config}" --noEmit
+          done
+      - name: Typecheck VS Code extension
+        run: pnpm --filter nighthawk run typecheck
+      - name: Typecheck vis-server
+        run: pnpm --filter @nighthawk/vis-server run typecheck
+      - name: Typecheck vis-web
+        run: pnpm --filter @nighthawk/vis-web run typecheck
+
+  pkg-pr-new:
+    name: Publish NightHawk preview
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.repository_owner == 'AliceGoto' && github.event.pull_request.draft == false
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-pkg-pr-new-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package dependencies
+        run: pnpm run build:packages
+
+      - name: Generate NightHawk built-in catalog
+        shell: bash
+        run: |
+          CATALOG_FILE="$RUNNER_TEMP/nighthawk-built-in-catalog.json"
+          node apps/nighthawk/scripts/update-catalog.mjs --out "$CATALOG_FILE"
+          echo "NIGHTHAWK_BUILT_IN_CATALOG_FILE=$CATALOG_FILE" >> "$GITHUB_ENV"
+
+      - name: Build NightHawk package
+        run: pnpm --filter @nighthawk/nighthawk run build
+
+      - name: Publish pkg.pr.new preview
+        run: pnpm exec pkg-pr-new publish --bin --commentWithSha --packageManager=pnpm,npm --no-template './apps/nighthawk'
+
+  # ---------------------------------------------------------------------------
+  # Nix
+  # ---------------------------------------------------------------------------
+
+  check-workspace-sync:
+    name: Check flake.nix workspace sync
+    runs-on: ubuntu-latest
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check workspace sync
+        id: check
+        run: |
+          set -euo pipefail
+          if node scripts/check-nix-workspace.mjs; then
+            echo "SYNC_OK=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "SYNC_OK=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract missing items
+        if: steps.check.outputs.SYNC_OK == 'false' && github.event_name == 'pull_request'
+        id: missing
+        run: |
+          {
+            echo "body<<EOF"
+            echo "<!-- nix-workspace-sync-bot -->"
+            echo "❌ flake.nix workspace lists out of sync"
+            echo ""
+            echo "The recursive workspace dependencies of \`apps/nighthawk\` do not match \`flake.nix\`. Please run \`node scripts/check-nix-workspace.mjs\` locally for details."
+            echo ""
+            echo "Typical fix: add the missing package name to \`workspaceNames\` and its path to \`workspacePaths\` in \`flake.nix\`."
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post or update PR comment
+        if: steps.check.outputs.SYNC_OK == 'false' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          COMMENT_BODY: ${{ steps.missing.outputs.body }}
+        with:
+          script: |
+            const marker = '<!-- nix-workspace-sync-bot -->';
+            const body = process.env.COMMENT_BODY;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail if workspace sync failed
+        if: steps.check.outputs.SYNC_OK == 'false'
+        run: exit 1
+
+  nix-build:
+    name: nix build .#nighthawk
+    needs: check-workspace-sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix-path: nixpkgs=channel:nixos-unstable
+
+      - name: Build
+        id: build
+        run: |
+          set -euo pipefail
+          LOG_FILE="$(mktemp)"
+          if nix build .#nighthawk --print-build-logs 2>&1 | tee "$LOG_FILE"; then
+            echo "BUILD_FAILED=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "BUILD_FAILED=true" >> "$GITHUB_OUTPUT"
+            echo "LOG_FILE=$LOG_FILE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract error log
+        if: steps.build.outputs.BUILD_FAILED == 'true' && github.event_name == 'pull_request'
+        id: error
+        run: |
+          LOG_FILE="${{ steps.build.outputs.LOG_FILE }}"
+
+          # Extract hash mismatch info
+          SPECIFIED=$(grep -oP 'specified:\s+\K\S+' "$LOG_FILE" || true)
+          GOT=$(grep -oP 'got:\s+\K\S+' "$LOG_FILE" || true)
+
+          if [ -n "$SPECIFIED" ] && [ -n "$GOT" ]; then
+            {
+              echo "body<<EOF"
+              echo "❌ Nix build failed"
+              echo ""
+              echo "Hash mismatch in \`pnpmDeps\`:"
+              echo "| | Hash |"
+              echo "|---|---|"
+              echo "| **specified** | \`$SPECIFIED\` |"
+              echo "| **got** | \`$GOT\` |"
+              echo ""
+              echo "Please update \`flake.nix\` with the **got** hash."
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            TAIL=$(tail -n 80 "$LOG_FILE" | sed 's/^/    /')
+            {
+              echo "body<<EOF"
+              echo "❌ Nix build failed"
+              echo ""
+              echo "\`\`\`"
+              echo "$TAIL"
+              echo "\`\`\`"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post or update PR comment
+        if: steps.build.outputs.BUILD_FAILED == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          COMMENT_BODY: ${{ steps.error.outputs.body }}
+        with:
+          script: |
+            const marker = '<!-- nix-build-bot -->';
+            const body = marker + '\n' + process.env.COMMENT_BODY;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail the job if build failed
+        if: steps.build.outputs.BUILD_FAILED == 'true'
+        run: exit 1
+
+  # ---------------------------------------------------------------------------
+  # Release
+  # ---------------------------------------------------------------------------
+
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'AliceGoto'
+    if: github.event_name == 'push' && github.repository_owner == 'AliceGoto'
     outputs:
       packages_published: ${{ steps.changesets.outputs.published }}
       nighthawk_native_release: ${{ steps.nighthawk-release.outputs.should_publish }}
@@ -72,32 +502,186 @@ jobs:
         env:
           CHANGESETS_PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
 
-  deploy-docs:
-    name: Deploy docs
+  # The native tag is resolved in one place so no job ever guesses it from
+  # package.json: a publication uses the changesets output, a manual dispatch
+  # uses the tag the operator passed in.
+  native-tag:
+    name: Resolve native release tag
     needs: release
-    if: needs.release.outputs.packages_published == 'true'
-    uses: ./.github/workflows/docs-deploy.yml
+    runs-on: ubuntu-latest
+    if: "!cancelled() && (github.event_name == 'workflow_dispatch' || needs.release.outputs.nighthawk_native_release == 'true')"
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - id: resolve
+        env:
+          DISPATCH_TAG: ${{ github.event.inputs.release-tag }}
+          CHANGESETS_TAG: ${{ needs.release.outputs.nighthawk_release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${DISPATCH_TAG}" ]]; then
+            echo "tag=${DISPATCH_TAG}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${CHANGESETS_TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy-docs-build:
+    name: Docs build
+    needs: release
+    if: "!cancelled() && needs.release.outputs.packages_published == 'true'"
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pages: write
       id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build docs
+        run: pnpm -C docs run build
+        env:
+          VITEPRESS_BASE: /${{ github.event.repository.name }}/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/.vitepress/dist
+
+  deploy-docs:
+    name: Docs deploy
+    needs: deploy-docs-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
 
   native-artifacts:
-    name: Native release artifact
-    needs: release
-    if: needs.release.outputs.nighthawk_native_release == 'true'
-    uses: ./.github/workflows/_native-build.yml
-    with:
-      upload-artifact-prefix: nighthawk-native
-      retention-days: 7
-      sign-macos: false
+    name: Native bundle (${{ matrix.target }})
+    needs: native-tag
+    if: "!cancelled() && needs.native-tag.outputs.tag != ''"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux-x64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+          - os: macos-15-intel
+            target: darwin-x64
+          - os: macos-15
+            target: darwin-arm64
+          - os: windows-2025-vs2026
+            target: win32-x64
+          - os: windows-11-arm
+            target: win32-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup macOS keychain (release only)
+        if: runner.os == 'macOS' && github.event.inputs.sign-macos == 'true'
+        uses: ./.github/actions/macos-keychain-setup
+        with:
+          certificate-p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          certificate-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Generate built-in catalog (release artifacts)
+        if: github.event.inputs.sign-macos == 'true'
+        shell: bash
+        run: |
+          CATALOG_FILE="$RUNNER_TEMP/nighthawk-built-in-catalog.json"
+          node apps/nighthawk/scripts/update-catalog.mjs --out "$CATALOG_FILE"
+          echo "NIGHTHAWK_BUILT_IN_CATALOG_FILE=$CATALOG_FILE" >> "$GITHUB_ENV"
+
+      - name: Build web assets
+        # The SEA blob step embeds apps/nighthawk/dist-web. The bundle is
+        # committed (synced from the code-app repo) — just verify it is in place.
+        run: node apps/nighthawk/scripts/check-web-assets.mjs
+
+      - name: Build native executable (release profile, macOS signed)
+        if: runner.os == 'macOS' && github.event.inputs.sign-macos == 'true'
+        run: pnpm --filter @nighthawk/nighthawk run build:native:release
+
+      - name: Build native executable (local profile)
+        if: "!(runner.os == 'macOS' && github.event.inputs.sign-macos == 'true')"
+        run: pnpm --filter @nighthawk/nighthawk run build:native:sea
+
+      - name: Notarize macOS binary
+        if: runner.os == 'macOS' && github.event.inputs.sign-macos == 'true'
+        uses: ./.github/actions/macos-notarize
+        with:
+          binary-path: ${{ github.workspace }}/apps/nighthawk/dist-native/bin/${{ matrix.target }}/nighthawk
+          notarization-key-p8: ${{ secrets.APPLE_NOTARIZATION_KEY_P8 }}
+          notarization-key-id: ${{ secrets.APPLE_NOTARIZATION_KEY_ID }}
+          notarization-issuer-id: ${{ secrets.APPLE_NOTARIZATION_ISSUER_ID }}
+
+      - name: Cleanup macOS keychain
+        if: always() && runner.os == 'macOS' && github.event.inputs.sign-macos == 'true'
+        uses: ./.github/actions/macos-keychain-cleanup
+
+      - name: Smoke test native executable
+        run: pnpm --filter @nighthawk/nighthawk run test:native:smoke
+
+      - name: Package native artifact
+        run: pnpm --filter @nighthawk/nighthawk run package:native
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: nighthawk-native-${{ matrix.target }}
+          retention-days: 7
+          path: |
+            apps/nighthawk/dist-native/artifacts/nighthawk-${{ matrix.target }}.zip
+            apps/nighthawk/dist-native/artifacts/nighthawk-${{ matrix.target }}.zip.sha256
+          if-no-files-found: ignore
 
   publish-native-assets:
     name: Publish native release assets
     needs:
-      - release
+      - native-tag
       - native-artifacts
-    if: needs.release.outputs.nighthawk_native_release == 'true'
+    if: "!cancelled() && needs.native-tag.outputs.tag != ''"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -115,24 +699,25 @@ jobs:
 
       - name: Produce manifest.json
         env:
-          RELEASE_TAG: ${{ needs.release.outputs.nighthawk_release_tag }}
+          RELEASE_TAG: ${{ needs.native-tag.outputs.tag }}
         run: node apps/nighthawk/scripts/native/produce-manifest.mjs dist-native-release "$RELEASE_TAG"
 
       - name: Upload assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.release.outputs.nighthawk_release_tag }}
+          RELEASE_TAG: ${{ needs.native-tag.outputs.tag }}
         run: gh release upload "$RELEASE_TAG" dist-native-release/* --clobber
 
   publish-brew:
     name: Publish Homebrew formula
     needs:
-      - release
+      - native-tag
       - native-artifacts
-    if: needs.release.outputs.nighthawk_native_release == 'true'
+    if: "!cancelled() && needs.native-tag.outputs.tag != ''"
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -146,12 +731,12 @@ jobs:
 
       - name: Produce manifest.json
         env:
-          RELEASE_TAG: ${{ needs.release.outputs.nighthawk_release_tag }}
+          RELEASE_TAG: ${{ needs.native-tag.outputs.tag }}
         run: node apps/nighthawk/scripts/native/produce-manifest.mjs dist-native-release "$RELEASE_TAG"
 
       - name: Generate Homebrew formula
         env:
-          RELEASE_TAG: ${{ needs.release.outputs.nighthawk_release_tag }}
+          RELEASE_TAG: ${{ needs.native-tag.outputs.tag }}
         run: node apps/nighthawk/scripts/native/update-brew-formula.mjs dist-native-release/manifest.json --out nighthawk.rb
 
       - name: Check Homebrew tap token
@@ -169,7 +754,7 @@ jobs:
         if: steps.homebrew-token.outputs.available == 'true'
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          RELEASE_TAG: ${{ needs.release.outputs.nighthawk_release_tag }}
+          RELEASE_TAG: ${{ needs.native-tag.outputs.tag }}
         run: |
           VERSION="${RELEASE_TAG#*@}"
           VERSION="${VERSION#v}"

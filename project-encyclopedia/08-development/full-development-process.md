@@ -145,7 +145,7 @@ flowchart LR
   - `.agents/skills/gen-docs/SKILL.md`（非 TS 源码，可直接阅读）
   - `.agents/skills/gen-changesets/SKILL.md`（非 TS 源码，可直接阅读）
   - `.agents/skills/translate-docs/SKILL.md`（非 TS 源码，可直接阅读）
-  - `.github/workflows/ci.yml`（非 TS 源码，可直接阅读）
+  - `.github/workflows/release.yml`（非 TS 源码，可直接阅读）
   - `package.json`（非 TS 源码，可直接阅读）
 
 ## 证据与代码位置
@@ -156,5 +156,5 @@ flowchart LR
 - `.agents/skills/gen-docs/SKILL.md`
 - `.agents/skills/gen-changesets/SKILL.md`
 - `.agents/skills/translate-docs/SKILL.md`
-- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
 - `package.json`

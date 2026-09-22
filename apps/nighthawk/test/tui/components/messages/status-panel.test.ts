@@ -188,4 +188,73 @@ describe('status panel report lines', () => {
     expect(output).toContain('Warning      No active session');
     expect(output).toContain('No context window data available.');
   });
+
+  it('renders subagent cluster membership and standalone subagents', () => {
+    const lines = buildStatusReportLines({
+      version: '1.2.3',
+      model: 'k2',
+      workDir: '/tmp/project',
+      sessionId: 'ses-1',
+      sessionTitle: null,
+      thinkingEffort: 'off',
+      permissionMode: 'manual',
+      planMode: false,
+      towerMode: false,
+      towerAvailable: true,
+      contextUsage: 0,
+      contextTokens: 0,
+      maxContextTokens: 0,
+      availableModels: {},
+      clusters: [
+        {
+          description: 'Review the compaction strategy and its 16k summary cap',
+          total: 5,
+          active: 2,
+          completed: 2,
+          failed: 1,
+          cancelled: 0,
+        },
+        {
+          description: 'A second cluster',
+          total: 2,
+          active: 1,
+          completed: 0,
+          failed: 0,
+          cancelled: 1,
+        },
+      ],
+      standaloneSubagents: 3,
+    }).map(strip);
+
+    const output = lines.join('\n');
+    expect(output).toContain('Subagents / Clusters');
+    expect(output).toContain('2 clusters · 7 members · 3 standalone');
+    expect(output).toContain('Review the compaction strategy and its 16…');
+    expect(output).toContain('5 total · 2 running · 2 done · 1 failed');
+    expect(output).toContain('A second cluster');
+    expect(output).toContain('1 cancelled');
+  });
+
+  it('reports none when no subagents or clusters exist', () => {
+    const lines = buildStatusReportLines({
+      version: '1.2.3',
+      model: 'k2',
+      workDir: '/tmp/project',
+      sessionId: 'ses-1',
+      sessionTitle: null,
+      thinkingEffort: 'off',
+      permissionMode: 'manual',
+      planMode: false,
+      towerMode: false,
+      towerAvailable: true,
+      contextUsage: 0,
+      contextTokens: 0,
+      maxContextTokens: 0,
+      availableModels: {},
+    }).map(strip);
+
+    const output = lines.join('\n');
+    expect(output).toContain('Subagents / Clusters');
+    expect(output).toContain('None');
+  });
 });
