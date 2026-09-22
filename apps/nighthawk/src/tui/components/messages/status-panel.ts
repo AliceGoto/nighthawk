@@ -55,6 +55,19 @@ export interface StatusReportOptions {
   readonly statusError?: string;
   readonly managedUsage?: ManagedUsageReport;
   readonly managedUsageError?: string;
+  /** Per-cluster subagent progress snapshots for the `/status` report. */
+  readonly clusters?: readonly ClusterStatusLine[];
+  /** Subagents launched outside of a cluster (plain subagent tool calls). */
+  readonly standaloneSubagents?: number;
+}
+
+export interface ClusterStatusLine {
+  readonly description: string;
+  readonly total: number;
+  readonly active: number;
+  readonly completed: number;
+  readonly failed: number;
+  readonly cancelled: number;
 }
 
 type Colorize = (text: string) => string;
@@ -97,6 +110,50 @@ function contextValues(options: StatusReportOptions): {
     tokens: options.status?.contextTokens ?? options.contextTokens,
     maxTokens: options.status?.maxContextTokens ?? options.maxContextTokens,
   };
+}
+
+function clusterStatusSection(
+  clusters: readonly ClusterStatusLine[] | undefined,
+  standalone: number | undefined,
+  accent: (text: string) => string,
+  value: (text: string) => string,
+  muted: (text: string) => string,
+): string[] {
+  const lines: string[] = [];
+  const list = clusters ?? [];
+  const alone = standalone ?? 0;
+  lines.push(accent('Subagents / Clusters'));
+  if (list.length === 0 && alone === 0) {
+    lines.push(`  ${muted('None')}`);
+    return lines;
+  }
+  const members = list.reduce((sum, cluster) => sum + cluster.total, 0);
+  const summary: string[] = [];
+  if (list.length > 0 || members > 0) {
+    summary.push(
+      `${list.length} cluster${list.length === 1 ? '' : 's'} · ${members} member${members === 1 ? '' : 's'}`,
+    );
+  }
+  if (alone > 0) summary.push(`${alone} standalone`);
+  lines.push(`  ${value(summary.join(' · '))}`);
+  for (const cluster of list) {
+    const counts = [
+      `${cluster.total} total`,
+      `${cluster.active} running`,
+      `${cluster.completed} done`,
+      `${cluster.failed} failed`,
+    ];
+    if (cluster.cancelled > 0) counts.push(`${cluster.cancelled} cancelled`);
+    lines.push(
+      `  ${muted('•')} ${value(clusterDescription(cluster.description))} ${muted(counts.join(' · '))}`,
+    );
+  }
+  return lines;
+}
+
+function clusterDescription(text: string): string {
+  const single = text.replaceAll(/\s+/g, ' ').trim();
+  return single.length > 44 ? `${single.slice(0, 41)}…` : single;
 }
 
 export function buildStatusReportLines(options: StatusReportOptions): string[] {
@@ -147,6 +204,9 @@ export function buildStatusReportLines(options: StatusReportOptions): string[] {
   } else {
     lines.push(`  ${muted('No context window data available.')}`);
   }
+
+  lines.push('');
+  lines.push(...clusterStatusSection(options.clusters, options.standaloneSubagents, accent, value, muted));
 
   const managedSection = buildManagedUsageReportLines({
     managedUsage: options.managedUsage,

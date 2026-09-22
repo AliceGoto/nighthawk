@@ -3,8 +3,9 @@ import { release as osRelease, type as osType } from 'node:os';
 import type { McpServerInfo, SessionStatus, SessionUsage } from '@nighthawk/nighthawk-sdk';
 
 import { buildMcpStatusReportLines } from '../components/messages/mcp-status-panel';
-import { buildStatusReportLines } from '../components/messages/status-panel';
+import { buildStatusReportLines, type ClusterStatusLine } from '../components/messages/status-panel';
 import { buildUsageReportLines, UsagePanelComponent, type ManagedUsageReport } from '../components/messages/usage-panel';
+import type { SubAgentEventHandler } from '../controllers/subagent-event-handler';
 import { isExperimentalFlagEnabled } from './experimental-flags';
 import {
   FEEDBACK_ISSUE_URL,
@@ -167,6 +168,7 @@ export async function showStatusReport(host: SlashCommandHost): Promise<void> {
     loadRuntimeStatusReport(host),
     loadManagedUsageReport(host),
   ]);
+  const subAgentEventHandler = host.sessionEventHandler.subAgentEventHandler;
   const appState = host.state.appState;
   const reportArgs = {
     version: appState.version,
@@ -187,6 +189,8 @@ export async function showStatusReport(host: SlashCommandHost): Promise<void> {
     statusError: runtimeStatus.error,
     managedUsage: managedUsage?.usage,
     managedUsageError: managedUsage?.error,
+    clusters: clusterSummaries(subAgentEventHandler),
+    standaloneSubagents: standaloneSubagentCount(subAgentEventHandler),
   };
   const panel = new UsagePanelComponent(() => buildStatusReportLines(reportArgs), 'primary', ' Status ');
   host.state.transcriptContainer.addChild(panel);
@@ -251,4 +255,23 @@ async function loadManagedUsageReport(host: SlashCommandHost): Promise<ManagedUs
     return { error: res.message };
   }
   return { usage: { summary: res.summary, limits: res.limits, extraUsage: res.extraUsage } };
+}
+
+function clusterSummaries(handler: SubAgentEventHandler): readonly ClusterStatusLine[] {
+  return handler.getSwarmProgressSummaries().map((summary) => ({
+    description: summary.description,
+    total: summary.total,
+    active: summary.active,
+    completed: summary.completed,
+    failed: summary.failed,
+    cancelled: summary.cancelled,
+  }));
+}
+
+function standaloneSubagentCount(handler: SubAgentEventHandler): number {
+  let count = 0;
+  for (const info of handler.subagentInfo.values()) {
+    if (info.swarmIndex === undefined) count += 1;
+  }
+  return count;
 }
