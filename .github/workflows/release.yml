@@ -35,7 +35,11 @@ on:
         type: boolean
         default: false
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+# Serialize runs on a branch, but not pull-request runs. release.yml's original
+# group keyed on the ref alone; applied to the whole unified pipeline that would
+# make a second push to a PR queue behind the first instead of reporting, so
+# pull requests key on the head SHA as well.
+concurrency: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'shared' }}
 
 permissions:
   contents: read
