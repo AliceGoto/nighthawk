@@ -32,7 +32,7 @@
 
 ## 约束文件
 
-为了“让工具严格遵守”，已在所有源码/工程目录生成 `CONSTRAINTS.md`，共 **74 个**：
+为了“让工具严格遵守”，已在所有源码/工程目录生成 `CONSTRAINTS.md`，共 **72 个**：
 
 ```text
 /CONSTRAINTS.md                     （根目录全局约束）
@@ -43,7 +43,6 @@ apps/*/CONSTRAINTS.md               （4 个应用）
 apps/*/src/CONSTRAINTS.md           （源码目录）
 apps/*/test/CONSTRAINTS.md          （测试目录）
 .agents/CONSTRAINTS.md
-.changeset/CONSTRAINTS.md
 .github/CONSTRAINTS.md
 build/CONSTRAINTS.md
 docs/CONSTRAINTS.md
@@ -58,14 +57,13 @@ scripts/CONSTRAINTS.md
 
 ## 提示词文件
 
-除根 `PROMPTS.md` 外，每个包/应用目录和工程目录也有 `PROMPTS.md`，共 **34 个**：
+除根 `PROMPTS.md` 外，每个包/应用目录和工程目录也有 `PROMPTS.md`，共 **32 个**：
 
 ```text
 /PROMPTS.md
 packages/*/PROMPTS.md   （19 个包）
 apps/*/PROMPTS.md       （4 个应用）
 .agents/PROMPTS.md
-.changeset/PROMPTS.md
 .github/PROMPTS.md
 build/PROMPTS.md
 docs/PROMPTS.md

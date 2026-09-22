@@ -42,7 +42,8 @@ This is a TypeScript monorepo built for agent-assisted development. Keep the roo
 
 ## Constraint Files
 
-Every source/engineering directory has a local `CONSTRAINTS.md` (root, packages, apps, src, test, scripts, build, docs, plugins, reports, .github, .agents, .changeset, plan, project-encyclopedia). Before modifying files in a directory, read its `CONSTRAINTS.md` and follow it as hard rules. If `CONSTRAINTS.md` conflicts with this file or another instruction, stop and report the conflict instead of silently choosing one.
+Every source/engineering directory has a local `CONSTRAINTS.md` (root, packages, apps, src, test, scripts, build, docs, plugins, reports, .github, .agents, plan, project-encyclopedia). Before modifying files in a directory, read its `CONSTRAINTS.md` and follow it as hard rules. If `CONSTRAINTS.md` conflicts with this file or another instruction, stop and report the conflict instead of silently choosing one.
+`.changeset/` is the one directory that cannot carry the pair: Changesets parses every `.md` file directly under it as a version description (skipping only `README.md`, and reading any subdirectory as a legacy v1 changeset), so a frontmatter-less file or any subdirectory there aborts the Release workflow. Its authoring rules live in `.changeset/README.md` instead.
 
 
 ## Project Map

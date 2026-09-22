@@ -155,3 +155,21 @@ The root-level `pnpm run publish` first runs typecheck, lint, sherif, test, buil
 - [Changesets documentation](https://github.com/changesets/changesets)
 - [Changesets GitHub Action](https://github.com/changesets/action)
 - [npm Trusted Publishing documentation](https://docs.npmjs.com/trusted-publishers)
+
+## Constraints for this directory
+
+This directory does not carry its own `CONSTRAINTS.md` / `PROMPTS.md` pair, unlike every other engineering directory in the repository. Changesets parses every `.md` file directly under `.changeset/` as a version description — it skips only `README.md` and never descends into subdirectories, while any subdirectory is read as a legacy v1 changeset (it must contain `changes.md` and `changes.json`). A frontmatter-less file here therefore aborts the Release workflow, and a subdirectory aborts it a different way. Keep documentation for changeset authors in this README.
+
+When writing a changeset, follow the `gen-changesets` skill (`.agents/skills/gen-changesets/SKILL.md`) and these rules:
+
+- Write only changes users can perceive; skip anything they cannot.
+- One short, user-facing sentence stating only what changed.
+- No file, class, or function names, and no PR numbers.
+- Never choose a `major` bump yourself — ask first; default to `minor`, fall back to `patch`.
+- Use neutral placeholders in public text; never leak internal identifiers.
+
+Verify the directory holds only real changesets:
+
+```sh
+ls .changeset/*.md | grep -v README.md
+```

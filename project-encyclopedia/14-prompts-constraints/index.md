@@ -2,13 +2,12 @@
 
 > 本索引由脚本生成，列出仓库中所有 `CONSTRAINTS.md` 与 `PROMPTS.md`。
 
-- CONSTRAINTS.md 数量：74
-- PROMPTS.md 数量：34
+- CONSTRAINTS.md 数量：72
+- PROMPTS.md 数量：32
 
 ## CONSTRAINTS.md
 
 - `.agents/CONSTRAINTS.md`
-- `.changeset/CONSTRAINTS.md`
 - `.github/CONSTRAINTS.md`
 - `CONSTRAINTS.md`
 - `apps/nighthawk-inspect/CONSTRAINTS.md`
@@ -85,7 +84,6 @@
 ## PROMPTS.md
 
 - `.agents/PROMPTS.md`
-- `.changeset/PROMPTS.md`
 - `.github/PROMPTS.md`
 - `PROMPTS.md`
 - `apps/nighthawk-inspect/PROMPTS.md`
