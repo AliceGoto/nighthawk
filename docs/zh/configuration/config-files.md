@@ -62,7 +62,7 @@ keep = "all"
 
 [loop_control]
 max_attempts_per_step = 10
-reserved_context_size = 50000
+# reserved_context_size = 50000  # 默认不设置（模型窗口的 15%）
 
 [background]
 max_running_tasks = 4

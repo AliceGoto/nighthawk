@@ -62,7 +62,7 @@ keep = "all"
 
 [loop_control]
 max_attempts_per_step = 10
-reserved_context_size = 50000
+# reserved_context_size = 50000  # unset by default (15% of the model window)
 
 [background]
 max_running_tasks = 4
