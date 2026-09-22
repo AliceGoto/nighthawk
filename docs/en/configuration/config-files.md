@@ -323,15 +323,16 @@ Configuration errors fail loudly instead of falling back silently. Session creat
 
 ## `loop_control`
 
-`loop_control` governs the step count limit, the per-step attempt limit, and the threshold that triggers automatic context compaction in the Agent execution loop.
+`loop_control` governs the step count limit, the per-step attempt limit, and the thresholds that trigger automatic context compaction in the Agent execution loop.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `max_steps_per_turn` | `integer` | — | Maximum steps per turn; unset or `0` means unlimited |
 | `max_attempts_per_step` | `integer` | `10` | Maximum total attempts for a failing step, including the initial attempt |
-| `reserved_context_size` | `integer` | — | Number of tokens reserved for model output; automatic compaction is triggered when the remaining context window falls below this value |
+| `reserved_context_size` | `integer` | 15% of the window, clamped to 20,000–50,000 | Number of tokens reserved for model output; automatic compaction is triggered when the remaining context window falls below this value. Set it to pin an absolute value |
 | `max_ralph_iterations` | `integer` | — | Maximum number of iterations for a Ralph loop; `-1` disables the cap |
 | `compaction_trigger_ratio` | `number` | — | Automatic compaction is triggered when the used context reaches this ratio of the window; valid range `0.5`–`0.99` |
+| `compaction_retention_ratio` | `number` | `0.1` | Share of the window that compaction keeps as user messages, with a 20,000-token floor; valid range `0.01`–`1` |
 
 `max_steps_per_turn` can be overridden by the `NIGHTHAWK_LOOP_MAX_STEPS_PER_TURN` environment variable, and `max_attempts_per_step` by `NIGHTHAWK_LOOP_MAX_ATTEMPTS_PER_STEP`; both take higher priority than the config file. The former `NIGHTHAWK_LOOP_MAX_RETRIES_PER_STEP` variable is deprecated but still honored (with a startup warning) when the new one is unset.
 

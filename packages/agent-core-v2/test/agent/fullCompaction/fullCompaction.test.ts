@@ -249,6 +249,11 @@ describe('FullCompaction', () => {
     const events = ctx.newEvents();
     expect(countEvents(events, 'context.append_message')).toBeGreaterThanOrEqual(6);
     expect(countEvents(events, 'context.apply_compaction')).toBeGreaterThanOrEqual(1);
+    const applied = events.find((event) => {
+      if (event === null || typeof event !== 'object') return false;
+      return (event as { event?: unknown }).event === 'context.apply_compaction';
+    }) as { args?: Record<string, unknown> } | undefined;
+    expect(applied?.args?.['retentionBudget']).toBe(25_600);
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: '[wire]', event: 'full_compaction.begin' }),

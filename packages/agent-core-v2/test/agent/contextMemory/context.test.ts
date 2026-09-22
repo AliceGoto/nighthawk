@@ -1,15 +1,18 @@
 import type { Message, ToolCall } from '#/kosong/contract/message';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { estimateTokens, estimateTokensForMessages } from '#/kosong/contract/tokens';
+import { estimateTokens, estimateTokensForMessage, estimateTokensForMessages } from '#/kosong/contract/tokens';
 import { buildImageCompressionCaption } from '#/agent/media/image-compress';
 import {
   buildContextCompactionShape,
+  COMPACTION_ELISION_VARIANT,
   COMPACT_USER_MESSAGE_HEAD_TOKENS,
   COMPACT_USER_MESSAGE_MAX_TOKENS,
+  resolveCompactionRetentionBudget,
   selectCompactionUserMessages,
   type TokenEstimate,
 } from '#/agent/contextMemory/compactionHandoff';
+import { applyContextCompactionRecord } from '#/agent/contextMemory/contextOps';
 import type { ContextMessage } from '#/agent/contextMemory/types';
 import {
   closeTrailingOpenToolExchange,
@@ -840,6 +843,77 @@ describe('Agent context', () => {
 
       expect(withOverhead.tokensAfter).toBe(withoutOverhead.tokensAfter + 3_000);
       expect(withOverhead.messages).toEqual(withoutOverhead.messages);
+    });
+  });
+
+  describe('window-scaled compaction retention', () => {
+    const windowTokens = 1_048_576;
+    const pad = 'x'.repeat(60_000);
+    const first = `first ${pad}`;
+    const second = `second ${pad}`;
+    const third = `third ${pad}`;
+    const history = [userMessage(first), userMessage(second), userMessage(third)];
+    const singleMessageTokens = estimateTokensForMessage(history[0]!);
+    const hasElision = (messages: readonly ContextMessage[]): boolean =>
+      messages.some(
+        (message) =>
+          message.origin?.kind === 'injection' &&
+          message.origin.variant === COMPACTION_ELISION_VARIANT,
+      );
+
+    it('falls back to the absolute floor when the window is unknown', () => {
+      expect(resolveCompactionRetentionBudget(undefined)).toBe(COMPACT_USER_MESSAGE_MAX_TOKENS);
+      expect(resolveCompactionRetentionBudget(0)).toBe(COMPACT_USER_MESSAGE_MAX_TOKENS);
+    });
+
+    it('keeps small windows on the floor and scales large ones', () => {
+      expect(resolveCompactionRetentionBudget(131_072)).toBe(COMPACT_USER_MESSAGE_MAX_TOKENS);
+      expect(resolveCompactionRetentionBudget(200_000)).toBe(COMPACT_USER_MESSAGE_MAX_TOKENS);
+      expect(resolveCompactionRetentionBudget(windowTokens)).toBe(104_858);
+    });
+
+    it('honours an explicit ratio from the loop control config', () => {
+      expect(resolveCompactionRetentionBudget(windowTokens, 0.5)).toBe(524_288);
+    });
+
+    it('retains according to the supplied budget', () => {
+      const generous = buildContextCompactionShape(history, {
+        summary: 'summary',
+        compactedCount: history.length,
+        tokensBefore: 0,
+        retentionBudget: singleMessageTokens * history.length + 1,
+      });
+      const tight = buildContextCompactionShape(history, {
+        summary: 'summary',
+        compactedCount: history.length,
+        tokensBefore: 0,
+        retentionBudget: Math.floor(singleMessageTokens * 1.5),
+      });
+
+      expect(hasElision(generous.messages)).toBe(false);
+      expect(generous.messages.map(textOf)).toEqual([first, second, third, 'summary']);
+      expect(hasElision(tight.messages)).toBe(true);
+    });
+
+    it('replays the persisted budget rather than the current default', () => {
+      const record = {
+        agentId: 'main',
+        summary: 'summary',
+        compactedCount: history.length,
+        tokensBefore: 0,
+        keptUserMessageCount: history.length,
+        retentionBudget: singleMessageTokens * history.length + 1,
+      };
+
+      const replayed = applyContextCompactionRecord(history, record);
+      expect(replayed.map(textOf)).toEqual([first, second, third, 'summary']);
+
+      const withoutBudget = applyContextCompactionRecord(history, {
+        ...record,
+        retentionBudget: undefined,
+      });
+      expect(withoutBudget.map(textOf)).not.toEqual(replayed.map(textOf));
+      expect(hasElision(withoutBudget)).toBe(true);
     });
   });
 

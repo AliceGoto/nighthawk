@@ -328,9 +328,10 @@ k3-max = "同一模型的 max Thinking 档位。适合最难的子任务。"
 | --- | --- | --- | --- |
 | `max_steps_per_turn` | `integer` | — | 单轮最大步数；不设或设为 `0` 则无上限 |
 | `max_attempts_per_step` | `integer` | `10` | 单步失败后的最大总尝试次数（含首次尝试） |
-| `reserved_context_size` | `integer` | — | 预留给模型输出的 token 数；上下文窗口剩余量低于此值时触发自动压缩 |
+| `reserved_context_size` | `integer` | 窗口的 15%，限制在 20,000–50,000 | 预留给模型输出的 token 数；上下文窗口剩余量低于此值时触发自动压缩。设置后固定为绝对值 |
 | `max_ralph_iterations` | `integer` | — | Ralph 循环的最大迭代次数上限；`-1` 表示不设上限 |
 | `compaction_trigger_ratio` | `number` | — | 已用上下文达到窗口的该比例时触发自动压缩；合法范围 `0.5`–`0.99` |
+| `compaction_retention_ratio` | `number` | `0.1` | 压缩时保留的用户消息占窗口的比例，下限为 20,000 token；合法范围 `0.01`–`1` |
 
 `max_steps_per_turn` 可被环境变量 `NIGHTHAWK_LOOP_MAX_STEPS_PER_TURN` 覆盖，`max_attempts_per_step` 可被 `NIGHTHAWK_LOOP_MAX_ATTEMPTS_PER_STEP` 覆盖，优先级均高于配置文件。旧的 `NIGHTHAWK_LOOP_MAX_RETRIES_PER_STEP` 已废弃，但在新变量未设置时仍生效（启动时会给出警告）。
 

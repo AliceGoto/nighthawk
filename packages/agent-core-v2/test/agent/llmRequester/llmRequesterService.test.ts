@@ -173,6 +173,7 @@ function createService(
       thinkingLevel,
       reservedContextSize: undefined,
       compactionTriggerRatio: undefined,
+      compactionRetentionRatio: undefined,
     }),
     resolveRequestParams: () => ({}),
     getSystemPrompt: () => 'system',

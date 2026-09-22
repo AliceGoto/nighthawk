@@ -290,6 +290,7 @@ interface ModelConfigForConfig {
   readonly provider: string;
   readonly model: string;
   readonly maxContextSize: number;
+  readonly maxInputSize?: number;
   readonly maxOutputSize?: number;
   readonly capabilities?: readonly string[];
   readonly supportEfforts?: readonly string[];
@@ -2713,6 +2714,7 @@ function configWithProvider(
         model: provider.model,
         maxContextSize:
           maxContextSize === undefined || maxContextSize <= 0 ? 1_000_000 : maxContextSize,
+        maxInputSize: modelCapabilities?.max_input_tokens,
         capabilities: capabilityNames(modelCapabilities),
       },
     },

@@ -19,6 +19,9 @@ export interface ContextCompactionInput {
    *  the `tokensAfter` fallback so the result stays on the same full-request
    *  basis as the measured exchange anchors. */
   readonly requestOverheadTokens?: number;
+  /** Window-scaled token budget for the user messages compaction keeps, so a
+   *  replay reproduces the same history regardless of the model in use now. */
+  readonly retentionBudget?: number;
   readonly keptUserMessageCount?: number;
   readonly keptHeadUserMessageCount?: number;
   readonly droppedCount?: number;

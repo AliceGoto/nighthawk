@@ -7,7 +7,22 @@ import type { ContextMessage, PromptOrigin } from './types';
 export const COMPACTION_SUMMARY_PREFIX = summaryPrefixTemplate.trimEnd();
 export const COMPACT_USER_MESSAGE_MAX_TOKENS = 20_000;
 export const COMPACT_USER_MESSAGE_HEAD_TOKENS = 2_000;
+export const COMPACT_USER_MESSAGE_RETENTION_RATIO = 0.1;
 export const COMPACTION_ELISION_VARIANT = 'compaction_elision';
+
+/**
+ * Token budget for the user messages compaction keeps, scaled to the model's
+ * own context window. {@link COMPACT_USER_MESSAGE_MAX_TOKENS} is both the floor
+ * and the answer when the window is unknown (older callers and replayed records
+ * without a persisted `retentionBudget`).
+ */
+export function resolveCompactionRetentionBudget(
+  windowTokens: number | undefined,
+  ratio: number = COMPACT_USER_MESSAGE_RETENTION_RATIO,
+): number {
+  if (windowTokens === undefined || windowTokens <= 0) return COMPACT_USER_MESSAGE_MAX_TOKENS;
+  return Math.max(COMPACT_USER_MESSAGE_MAX_TOKENS, Math.round(windowTokens * ratio));
+}
 
 type MessageLike = ContextMessage;
 
@@ -39,6 +54,7 @@ export interface ContextCompactionShapeInput {
   readonly tokensAfter?: number;
   readonly summaryOutputTokens?: number;
   readonly requestOverheadTokens?: number;
+  readonly retentionBudget?: number;
   readonly keptUserMessageCount?: number;
   readonly keptHeadUserMessageCount?: number;
   readonly droppedCount?: number;
@@ -83,7 +99,7 @@ export function buildContextCompactionShape(
   const compactableUserMessages = collectCompactableUserMessages(history);
   const selection = selectCompactionUserMessages(
     compactableUserMessages,
-    COMPACT_USER_MESSAGE_MAX_TOKENS,
+    input.retentionBudget ?? COMPACT_USER_MESSAGE_MAX_TOKENS,
     COMPACT_USER_MESSAGE_HEAD_TOKENS,
     estimate.message,
   );

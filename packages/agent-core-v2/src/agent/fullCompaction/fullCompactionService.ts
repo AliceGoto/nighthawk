@@ -5,7 +5,7 @@ import { ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { defineState } from '#/state/state';
 import { renderPrompt } from "#/_base/utils/render-prompt";
 import { estimateTokensForMessage } from "#/kosong/contract/tokens";
-import { buildCompactionSummaryText, isRealUserInput } from '#/agent/contextMemory/compactionHandoff';
+import { buildCompactionSummaryText, isRealUserInput, resolveCompactionRetentionBudget } from '#/agent/contextMemory/compactionHandoff';
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
 import type { ContextMessage } from '#/agent/contextMemory/types';
 import { ISessionTokenCountingService } from '#/session/tokenCounting/sessionTokenCounting';
@@ -630,6 +630,10 @@ export class AgentFullCompactionService extends Service implements IAgentFullCom
       const resolvedModel = this.profile.resolveModelContext();
       thinkingEffort = resolvedModel.thinkingLevel;
       const maxContextTokens = resolvedModel.modelCapabilities.max_context_tokens;
+      const retentionBudget = resolveCompactionRetentionBudget(
+        resolvedModel.modelCapabilities.max_input_tokens ?? maxContextTokens,
+        resolvedModel.compactionRetentionRatio,
+      );
       const defaultCompactionCap =
         maxContextTokens > 0
           ? Math.min(maxContextTokens, DEFAULT_COMPACTION_MAX_COMPLETION_TOKENS)
@@ -745,6 +749,7 @@ export class AgentFullCompactionService extends Service implements IAgentFullCom
         tokensBefore,
         summaryOutputTokens: attempt.usage?.output,
         requestOverheadTokens: this.requestTokens([]),
+        retentionBudget,
         droppedCount: droppedCount === 0 ? undefined : droppedCount,
       });
 

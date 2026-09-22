@@ -27,6 +27,24 @@ export const DEFAULT_COMPACTION_CONFIG: CompactionConfig = {
   minOverflowReductionRatio: 0.05,
 };
 
+export const DEFAULT_RESERVED_CONTEXT_RATIO = 0.15;
+export const MIN_RESERVED_CONTEXT_SIZE = 20_000;
+export const MAX_RESERVED_CONTEXT_SIZE = 50_000;
+
+/**
+ * Headroom kept below the model window so the running turn can still finish.
+ * Scaled to the window between an absolute floor and ceiling: an absolute
+ * reserve makes a small window compact at a fraction of its capacity, while a
+ * purely proportional one would leave large windows with too little room.
+ */
+export function resolveReservedContextSize(windowTokens: number): number {
+  if (windowTokens <= 0) return MIN_RESERVED_CONTEXT_SIZE;
+  return Math.min(
+    MAX_RESERVED_CONTEXT_SIZE,
+    Math.max(MIN_RESERVED_CONTEXT_SIZE, Math.round(windowTokens * DEFAULT_RESERVED_CONTEXT_RATIO)),
+  );
+}
+
 export interface CompactionStrategy {
   shouldCompact(usedSize: number): boolean;
   shouldBlock(usedSize: number): boolean;
@@ -91,12 +109,13 @@ export class RuntimeCompactionStrategy implements CompactionStrategy {
   private config(model: ProfileModelContext = this.context()): CompactionConfig {
     const triggerRatio = model.compactionTriggerRatio ?? DEFAULT_COMPACTION_CONFIG.triggerRatio;
     const blockRatio = Math.max(triggerRatio, DEFAULT_COMPACTION_CONFIG.blockRatio);
+    const windowTokens =
+      model.modelCapabilities.max_input_tokens ?? model.modelCapabilities.max_context_tokens;
     return {
       ...DEFAULT_COMPACTION_CONFIG,
       triggerRatio,
       blockRatio,
-      reservedContextSize:
-        model.reservedContextSize ?? DEFAULT_COMPACTION_CONFIG.reservedContextSize,
+      reservedContextSize: model.reservedContextSize ?? resolveReservedContextSize(windowTokens),
     };
   }
 }

@@ -197,7 +197,7 @@ function recoverFoldedLength(
   }
   const keptUserMessages = selectRecentUserMessages(
     collectCompactableUserMessages(transcript.slice(clearFloor).map((e) => e.message)),
-    COMPACT_USER_MESSAGE_MAX_TOKENS,
+    readNumber(record, 'retentionBudget') ?? COMPACT_USER_MESSAGE_MAX_TOKENS,
   );
   return keptUserMessages.length + 1;
 }

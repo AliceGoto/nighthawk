@@ -2,7 +2,12 @@ import { type Message } from '#/kosong/contract/message';
 import { describe, expect, it } from 'vitest';
 
 import { estimateTokensForMessages } from '#/kosong/contract/tokens';
-import { DefaultCompactionStrategy } from '#/agent/fullCompaction/strategy';
+import {
+  DefaultCompactionStrategy,
+  resolveReservedContextSize,
+  RuntimeCompactionStrategy,
+} from '#/agent/fullCompaction/strategy';
+import type { ProfileModelContext } from '#/agent/profile/profile';
 
 describe('DefaultCompactionStrategy', () => {
   it('keeps an oversized trailing user message as recent', () => {
@@ -177,6 +182,53 @@ describe('DefaultCompactionStrategy', () => {
     expect(strategy.shouldBlock(28_000)).toBe(true);
   });
 });
+
+describe('RuntimeCompactionStrategy window-scaled reserve', () => {
+  it('scales the reserve with the window between the floor and the ceiling', () => {
+    expect(resolveReservedContextSize(0)).toBe(20_000);
+    expect(resolveReservedContextSize(131_072)).toBe(20_000);
+    expect(resolveReservedContextSize(200_000)).toBe(30_000);
+    expect(resolveReservedContextSize(333_333)).toBe(50_000);
+    expect(resolveReservedContextSize(1_048_576)).toBe(50_000);
+  });
+
+  it('compacts a 128k window near the ratio threshold instead of far below it', () => {
+    const strategy = new RuntimeCompactionStrategy(() => modelContext(131_072));
+
+    expect(strategy.shouldCompact(81_072)).toBe(false);
+    expect(strategy.shouldCompact(111_071)).toBe(false);
+    expect(strategy.shouldCompact(111_072)).toBe(true);
+  });
+
+  it('keeps loop control as an absolute override of the scaled reserve', () => {
+    const strategy = new RuntimeCompactionStrategy(() => ({
+      ...modelContext(131_072),
+      reservedContextSize: 90_000,
+    }));
+
+    expect(strategy.shouldCompact(41_072)).toBe(true);
+  });
+});
+
+function modelContext(maxContextTokens: number): ProfileModelContext {
+  return {
+    modelAlias: 'model',
+    modelCapabilities: {
+      image_in: false,
+      video_in: false,
+      audio_in: false,
+      thinking: false,
+      tool_use: true,
+      max_context_tokens: maxContextTokens,
+    },
+    maxOutputSize: undefined,
+    alwaysThinking: undefined,
+    thinkingLevel: 'off',
+    reservedContextSize: undefined,
+    compactionTriggerRatio: undefined,
+    compactionRetentionRatio: undefined,
+  };
+}
 
 function testCompactionStrategy(maxSize: number = 1_000): DefaultCompactionStrategy {
   return new DefaultCompactionStrategy(() => maxSize, {

@@ -139,6 +139,7 @@ export function readContextCompactionShapeInput(
     tokensBefore: readOptionalNumber(fields, 'tokensBefore') ?? 0,
     tokensAfter: readOptionalNumber(fields, 'tokensAfter'),
     summaryOutputTokens: readOptionalNumber(fields, 'summaryOutputTokens'),
+    retentionBudget: readOptionalNumber(fields, 'retentionBudget'),
     keptUserMessageCount,
     keptHeadUserMessageCount: readOptionalNumber(fields, 'keptHeadUserMessageCount'),
     droppedCount: readOptionalNumber(fields, 'droppedCount'),

@@ -122,6 +122,24 @@ describe('reduceContextTranscript', () => {
     expect(result.foldedLength).toBe(4);
   });
 
+  it('uses the recorded retention budget when recovering a folded length', () => {
+    const pad = 'x'.repeat(60_000);
+    const before = [
+      appendMessage(userMessage(`u1 ${pad}`)),
+      appendMessage(userMessage(`u2 ${pad}`)),
+      appendMessage(userMessage(`u3 ${pad}`)),
+    ];
+
+    expect(
+      reduceContextTranscript([...before, { ...compaction('SUM', 5), retentionBudget: 15 }])
+        .foldedLength,
+    ).toBe(2);
+    expect(
+      reduceContextTranscript([...before, { ...compaction('SUM', 5), retentionBudget: 1_000_000 }])
+        .foldedLength,
+    ).toBe(4);
+  });
+
   it('carries the originating wire record time per entry', () => {
     const result = reduceContextTranscript([
       { type: 'context.append_message', message: userMessage('u1'), time: 100 },
