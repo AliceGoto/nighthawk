@@ -69,6 +69,10 @@ or two — do not pad it out. Include the critical data, identifiers, and
 references needed to continue, and omit anything that does not change the next
 move.
 
+Aim for roughly 16k tokens or less. If the note would exceed that, keep the facts
+of work already done — exact commands, paths, and results — plus the forward
+plan, and compress narrative explanation instead.
+
 Respond with text only. Do not call any tools — you already have everything you
 need in the conversation history.
 

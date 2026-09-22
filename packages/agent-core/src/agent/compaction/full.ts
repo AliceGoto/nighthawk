@@ -56,7 +56,10 @@ import { buildCompactionSummaryText, isRealUserInput } from './handoff';
 
 export const MAX_COMPACTION_RETRY_ATTEMPTS = 5;
 
-const DEFAULT_COMPACTION_MAX_COMPLETION_TOKENS = 128 * 1024;
+// A 128k cap was a no-op on a 128k window (it equaled the entire window) and
+// still took ~13% of a 1M window, so summaries stayed far longer than a handoff
+// note needs. 16k keeps the note focused whatever window the model has.
+const DEFAULT_COMPACTION_MAX_COMPLETION_TOKENS = 16 * 1024;
 const OVERFLOW_CONTEXT_SAFETY_RATIO = 0.85;
 const OVERFLOW_STATUS_RECOVERY_RATIO = 0.5;
 
