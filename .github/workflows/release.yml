@@ -57,7 +57,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
 
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +77,7 @@ jobs:
   test:
     name: test (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
     strategy:
       fail-fast: false
       matrix:
@@ -100,7 +100,7 @@ jobs:
   # does not execute it; it needs its own job.
   test-pi-tui:
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
 
     steps:
       - uses: actions/checkout@v4
@@ -120,7 +120,7 @@ jobs:
   # the extension selects through the rollback env var.
   test-vscode-legacy:
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
 
     steps:
       - uses: actions/checkout@v4
@@ -160,7 +160,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
 
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
 
   typecheck:
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
 
     steps:
       - uses: actions/checkout@v4
@@ -254,7 +254,7 @@ jobs:
   check-workspace-sync:
     name: Check flake.nix workspace sync
     runs-on: ubuntu-latest
-    if: "github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled')"
+    if: "github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'edited' && github.event.action != 'labeled')"
     permissions:
       contents: read
       pull-requests: write
@@ -438,7 +438,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_dispatch' && github.repository_owner == 'AliceGoto'
+    if: github.event_name == 'push' && github.repository_owner == 'AliceGoto'
     outputs:
       packages_published: ${{ steps.changesets.outputs.published }}
       nighthawk_native_release: ${{ steps.nighthawk-release.outputs.should_publish }}
