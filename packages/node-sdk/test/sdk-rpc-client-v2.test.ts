@@ -1080,7 +1080,7 @@ describe('SDKRpcClientV2 (agent-core-v2 wiring)', () => {
       // Without this seed the managed vendors go out with the SDK's default
       // User-Agent and no X-Msh-* — the interactive-v2 path's identity bug.
       const headers = client.engineAccessor.get(IHostRequestHeaders).headers;
-      expect(headers['User-Agent']).toBe(`kimi-code-cli/${TEST_IDENTITY.version}`);
+      expect(headers['User-Agent']).toBe(`nighthawk-cli/${TEST_IDENTITY.version}`);
       expect(headers['X-Msh-Platform']).toBe('nighthawk_cli');
       expect(headers['X-Msh-Version']).toBe(TEST_IDENTITY.version);
       expect(headers['X-Msh-Device-Id']).toBeTruthy();
