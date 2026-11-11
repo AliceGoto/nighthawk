@@ -1173,7 +1173,7 @@ describe('truncation pipeline', () => {
     let pages = 0;
     while (args !== undefined && pages < 20) {
       const [page] = await execute([toolCall(`read_glob_${String(pages++)}`, 'Read', args)]);
-      expect(page?.isError).not.toBe(true);
+      expect(page?.isError, page?.output ?? page?.note).not.toBe(true);
       if (typeof page?.output !== 'string') throw new Error('expected Read text');
       recovered.push(...page.output.replaceAll(/^\d+\t/gm, '').split('\n').filter(Boolean));
       const next = /Next Read: (\{[^\n]*\})/.exec(page.note ?? '')?.[1];
@@ -1209,7 +1209,7 @@ describe('truncation pipeline', () => {
         const [page] = await execute([toolCall(`glob_large_${String(globPages++)}`, 'Glob', {
           pattern: '*.ts', path: root, head_limit: 0, offset,
         })]);
-        expect(page?.isError).not.toBe(true);
+        expect(page?.isError, page?.output ?? page?.note).not.toBe(true);
         if (typeof page?.output !== 'string') throw new Error('expected Glob output');
         expect(page.output).toContain('the full output was saved to a file');
         const continuation = /Continue with the same search arguments and offset=(\d+)\./.exec(page.output)?.[1];
