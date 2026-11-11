@@ -100,4 +100,4 @@ After opening the help panel with `/help`, use the following keys to navigate an
 ## Next steps
 
 - [Slash Commands](./slash-commands.md) — Quick reference for built-in TUI control commands
-- [`nighthawk` Command](./kimi-command.md) — Complete reference for startup flags and subcommands
+- [`nighthawk` Command](./nighthawk-command.md) — Complete reference for startup flags and subcommands

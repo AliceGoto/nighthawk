@@ -88,9 +88,9 @@ Paseo 的通用 ACP 适配层不会帮你走登录流程，所以请先完成终
 
 - **会话立刻被中断 / IDE 提示 "agent exited"**：通常是 `command` 路径不对或 nighthawk 没登录。先在终端跑一次 `nighthawk acp` 验证：如果阻塞等待标准输入则说明 CLI 本身没问题，问题在 IDE 配置；如果立刻报错则按报错提示处理（多数是没在 `config.toml` 里配置 provider）。
 - **IDE 显示 "auth required"**：表示 CLI 没有可用的鉴权令牌。退出 IDE，在终端执行 `nighthawk` 完成登录后再启动 IDE 即可。
-- **MCP 工具看不到**：参考 [`nighthawk acp`](../reference/kimi-acp.md) 中的能力表确认 IDE 配的 MCP 传输类型是否被支持。当前 NightHawk CLI 的 ACP server 支持 `http`、`stdio` 与 `sse` 三种传输方式；`acp` 传输的 MCP server 会被静默丢弃并在日志中给出 warn。
+- **MCP 工具看不到**：参考 [`nighthawk acp`](../reference/nighthawk-acp.md) 中的能力表确认 IDE 配的 MCP 传输类型是否被支持。当前 NightHawk CLI 的 ACP server 支持 `http`、`stdio` 与 `sse` 三种传输方式；`acp` 传输的 MCP server 会被静默丢弃并在日志中给出 warn。
 
 ## 下一步
 
-- [nighthawk acp 参考](../reference/kimi-acp.md) — ACP 能力矩阵和方法覆盖详情
-- [nighthawk 命令参考](../reference/kimi-command.md) — 完整子命令列表
+- [nighthawk acp 参考](../reference/nighthawk-acp.md) — ACP 能力矩阵和方法覆盖详情
+- [nighthawk 命令参考](../reference/nighthawk-command.md) — 完整子命令列表

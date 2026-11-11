@@ -137,4 +137,4 @@ Conversion runs locally: the original session files are not changed and no model
 ## Next steps
 
 - [Data locations](../configuration/data-locations.md) — full directory layout for session files
-- [nighthawk command reference](../reference/kimi-command.md) — complete parameter reference for `--continue`, `--session`, `export`, and other commands
+- [nighthawk command reference](../reference/nighthawk-command.md) — complete parameter reference for `--continue`, `--session`, `export`, and other commands

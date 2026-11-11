@@ -53,7 +53,7 @@ Two paths when adding:
   }
   ```
 
-The same operations are also available in non-interactive environments via the shell command: [`nighthawk provider`](../reference/kimi-command.md#nighthawk-provider).
+The same operations are also available in non-interactive environments via the shell command: [`nighthawk provider`](../reference/nighthawk-command.md#nighthawk-provider).
 
 ## `anthropic`
 

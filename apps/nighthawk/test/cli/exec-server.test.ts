@@ -47,7 +47,6 @@ describe('hidden exec-server subcommand', () => {
       () => {},
       () => {},
       () => {},
-      () => {},
       (listen) => {
         calls.push(listen);
       },

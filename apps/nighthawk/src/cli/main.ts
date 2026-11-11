@@ -26,7 +26,6 @@ import {
 } from '@nighthawk/nighthawk-telemetry';
 
 import { CLI_SHUTDOWN_TIMEOUT_MS, CLI_UI_MODE, PROCESS_NAME } from '#/constant/app';
-import { runHeadlessMigrate, type MigrateCommandOptions } from '#/migration/index';
 import { installMinidbTextBuildWorker } from '#/native/minidb-worker';
 import { installNativeModuleHook } from '#/native/module-hook';
 import { installKapSearchWorker } from '#/native/search-worker';
@@ -100,25 +99,6 @@ export async function handleMainCommand(
   return { headlessCompleted: false };
 }
 
-/** `nighthawk migrate`: launch the migration screen only, then exit. `--run` runs the full migration headlessly with step logs instead. */
-async function handleMigrateCommand(
-  version: string,
-  options: MigrateCommandOptions,
-): Promise<void> {
-  if (options.configOnly && !options.run) {
-    process.stderr.write('error: --config-only requires --run\n');
-    process.exitCode = 2;
-    return;
-  }
-  if (options.run) {
-    // Set the exit code and return normally — an immediate process.exit here
-    // could terminate before buffered step/report output is flushed when the
-    // command is piped or redirected.
-    process.exitCode = await runHeadlessMigrate({ configOnly: options.configOnly });
-    return;
-  }
-  await runShell(MIGRATE_CLI_OPTIONS, version, { migrateOnly: true });
-}
 
 export async function handleUpgradeCommand(version: string, yes: boolean): Promise<void> {
   const telemetryBootstrap = createCliTelemetryBootstrap();
@@ -151,21 +131,6 @@ export async function handleUpgradeCommand(version: string, yes: boolean): Promi
   process.exit(exitCode);
 }
 
-/** A neutral CLIOptions value — `nighthawk migrate` never opens a chat session. */
-const MIGRATE_CLI_OPTIONS: CLIOptions = {
-  session: undefined,
-  continue: false,
-  yolo: false,
-  auto: false,
-  plan: false,
-  model: undefined,
-  outputFormat: undefined,
-  prompt: undefined,
-  skillsDirs: [],
-  agent: undefined,
-  agentFiles: [],
-  environment: undefined,
-};
 
 export function main(): void {
   process.title = PROCESS_NAME;
@@ -266,14 +231,6 @@ function bootstrap(): void {
           process.stderr.write(`See log: ${resolveGlobalLogPath(resolveNightHawkHome())}\n`);
           process.exit(1);
         });
-    },
-    (migrateOptions) => {
-      void handleMigrateCommand(version, migrateOptions).catch(async (error: unknown) => {
-        await logStartupFailure('run migration', error);
-        process.stderr.write(formatStartupError(error, { operation: 'run migration' }));
-        process.stderr.write(`See log: ${resolveGlobalLogPath(resolveNightHawkHome())}\n`);
-        process.exit(1);
-      });
     },
     (entry, args) => {
       void runPluginNodeEntry(entry, args).catch(async (error: unknown) => {

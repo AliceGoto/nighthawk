@@ -1,12 +1,12 @@
 import type { SkillDefinition } from '#/features/skill/catalog/types';
 import { parseSkillText } from '#/features/skill/catalog/parser';
-import CHECK_NIGHTHAWK_DOCS_BODY from './check-kimi-code-docs.md?raw';
+import CHECK_NIGHTHAWK_DOCS_BODY from './check-nighthawk-docs.md?raw';
 
-const PSEUDO_PATH = 'builtin://check-kimi-code-docs';
+const PSEUDO_PATH = 'builtin://check-nighthawk-docs';
 
 const parsed = parseSkillText({
-  skillMdPath: '/builtin/skills/check-kimi-code-docs.md',
-  skillDirName: 'check-kimi-code-docs',
+  skillMdPath: '/builtin/skills/check-nighthawk-docs.md',
+  skillDirName: 'check-nighthawk-docs',
   source: 'builtin',
   text: CHECK_NIGHTHAWK_DOCS_BODY,
 });

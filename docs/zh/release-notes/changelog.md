@@ -1649,7 +1649,7 @@ outline: 2
 
 ### 新功能
 
-- 支持 `nighthawk acp` 子命令：nighthawk 现在可通过 stdio 使用 [Agent Client Protocol 0.23](https://agentclientprotocol.com/)，因此 IDE（Zed、JetBrains AI Chat、自定义客户端）可以直接驱动会话；覆盖矩阵、Zed 配置和破坏性预发布说明见 [nighthawk acp 子命令页面](https://alicegoto.github.io/nighthawk/zh/reference/kimi-acp.html)。
+- 支持 `nighthawk acp` 子命令：nighthawk 现在可通过 stdio 使用 [Agent Client Protocol 0.23](https://agentclientprotocol.com/)，因此 IDE（Zed、JetBrains AI Chat、自定义客户端）可以直接驱动会话；覆盖矩阵、Zed 配置和破坏性预发布说明见 [nighthawk acp 子命令页面](https://alicegoto.github.io/nighthawk/zh/reference/nighthawk-acp.html)。
 - 新增 `/btw`，用于进行不会引导当前主轮次的侧通道对话，并允许 `/btw` 在输入问题前打开侧通道面板。
 
 ### 修复

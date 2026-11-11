@@ -38,12 +38,12 @@ Some commands are only available in the idle state. Executing these commands whi
 | `/reload-tui` | — | Reload only the `tui.toml` UI preferences (theme, editor, notifications, etc.) without rebuilding the session | Yes |
 | `/init` | — | Analyze the current codebase and generate `AGENTS.md` | No |
 | `/export-md [<path>]` | `/export` | Export the current session as a Markdown file | No |
-| `/export-debug-zip` | — | Export the current session as a debug ZIP archive (same behavior as [`nighthawk export`](./kimi-command.md#nighthawk-export)) | No |
-| `/import-sessions` | — | Import Claude Code and Codex sessions from the last 15 or 30 days as regular sessions (same behavior as [`nighthawk import-sessions`](./kimi-command.md#nighthawk-import-sessions)) | No |
+| `/export-debug-zip` | — | Export the current session as a debug ZIP archive (same behavior as [`nighthawk export`](./nighthawk-command.md#nighthawk-export)) | No |
+| `/import-sessions` | — | Import Claude Code and Codex sessions from the last 15 or 30 days as regular sessions (same behavior as [`nighthawk import-sessions`](./nighthawk-command.md#nighthawk-import-sessions)) | No |
 | `/copy` | — | Copy the last assistant message to the clipboard | No |
 | `/add-dir [<path>]` | — | Add an extra workspace directory to the current session. Run without a path (or with `list`) to list configured directories. When adding, choose whether to remember the directory in the workspace registry | No |
-| `/web` | — | Open the current session in the web UI: pick a running server to connect to, or start a new foreground server after the TUI exits. See [`nighthawk web`](./kimi-command.md#nighthawk-web) | Yes |
-| `/desktop` | `/install-desktop` | Open the NightHawk desktop app page in your browser (URL follows the active region: `https://www.kimi.com/code` or `https://www.kimi.ai/code`). See [`nighthawk install-desktop`](./kimi-command.md#nighthawk-install-desktop) | Yes |
+| `/web` | — | Open the current session in the web UI: pick a running server to connect to, or start a new foreground server after the TUI exits. See [`nighthawk web`](./nighthawk-command.md#nighthawk-web) | Yes |
+| `/desktop` | `/install-desktop` | Open the NightHawk desktop app page in your browser (URL follows the active region: `https://www.kimi.com/code` or `https://www.kimi.ai/code`). See [`nighthawk install-desktop`](./nighthawk-command.md#nighthawk-install-desktop) | Yes |
 
 ## Modes & Run Control
 

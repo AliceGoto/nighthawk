@@ -137,4 +137,4 @@ nighthawk import-sessions
 ## 下一步
 
 - [数据路径](../configuration/data-locations.md) — 会话文件的完整目录结构说明
-- [nighthawk 命令](../reference/kimi-command.md) — `--continue`、`--session`、`export` 等命令的完整参数参考
+- [nighthawk 命令](../reference/nighthawk-command.md) — `--continue`、`--session`、`export` 等命令的完整参数参考

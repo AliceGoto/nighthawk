@@ -1,5 +1,4 @@
 import { CLI_COMMAND_NAME } from '#/constant/app';
-import { registerMigrateCommand, type MigrateCommandOptions } from '#/migration/index';
 import { registerImportSessionsCommand } from '#/session-import/index';
 import { Command, InvalidArgumentError, Option } from 'commander';
 
@@ -18,7 +17,6 @@ import { registerVisCommand } from './sub/vis';
 import { registerWebCommand } from './sub/web';
 
 export type MainCommandHandler = (opts: CLIOptions) => void;
-export type MigrateCommandHandler = (options: MigrateCommandOptions) => void;
 export type PluginNodeRunnerHandler = (entry: string, args: readonly string[]) => void;
 export type UpgradeCommandHandler = (yes: boolean) => void | Promise<void>;
 export type UpdateDownloadHandler = (
@@ -32,7 +30,6 @@ export type ExecServerCommandHandler = (listen: string) => void;
 export function createProgram(
   version: string,
   onMain: MainCommandHandler,
-  onMigrate: MigrateCommandHandler,
   onPluginNodeRunner: PluginNodeRunnerHandler = () => {},
   onUpgrade: UpgradeCommandHandler = () => {},
   onUpdateDownload: UpdateDownloadHandler = () => {},
@@ -151,7 +148,6 @@ export function createProgram(
   registerVisCommand(program);
   registerInstallDesktopCommand(program);
   registerAppCommand(program);
-  registerMigrateCommand(program, onMigrate);
   registerImportSessionsCommand(program);
   program
     .command('upgrade')

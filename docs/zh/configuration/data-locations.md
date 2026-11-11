@@ -94,7 +94,7 @@ $NIGHTHAWK_HOME  （默认 ~/.nighthawk）
 - **`logs/nighthawk.log`**（全局）：记录启动、配置变更、导出等跨会话事件。
 - **`<sessionDir>/logs/nighthawk.log`**（会话级）：记录单个会话内的诊断事件。
 
-报 bug 时，优先用 `nighthawk export` 导出相关会话（详见 [nighthawk 命令](../reference/kimi-command.md)）；会话日志默认包含在导出包里。不想分享全局日志时加 `--no-include-global-log`。
+报 bug 时，优先用 `nighthawk export` 导出相关会话（详见 [nighthawk 命令](../reference/nighthawk-command.md)）；会话日志默认包含在导出包里。不想分享全局日志时加 `--no-include-global-log`。
 
 `updates/` 下的文件（`latest.json`、`install.json`、`install.lock`、`rollout.log`）由自动更新机制维护，通常无需手动编辑。`rollout.log` 记录每次更新检查命中的灰度分批情况，可用于排查设备何时能收到新版本。
 

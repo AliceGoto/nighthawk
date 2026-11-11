@@ -53,7 +53,7 @@ NightHawk CLI 支持同时接入多家模型供应商服务，模型在供应商
   }
   ```
 
-非交互环境下也可以用 shell 命令完成同样操作：[`nighthawk provider`](../reference/kimi-command.md#nighthawk-provider)。
+非交互环境下也可以用 shell 命令完成同样操作：[`nighthawk provider`](../reference/nighthawk-command.md#nighthawk-provider)。
 
 ## `anthropic`
 

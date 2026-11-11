@@ -81,7 +81,7 @@ Web 支持的斜杠命令见上文 [常用斜杠命令](#常用斜杠命令)，�
 ## 安全注意
 
 - **建议设置并列凭证**：绑定局域网地址后，额外设置 `NIGHTHAWK_PASSWORD` 环境变量，服务端会对鉴权失败自动限流。
-- **不要彻底关闭鉴权**：`--dangerous-bypass-auth` 会关闭所有鉴权，任何能访问该端口的人都能控制你的会话、文件系统和 shell。仅在可信网络或自有鉴权代理之后使用，详见 [nighthawk 命令参考](../reference/kimi-command.md#nighthawk-web)。
+- **不要彻底关闭鉴权**：`--dangerous-bypass-auth` 会关闭所有鉴权，任何能访问该端口的人都能控制你的会话、文件系统和 shell。仅在可信网络或自有鉴权代理之后使用，详见 [nighthawk 命令参考](../reference/nighthawk-command.md#nighthawk-web)。
 
 
 ## 常见问题
@@ -105,5 +105,5 @@ Web 支持的斜杠命令见上文 [常用斜杠命令](#常用斜杠命令)，�
 ## 下一步
 
 - [服务 API](../reference/server-api.md) — 面向脚本与第三方集成的 REST / WebSocket 接口（实验性）
-- [nighthawk 命令](../reference/kimi-command.md#nighthawk-web) — `nighthawk web` 的全部命令行选项
+- [nighthawk 命令](../reference/nighthawk-command.md#nighthawk-web) — `nighthawk web` 的全部命令行选项
 - [远程控制](./remote-control.md) — 从公网任意设备远程查看和接管本机会话

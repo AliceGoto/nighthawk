@@ -142,7 +142,7 @@ nighthawk -p "List changed files" --output-format stream-json
 
 ### `nighthawk acp`
 
-把 NightHawk CLI 切换到 ACP（Agent Client Protocol）模式，在标准输入/输出上以 JSON-RPC 形式与 IDE 对话，让编辑器直接驱动 nighthawk 的会话和工具调用。通常不需要手动运行——IDE 会把它作为子进程入口启动。配置方式见[在 IDE 中使用](../guides/ides.md)，技术细节见 [nighthawk acp 参考](./kimi-acp.md)。
+把 NightHawk CLI 切换到 ACP（Agent Client Protocol）模式，在标准输入/输出上以 JSON-RPC 形式与 IDE 对话，让编辑器直接驱动 nighthawk 的会话和工具调用。通常不需要手动运行——IDE 会把它作为子进程入口启动。配置方式见[在 IDE 中使用](../guides/ides.md)，技术细节见 [nighthawk acp 参考](./nighthawk-acp.md)。
 
 ```sh
 nighthawk acp
@@ -269,15 +269,6 @@ nighthawk export 01HZ...XYZ -o ./bug-report.zip
 nighthawk export 01HZ...XYZ -o ./bug-report.zip --no-include-global-log
 ```
 
-### `nighthawk migrate`
-
-将旧版 kimi-cli 的本地数据迁移到 nighthawk，包括历史会话和配置文件。纯交互式运行，会引导你完成全流程。
-
-```sh
-nighthawk migrate
-```
-
-完整迁移说明见[从 kimi-cli 迁移](../guides/migration.md)。
 
 ### `nighthawk import-sessions`
 

@@ -94,4 +94,4 @@ When an ACP client provides `mcpServers` in `session/new` or `session/load`, the
 ## Next steps
 
 - [Using in IDEs](../guides/ides.md) — Zed / JetBrains configuration steps and troubleshooting
-- [`nighthawk` Command Reference](./kimi-command.md) — Complete subcommand list
+- [`nighthawk` Command Reference](./nighthawk-command.md) — Complete subcommand list

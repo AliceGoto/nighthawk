@@ -1,7 +1,7 @@
 import type { IFlagService } from '#/app/flag/flag';
 import type { SkillDefinition } from '#/features/skill/catalog/types';
 
-import { CHECK_NIGHTHAWK_DOCS_SKILL } from './check-kimi-code-docs';
+import { CHECK_NIGHTHAWK_DOCS_SKILL } from './check-nighthawk-docs';
 import { CUSTOM_THEME_SKILL } from './custom-theme';
 import { IMPORT_FROM_CC_CODEX_SKILL } from './import-from-cc-codex';
 import { MCP_CONFIG_SKILL } from './mcp-config';

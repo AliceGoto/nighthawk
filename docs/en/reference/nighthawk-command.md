@@ -142,7 +142,7 @@ In `stream-json` mode, regular replies produce an Assistant message; when the mo
 
 ### `nighthawk acp`
 
-Switch NightHawk CLI to ACP (Agent Client Protocol) mode, communicating with an IDE via JSON-RPC over stdin/stdout so the editor can directly drive nighthawk's sessions and tool calls. You typically do not need to run this manually — the IDE starts it as a subprocess entry point. For configuration, see [Using in IDEs](../guides/ides.md); for technical details, see the [nighthawk acp reference](./kimi-acp.md).
+Switch NightHawk CLI to ACP (Agent Client Protocol) mode, communicating with an IDE via JSON-RPC over stdin/stdout so the editor can directly drive nighthawk's sessions and tool calls. You typically do not need to run this manually — the IDE starts it as a subprocess entry point. For configuration, see [Using in IDEs](../guides/ides.md); for technical details, see the [nighthawk acp reference](./nighthawk-acp.md).
 
 ```sh
 nighthawk acp
@@ -269,15 +269,6 @@ nighthawk export 01HZ...XYZ -o ./bug-report.zip
 nighthawk export 01HZ...XYZ -o ./bug-report.zip --no-include-global-log
 ```
 
-### `nighthawk migrate`
-
-Migrate local data from a legacy kimi-cli installation to nighthawk, including session history and configuration files. Runs entirely interactively, guiding you through the full process.
-
-```sh
-nighthawk migrate
-```
-
-For full migration instructions, see [Migrating from kimi-cli](../guides/migration.md).
 
 ### `nighthawk import-sessions`
 
