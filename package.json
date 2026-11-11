@@ -13,7 +13,7 @@
     "dev:v2": "pnpm -C apps/nighthawk run dev:kap-server:multi",
     "vis": "pnpm -C apps/vis run dev",
     "dev:docs": "pnpm -C docs install --ignore-workspace && pnpm -C docs run dev",
-    "typecheck": "pnpm run build:packages && pnpm -r --filter './packages/*' run typecheck && pnpm --filter @nighthawk/nighthawk run typecheck && pnpm --filter nighthawk run typecheck && pnpm --filter @nighthawk/vis-server run typecheck && pnpm --filter @nighthawk/vis-web run typecheck",
+    "typecheck": "pnpm run build:packages && pnpm -r --filter './packages/*' run typecheck && pnpm --filter @nighthawk/nighthawk run typecheck && pnpm --filter nighthawk run typecheck && pnpm --filter @nighthawk/vis-server run typecheck && pnpm --filter @nighthawk/vis-web run typecheck && pnpm --filter @nighthawk/web run typecheck",
     "lint": "node scripts/check-no-comments.mjs && oxlint --type-aware",
     "lint:fix": "pnpm run lint --fix",
     "lint:pkg": "pnpm --filter @nighthawk/nighthawk exec publint && npm_config_cache=${TMPDIR:-/tmp}/nighthawk-npm-cache pnpm --filter @nighthawk/nighthawk exec attw --pack . --profile node16",
@@ -26,7 +26,8 @@
     "version": "changeset version",
     "version:release": "changeset version",
     "publish": "pnpm run typecheck && pnpm run lint && pnpm run sherif && pnpm run test && pnpm run build && pnpm run lint:pkg && changeset publish",
-    "prepare": "node .husky/install.mjs"
+    "prepare": "node .husky/install.mjs",
+    "web:dev": "pnpm -C apps/web run dev"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.2",
