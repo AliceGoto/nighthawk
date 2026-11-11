@@ -19,6 +19,7 @@ import {
   type Message,
   type Session,
 } from './api';
+import { Markdown } from './Markdown';
 import { Socket, type WireEvent } from './ws';
 
 interface ToolCall {
@@ -62,17 +63,19 @@ function toItems(messages: Message[]): Item[] {
   for (const message of messages) {
     if (message.role === 'user') {
       const text = message.content.map(textOf).join('');
-      if (text.length > 0) items.push({ id: message.id, role: 'user', text, thinking: '', tools: [] });
+      const trimmed = text.trimStart();
+      if (text.trim().length === 0 || trimmed.startsWith('<system-reminder>')) continue;
+      items.push({ id: message.id, role: 'user', text, thinking: '', tools: [] });
       continue;
     }
     if (message.role === 'assistant') {
       const text = message.content.map(textOf).join('');
       const thinking = message.content
         .filter((block) => block.type === 'thinking')
-        .map((block) => block.text ?? '')
+        .map((block) => block.thinking ?? '')
         .join('');
       const tools = toolsOf(message);
-      if (text.length > 0 || tools.length > 0) {
+      if (text.length > 0 || tools.length > 0 || thinking.length > 0) {
         items.push({ id: message.id, role: 'assistant', text, thinking, tools });
       }
       continue;
@@ -185,7 +188,9 @@ export function App(): ReactElement {
   const [config, setConfig] = useState<Config>();
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [model, setModel] = useState('');
-  const [currentId, setCurrentId] = useState<string>();
+  const [currentId, setCurrentId] = useState<string | undefined>(
+    () => new URLSearchParams(location.search).get('session') ?? undefined,
+  );
   const [items, setItems] = useState<Item[]>([]);
   const [live, setLive] = useState<Item | undefined>();
   const [status, setStatus] = useState<'connecting' | 'open' | 'closed'>('closed');
@@ -460,8 +465,8 @@ export function App(): ReactElement {
         </div>
         <div className="new-session">
           <input value={cwd} onChange={(event) => setCwd(event.target.value)} placeholder="工作目录" />
-          <button type="button" onClick={() => void newSession()}>
-            新建
+          <button type="button" title="新建会话" className="new-session-add" onClick={() => void newSession()}>
+            ＋
           </button>
         </div>
         <nav className="sessions">
@@ -528,7 +533,12 @@ export function App(): ReactElement {
                 <article key={item.id} className={`message ${item.role}`}>
                   <div className="role">{item.role === 'user' ? '你' : 'NightHawk'}</div>
                   {item.thinking.length > 0 && <details className="thinking"><summary>思考</summary><pre>{item.thinking}</pre></details>}
-                  {item.text.length > 0 && <div className="text">{item.text}</div>}
+                  {item.text.length > 0 &&
+                    (item.role === 'assistant' ? (
+                      <Markdown text={item.text} />
+                    ) : (
+                      <div className="text">{item.text}</div>
+                    ))}
                   {item.tools.map((tool) => (
                     <details key={tool.id} className={`tool ${tool.isError === true ? 'failed' : ''}`}>
                       <summary>
@@ -558,7 +568,7 @@ export function App(): ReactElement {
                   }
                 }}
                   placeholder="问点什么，Enter 发送，Shift+Enter 换行"
-                  rows={3}
+                  rows={2}
                 />
                 <div className="composer-actions">
                   {busy ? (

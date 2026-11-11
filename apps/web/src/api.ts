@@ -22,6 +22,7 @@ export interface Session {
 export interface ContentBlock {
   type: string;
   text?: string;
+  thinking?: string;
   id?: string;
   name?: string;
   input?: unknown;

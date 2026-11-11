@@ -177,9 +177,13 @@ textarea::placeholder {
   border-radius: var(--radius-sm);
 }
 
-.new-session button {
-  padding: 7px 14px;
-  font-size: 12px;
+.new-session-add {
+  flex: none;
+  width: 34px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-2);
 }
 
 .sessions {
@@ -288,7 +292,7 @@ textarea::placeholder {
 }
 
 .model-select {
-  max-width: 220px;
+  max-width: 260px;
   padding: 6px 12px;
   font-size: 12px;
   color: var(--text-2);
@@ -388,14 +392,32 @@ textarea::placeholder {
 }
 
 .thinking summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   width: fit-content;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   color: var(--text-2);
-  background: var(--surface-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 999px;
   cursor: pointer;
   list-style: none;
+}
+
+.thinking summary::-webkit-details-marker {
+  display: none;
+}
+
+.thinking summary::before {
+  content: '›';
+  color: var(--text-3);
+  transition: transform 0.15s ease;
+}
+
+.thinking[open] summary::before {
+  transform: rotate(90deg);
 }
 
 .thinking pre {
@@ -410,6 +432,45 @@ textarea::placeholder {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   white-space: pre-wrap;
+}
+
+/* ---------- markdown ---------- */
+
+.md-text {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 26px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.md-text:last-child {
+  margin-bottom: 0;
+}
+
+.md code {
+  padding: 1px 6px;
+  font-family: var(--mono);
+  font-size: 0.875em;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.md-code {
+  margin: 12px 0;
+  padding: 14px 16px;
+  overflow: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.md-code code {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
 }
 
 /* ---------- tool cards ---------- */
@@ -505,8 +566,8 @@ textarea::placeholder {
 .composer textarea {
   display: block;
   width: 100%;
-  min-height: 52px;
-  max-height: 220px;
+  min-height: 48px;
+  max-height: 200px;
   padding: 2px 4px;
   font-size: 16px;
   line-height: 24px;
