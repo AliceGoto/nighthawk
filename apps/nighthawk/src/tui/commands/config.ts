@@ -212,7 +212,7 @@ export async function handleSecondaryModelCommand(host: SlashCommandHost, args: 
   if (Object.keys(models).length === 0) {
     host.showNotice(
       'No models configured',
-      'Run /login to sign in to NightHawk, or /provider to add another provider from a model catalog.',
+      'Run /provider to add a provider from a model catalog.',
     );
     return;
   }
@@ -437,7 +437,7 @@ export async function showModelPicker(host: SlashCommandHost, selectedValue: str
   if (entries.length === 0) {
     host.showNotice(
       'No models configured',
-      'Run /login to sign in to NightHawk, or /provider to add another provider from a model catalog.',
+      'Run /provider to add a provider from a model catalog.',
     );
     return;
   }

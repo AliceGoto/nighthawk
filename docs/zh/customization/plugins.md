@@ -107,7 +107,7 @@ NightHawk Datasource 是 NightHawk 官方数据插件。用自然语言直接查
 
 数据来源包括世界银行、IMF、OECD、FRED、WHO、FAO、国家统计局、Wind、S&P Capital IQ、SEC EDGAR、财新、新华财经、恒生聚源等权威机构与知名数据库，信源可溯源。
 
-> 使用前需先通过 `/login` 完成 NightHawk 账号 OAuth 登录。数据查询会消耗 NightHawk 套餐额度。
+> 该插件依赖托管账号。NightHawk 没有账号体系，当前版本不可用。
 
 #### 使用方式
 
@@ -163,7 +163,7 @@ NightHawk Datasource 是 NightHawk 官方数据插件。用自然语言直接查
 
 #### 计费与限制
 
-- 数据查询按次计费，消耗 NightHawk 账号额度
+- 数据查询依赖托管账号，当前版本不可用
 - 插件为只读查询，不提供任何写入或交易功能
 - 技术指标（MACD、KDJ 等）及实时行情仅在交易时段内可用
 - AI 输出内容仅供参考，不构成任何投资或商业决策建议

@@ -610,7 +610,6 @@ describe('CLI options parsing', () => {
         'web',
         'server',
         'rc',
-        'login',
         'doctor',
         'vis',
         'install-desktop',

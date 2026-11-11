@@ -8,7 +8,6 @@ NightHawk CLI 支持同时接入多家模型供应商服务，模型在供应商
 
 | 类型 | 协议 | 典型用途 |
 | --- | --- | --- |
-| [`nighthawk`](#nighthawk) | OpenAI 兼容 | NightHawk 托管服务、NightHawk Platform API 密钥 |
 | [`anthropic`](#anthropic) | Anthropic Messages | Claude 系列模型 |
 | [`openai`](#openai) | OpenAI Chat Completions | OpenAI 及兼容服务、DeepSeek、Qwen 等 |
 | [`openai_responses`](#openai_responses) | OpenAI Responses API | OpenAI 较新的 Responses 接口 |
@@ -54,28 +53,7 @@ NightHawk CLI 支持同时接入多家模型供应商服务，模型在供应商
   }
   ```
 
-::: warning
-通过 `/login` 登录的 NightHawk OAuth 托管账号不会在 `/provider` 里显示，请用 `/login` 和 `/logout` 管理。
-:::
-
 非交互环境下也可以用 shell 命令完成同样操作：[`nighthawk provider`](../reference/kimi-command.md#nighthawk-provider)。
-
-## `nighthawk`
-
-用于对接 Moonshot AI 的 OpenAI 兼容接口，包括 NightHawk 托管服务和 NightHawk Platform API 密钥。
-
-- 默认 `base_url`：`https://api.moonshot.ai/v1`
-- 凭证键名：`NIGHTHAWK_API_KEY`、`NIGHTHAWK_BASE_URL`
-- 额外能力：支持视频上传
-
-```toml
-[providers.nighthawk]
-type = "kimi"
-base_url = "https://api.moonshot.ai/v1"
-api_key = "sk-xxxxx"
-```
-
-> 使用 NightHawk 托管服务时，`/login` 登录后会自动配置 `base_url` 和凭证，无需手动填写。
 
 ## `anthropic`
 

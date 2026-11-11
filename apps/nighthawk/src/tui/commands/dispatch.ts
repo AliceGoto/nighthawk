@@ -24,7 +24,7 @@ import type {
   TranscriptEntry,
 } from '../types';
 import { formatErrorMessage } from '../utils/event-payload';
-import { handleLoginCommand, handleLogoutCommand } from './auth';
+import { handleLogoutCommand } from './auth';
 import { handleBtwCommand } from './btw';
 import { handleCopyCommand } from './copy';
 import { handleDesktopCommand } from './desktop';
@@ -546,9 +546,6 @@ async function handleBuiltInSlashCommand(
       return;
     case 'copy':
       await handleCopyCommand(host);
-      return;
-    case 'login':
-      await handleLoginCommand(host);
       return;
     case 'logout':
       await handleLogoutCommand(host);

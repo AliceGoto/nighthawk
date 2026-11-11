@@ -50,7 +50,7 @@ export function requireConfiguredModel(...models: readonly (string | undefined)[
   const model = configuredModel(...models);
   if (model === undefined) {
     throw new Error(
-      'No model configured. Run `nighthawk` and use /login to sign in, then retry; or set default_model in config.toml.',
+      'No model configured. Add a provider and set default_model in config.toml, then retry.',
     );
   }
   return model;

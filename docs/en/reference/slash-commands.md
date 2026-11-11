@@ -12,8 +12,7 @@ Some commands are only available in the idle state. Executing these commands whi
 
 | Command | Alias | Description | Always available |
 | --- | --- | --- | --- |
-| `/login` | — | Select an account or platform and log in: NightHawk uses OAuth device-code flow; NightHawk Platform uses API key login | No |
-| `/logout` | — | Clear credentials for the currently selected account | No |
+| `/logout` | — | Remove local credentials for a configured provider | No |
 | `/provider` | — | Open the interactive provider manager to view, add, and remove configured providers. See [Platforms & Models — `/provider` and provider management](../configuration/providers.md#provider-—-interactive-provider-management) | Yes |
 | `/provider refresh [providerId]` | — | Re-fetch model lists from providers at runtime: without an argument, refresh every provider; with one, refresh only that provider. Added and removed models are reported per provider | Yes |
 | `/model` | — | Switch the LLM model used in the current session | Yes |

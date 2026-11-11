@@ -107,7 +107,7 @@ NightHawk Datasource is the official NightHawk data plugin, letting you query fi
 
 Sources include authoritative institutions and leading databases such as the World Bank, IMF, OECD, FRED, WHO, FAO, the National Bureau of Statistics of China, Wind, S&P Capital IQ, SEC EDGAR, Caixin, Xinhua Finance, and Hundsun Juyuan, all traceable to their original publishers.
 
-You must first complete OAuth login with a NightHawk account via `/login`; data queries consume your NightHawk plan quota.
+This plugin depends on a managed account. NightHawk has no account system, so it is unavailable in this build.
 
 #### How to use
 
@@ -163,7 +163,7 @@ Look up national (GB), industry, local, and association standards by number or t
 
 #### Billing and limitations
 
-- Data queries are billed per call and consume NightHawk account credits
+- Data queries depend on a managed account and are unavailable in this build
 - The plugin provides read-only queries; no write or trading functionality is available
 - Technical indicators and real-time prices are only available during active trading hours
 - AI-generated output is for reference only and does not constitute investment or business advice

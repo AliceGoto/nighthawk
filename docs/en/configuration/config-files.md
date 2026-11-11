@@ -21,37 +21,30 @@ TOML field names always use snake_case, for example `default_model` and `max_con
 The following example covers the most commonly used configuration fields. You can copy it and adjust as needed:
 
 ```toml
-default_model = "nighthawk/k3"
+default_model = "deepseek-chat"
 default_permission_mode = "manual"
 default_plan_mode = false
 merge_all_available_skills = true
 telemetry = true
 
-[providers."managed:nighthawk"]
-type = "kimi"
-base_url = "https://api.kimi.com/coding/v1"
-api_key = ""
+[providers.deepseek]
+type = "openai"
+base_url = "https://api.deepseek.com"
+api_key_env = "DEEPSEEK_API_KEY"
 
-[models."nighthawk/k3"]
-provider = "managed:nighthawk"
-model = "k3"
-max_context_size = 1048576
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
-display_name = "K3"
+[models."deepseek-chat"]
+provider = "deepseek"
+model = "deepseek-chat"
+max_context_size = 131072
+capabilities = [ "thinking", "tool_use" ]
+
+[models."deepseek-reasoner"]
+provider = "deepseek"
+model = "deepseek-reasoner"
+max_context_size = 131072
+capabilities = [ "thinking", "tool_use" ]
 support_efforts = [ "low", "high", "max" ]
-default_effort = "max"
-
-[models."nighthawk/kimi-for-coding"]
-provider = "managed:nighthawk"
-model = "kimi-for-coding"
-max_context_size = 262144
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
-
-[models."nighthawk/kimi-for-coding-highspeed"]
-provider = "managed:nighthawk"
-model = "kimi-for-coding-highspeed"
-max_context_size = 262144
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
+default_effort = "high"
 
 [thinking]
 enabled = true
@@ -178,14 +171,14 @@ max_context_size = 1047576
 Use `[models."<alias>".overrides]` for user overrides that must survive provider-model refreshes. Environment consumers read the effective value: the override when present, otherwise the top-level field.
 
 ```toml
-[models."nighthawk/kimi-for-coding"]
-provider = "managed:nighthawk"
-model = "kimi-for-coding"
-max_context_size = 262144
-
-[models."nighthawk/kimi-for-coding".overrides]
+[models."deepseek-chat"]
+provider = "deepseek"
+model = "deepseek-chat"
 max_context_size = 131072
-display_name = "NightHawk for Coding (custom)"
+
+[models."deepseek-chat".overrides]
+max_context_size = 65536
+display_name = "DeepSeek Chat (custom)"
 ```
 
 `[models."<alias>".overrides]` accepts ordinary model fields such as `max_context_size`, `max_input_size`, `max_output_size`, `capabilities`, `display_name`, `reasoning_key`, `adaptive_thinking`, `support_efforts`, `default_effort`, and `off_effort`. It does not accept identity / routing fields (`provider`, `model`, `protocol`, `beta_api`, and `base_url`) or registry-managed `upgrade` metadata.
@@ -224,15 +217,14 @@ Pool aliases reference the current `[models]` table: if a provider is later dele
 
 In the interactive TUI, the [`/secondary-model`](../reference/slash-commands.md) command (alias `/subagent-model`) opens a model selector: the choice is written to `default_model` (when a models table exists and the picked alias is not in it, an entry with an empty description is added), and newly spawned subagents pick up the new default immediately, no session restart needed.
 
-Subagents only run on models listed in the pool. A lone `default_model` (or a `models` table with a single entry) pins every subagent to that model. A pool with two or more entries enables model selection: the `Agent` / `AgentSwarm` tools gain a `model` parameter, and the tool description lists the pool (the default marked `[default]`) so the main agent can choose per spawn. Pool keys can only reference configured [`[models]`](#models) entries. The `nighthawk/*` aliases below are provisioned by `/login`:
+Subagents only run on models listed in the pool. A lone `default_model` (or a `models` table with a single entry) pins every subagent to that model. A pool with two or more entries enables model selection: the `Agent` / `AgentSwarm` tools gain a `model` parameter, and the tool description lists the pool (the default marked `[default]`) so the main agent can choose per spawn. Pool keys can only reference configured [`[models]`](#models) entries, for example:
 
 ```toml
 [secondary_model]
-default_model = "nighthawk/kimi-for-coding-highspeed"
+default_model = "deepseek-chat"
 [secondary_model.models]
-"nighthawk/k3" = "Pick this for hard problems. Strong at complex reasoning, algorithm design, deep debugging, math, and systematic challenges."
-"nighthawk/kimi-for-coding-highspeed" = "Fast but priced higher. Good for latency-sensitive tasks: daily refactoring, code explanation, small edits, and summaries."
-"nighthawk/kimi-for-coding" = "A balanced coding workhorse. Good for most feature development and code-change tasks."
+"deepseek-chat" = "Daily driver. Good for refactors, code explanation, and small edits."
+"deepseek-reasoner" = "Pick this for hard problems. Strong at complex reasoning, algorithm design, and deep debugging."
 ```
 
 A spawn resolves the subagent's model in this order:
@@ -257,28 +249,31 @@ Binding a pool alias lands the subagent on the bound model's default effort. You
 2. List both the original alias and the variant alias in the pool.
 
 ```toml
-# "nighthawk/k3" is provisioned by /login (default: high); this registers
-# a max-effort variant of the same model
-[models.k3-max]
-provider = "managed:nighthawk"
-model = "k3"
-max_context_size = 1048576
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
+# Register a max-effort variant of the same underlying model
+[models.chat]
+provider = "deepseek"
+model = "deepseek-chat"
+
+[models.chat-max]
+provider = "deepseek"
+model = "deepseek-chat"
+max_context_size = 131072
+capabilities = [ "thinking", "tool_use" ]
 support_efforts = [ "low", "high", "max" ]
 
-[models.k3-max.overrides]
+[models.chat-max.overrides]
 default_effort = "max"
 
 [secondary_model]
-default_model = "nighthawk/k3"
+default_model = "chat"
 [secondary_model.models]
-"nighthawk/k3" = "Default high effort. Good for most implementation, analysis, and multi-turn interaction tasks."
-k3-max = "The same model at max thinking effort. Good for the hardest subtasks."
+chat = "Default effort. Good for most implementation, analysis, and multi-turn interaction tasks."
+chat-max = "The same model at max thinking effort. Good for the hardest subtasks."
 ```
 
 Two prerequisites:
 
-- The underlying model must declare `support_efforts` (under `managed:nighthawk` only the k3 family currently declares effort levels).
+- The underlying model must declare `support_efforts`, otherwise there are no effort levels to pick from.
 - The variant is a standalone entry and does not inherit fields from the entry it points at: copy `capabilities`, `support_efforts`, and the other metadata over in full, otherwise `default_effort` has no effect (it must be a member of `support_efforts`).
 
 Note the asymmetry between the main agent and pool-bound subagents: for the main agent, a configured global `[thinking].effort` overrides the variant's `default_effort`; for subagents the variant's `default_effort` wins over the global value, and only `[secondary_model].default_effort` outranks it. Value and fallback rules follow the [`[models]` entry's `default_effort`](#models).

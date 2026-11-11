@@ -399,12 +399,6 @@ export const BUILTIN_SLASH_COMMANDS = [
     priority: 40,
   },
   {
-    name: 'login',
-    aliases: [],
-    description: 'Select a platform and authenticate',
-    priority: 40,
-  },
-  {
     name: 'export-md',
     aliases: ['export'],
     description: 'Export current session as a Markdown file',

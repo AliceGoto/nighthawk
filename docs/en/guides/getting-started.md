@@ -78,22 +78,24 @@ To resume the previous session, add `-c`:
 nighthawk -c
 ```
 
-On first launch you need to configure an API source. In the interactive UI, enter `/login` to begin the login flow:
+On first launch you need to configure a model provider. Edit `~/.nighthawk/config.toml` and add a provider plus its models, for example DeepSeek:
 
+```toml
+[providers.deepseek]
+type = "openai"
+base_url = "https://api.deepseek.com"
+api_key_env = "DEEPSEEK_API_KEY"
+
+[models.deepseek-chat]
+provider = "deepseek"
+model = "deepseek-chat"
+
+default_model = "deepseek-chat"
 ```
-/login
-```
 
-`/login` opens a platform selector supporting two options:
+`api_key_env` names the environment variable to read the key from; you can also write `api_key` inline. Keys stay in your local config — NightHawk has no account system and never sends credentials to a hosted service.
 
-- **NightHawk (OAuth)** — device-code flow; open the link on any device, sign in, and enter the code to authorize
-- **NightHawk Platform API key** — enter an API key from `platform.kimi.com` or `platform.kimi.ai`
-
-To sign out, enter `/logout` to clear the current credentials.
-
-::: tip Using other AI providers
-If you want to connect Anthropic, OpenAI, Google, or other providers, edit `~/.nighthawk/config.toml` directly to configure the API key. See [Providers and models](../configuration/providers.md) for details. For the full reference of all config options, see [Configuration files](../configuration/config-files.md), [Environment variables](../configuration/env-vars.md), and [Configuration overrides](../configuration/overrides.md).
-:::
+You can also run `/provider` in the interactive UI to pick a provider from a model catalog, enter a key, and choose a default model. See [Providers and models](../configuration/providers.md) for details, and [Configuration files](../configuration/config-files.md), [Environment variables](../configuration/env-vars.md), and [Configuration overrides](../configuration/overrides.md) for the full reference.
 
 ## Your first conversation
 

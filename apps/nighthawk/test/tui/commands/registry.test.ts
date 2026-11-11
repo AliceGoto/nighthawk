@@ -177,7 +177,6 @@ describe('built-in slash command registry', () => {
         'help',
         'import-sessions',
         'init',
-        'login',
         'logout',
         'mcp',
         'model',

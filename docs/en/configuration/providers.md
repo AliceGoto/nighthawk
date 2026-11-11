@@ -1,6 +1,6 @@
 # Providers and models
 
-NightHawk CLI supports connecting to multiple LLM platforms simultaneously: one-click login via the NightHawk managed service, connecting Claude with an Anthropic API key, or connecting third-party inference services via the OpenAI-compatible protocol. Each provider corresponds to a specific API protocol; models are declared on top of providers with their own name, context length, and capabilities. This page explains how to configure each type of provider in `config.toml`.
+NightHawk CLI supports connecting to multiple LLM platforms simultaneously: Claude with an Anthropic API key, OpenAI-compatible services such as DeepSeek or Qwen, Gemini, and Vertex AI. Each provider corresponds to a specific API protocol; models are declared on top of providers with their own name, context length, and capabilities. This page explains how to configure each type of provider in `config.toml`. Each provider corresponds to a specific API protocol; models are declared on top of providers with their own name, context length, and capabilities. This page explains how to configure each type of provider in `config.toml`.
 
 ## Supported provider types
 
@@ -8,7 +8,6 @@ The `type` field in the `providers` table determines which protocol implementati
 
 | Type | Protocol | Typical use |
 | --- | --- | --- |
-| [`nighthawk`](#nighthawk) | OpenAI-compatible | NightHawk managed service, NightHawk Platform API key |
 | [`anthropic`](#anthropic) | Anthropic Messages | Claude model family |
 | [`openai`](#openai) | OpenAI Chat Completions | OpenAI and compatible services, DeepSeek, Qwen, etc. |
 | [`openai_responses`](#openai_responses) | OpenAI Responses API | OpenAI's newer Responses interface |
@@ -54,28 +53,7 @@ Two paths when adding:
   }
   ```
 
-::: warning
-NightHawk OAuth managed accounts logged in via `/login` do not appear in `/provider`. Use `/login` and `/logout` to manage them.
-:::
-
 The same operations are also available in non-interactive environments via the shell command: [`nighthawk provider`](../reference/kimi-command.md#nighthawk-provider).
-
-## `nighthawk`
-
-For connecting to Moonshot AI's OpenAI-compatible interface, including the NightHawk managed service and NightHawk Platform API keys.
-
-- Default `base_url`: `https://api.moonshot.ai/v1`
-- Credential key names: `NIGHTHAWK_API_KEY`, `NIGHTHAWK_BASE_URL`
-- Additional capability: supports video upload
-
-```toml
-[providers.nighthawk]
-type = "kimi"
-base_url = "https://api.moonshot.ai/v1"
-api_key = "sk-xxxxx"
-```
-
-> When using the NightHawk managed service, running `/login` automatically configures `base_url` and credentials, so no manual setup is needed.
 
 ## `anthropic`
 
@@ -171,10 +149,6 @@ nighthawk
 ```
 
 To route Vertex requests through a custom (e.g. proxied) endpoint, set `base_url` (or the `GOOGLE_VERTEX_BASE_URL` env var); when omitted, the SDK default regional `*-aiplatform.googleapis.com` host is used. As with `google-genai`, give the host root only. The SDK appends `/v1beta1/publishers/google/models/…` itself.
-
-## OAuth and credential injection
-
-The NightHawk managed service uses OAuth rather than static API keys. After running `/login`, the built-in authentication toolchain automatically writes and refreshes credentials, so no manual configuration is needed in `config.toml` for this.
 
 ## Next steps
 

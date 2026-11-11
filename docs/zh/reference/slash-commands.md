@@ -12,8 +12,7 @@
 
 | 命令 | 别名 | 说明 | 随时可用 |
 | --- | --- | --- | --- |
-| `/login` | — | 选择账号或平台并登录：NightHawk 走 OAuth 验证码流程，NightHawk Platform 通过 API 密钥登录 | 否 |
-| `/logout` | — | 清除当前所选账号的凭据 | 否 |
+| `/logout` | — | 移除已配置供应商的本地凭据 | 否 |
 | `/provider` | — | 打开交互式供应商管理器，查看、添加和删除已配置的供应商。详见[平台与模型 — `/provider` 与供应商管理](../configuration/providers.md#provider-—-交互式供应商管理) | 是 |
 | `/provider refresh [providerId]` | — | 运行时重新拉取供应商的模型列表：不带参数时刷新全部供应商，带参数时只刷新指定供应商。输出会按供应商汇报新增和下架的模型 | 是 |
 | `/model` | — | 切换当前会话使用的 LLM 模型 | 是 |

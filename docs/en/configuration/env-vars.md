@@ -87,20 +87,19 @@ Key names per provider:
 
 For the full provider type and field reference, see [Providers and models](./providers.md).
 
-## OAuth and managed services
+## Region and legacy managed endpoints
 
-This group of variables redirects OAuth authentication and managed service endpoints to a self-hosted or test environment. They are not needed for everyday use.
+`NIGHTHAWK_REGION_MARKER` controls the install-channel marker and local region inference; it is enabled by default, and `off` uses the `mainland-cn` default. It also decides which CDN the Grep tool downloads ripgrep from.
+
+The variables below only redirect legacy managed endpoints to a self-hosted or test environment. They are not needed for everyday use:
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `NIGHTHAWK_OAUTH_HOST` | OAuth auth host; highest priority | Falls back to `NIGHTHAWK_OAUTH_HOST` when unset |
-| `KIMI_OAUTH_HOST` | OAuth auth host; fallback for `NIGHTHAWK_OAUTH_HOST` | Falls back to `https://auth.kimi.com` when unset |
-| `NIGHTHAWK_BASE_URL` | Managed API base URL used after OAuth login | `https://api.kimi.com/coding/v1` |
-| `NIGHTHAWK_REGION_MARKER` | Install-channel marker and logged-out local region inference | Enabled; set `off` to disable both and use the `mainland-cn` default |
+| `NIGHTHAWK_OAUTH_HOST` | Legacy OAuth host | Falls back to `KIMI_OAUTH_HOST` when unset |
+| `KIMI_OAUTH_HOST` | Compatibility alias for the legacy OAuth host | `https://auth.kimi.com` |
+| `NIGHTHAWK_BASE_URL` | Legacy managed API base URL | `https://api.kimi.com/coding/v1` |
 
-::: warning
-`NIGHTHAWK_BASE_URL` (OAuth-managed service, targeting `kimi.com`) and `KIMI_BASE_URL` (direct API key connection, targeting `moonshot.ai`) are two distinct variables. Use each one in its appropriate context.
-:::
+NightHawk has no account system. Configure a third-party provider in `config.toml` and leave these variables alone.
 
 ## Define a model from environment variables (`NIGHTHAWK_MODEL_*`)
 

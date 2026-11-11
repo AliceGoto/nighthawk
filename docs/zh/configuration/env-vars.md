@@ -87,20 +87,19 @@ NIGHTHAWK_BASE_URL = "https://api.moonshot.ai/v1"
 
 供应商类型与字段的完整说明见[平台与模型](./providers.md)。
 
-## OAuth 与托管端点
+## 区域与旧版托管端点
 
-这组变量用于将 OAuth 认证和托管服务端点指向自建或测试环境，日常使用不需要设置。
+`NIGHTHAWK_REGION_MARKER` 控制安装渠道标记和本地区域推断，默认启用；设为 `off` 时使用 `mainland-cn` 默认值。它同时决定 Grep 使用的 ripgrep 从哪个 CDN 下载。
+
+以下变量只用于把旧版托管端点指向自建或测试环境，普通使用不需要设置：
 
 | 环境变量 | 用途 | 默认值 |
 | --- | --- | --- |
-| `NIGHTHAWK_OAUTH_HOST` | OAuth 认证 host，优先级最高 | 未设时回退到 `NIGHTHAWK_OAUTH_HOST` |
-| `KIMI_OAUTH_HOST` | OAuth 认证 host，作为上一个的 fallback | 未设时使用 `https://auth.kimi.com` |
-| `NIGHTHAWK_BASE_URL` | OAuth 登录后的托管 API base URL | `https://api.kimi.com/coding/v1` |
-| `NIGHTHAWK_REGION_MARKER` | 安装渠道标记和未登录时的本地区域推断 | 默认启用；设为 `off` 同时禁用并使用 `mainland-cn` 默认值 |
+| `NIGHTHAWK_OAUTH_HOST` | 旧版 OAuth host | 未设时回退到 `KIMI_OAUTH_HOST` |
+| `KIMI_OAUTH_HOST` | 旧版 OAuth host 的兼容别名 | `https://auth.kimi.com` |
+| `NIGHTHAWK_BASE_URL` | 旧版托管 API base URL | `https://api.kimi.com/coding/v1` |
 
-::: warning
-`NIGHTHAWK_BASE_URL`（OAuth 托管服务，指向 `kimi.com`）和 `KIMI_BASE_URL`（API 密钥直连，指向 `moonshot.ai`）是两个不同的变量，请按场景区分。
-:::
+NightHawk 没有账号体系，日常使用直接在 `config.toml` 里配置第三方供应商，不需要碰这些变量。
 
 ## 用环境变量定义模型（`NIGHTHAWK_MODEL_*`）
 
@@ -179,7 +178,7 @@ nighthawk
 | `NIGHTHAWK_TOKEN_COUNTING_STRATEGY` | 对外上报的上下文 token 计数，优先级高于 `config.toml` 的 `[token_counting] strategy` | `measured+estimated`、`measured`、`estimated`（不区分大小写）；非法值被忽略 |
 | `NIGHTHAWK_WEB_SEARCH_BASE_URL` | 网页搜索（`WebSearch`）服务的 API URL，优先级高于配置文件；凭据与自定义 header 不发往该端点 | 非空字符串；空白值被忽略 |
 | `NIGHTHAWK_WEB_SEARCH_API_KEY` | 网页搜索（`WebSearch`）服务的 API 密钥；设置后同时替换配置中的 API 密钥和 OAuth 凭据 | 非空字符串；空白值被忽略 |
-| `NIGHTHAWK_WEB_FETCH_BASE_URL` | 网页抓取（`FetchURL`）服务的 API URL，优先级高于配置文件；未指定端点时已登录用户走 NightHawk OAuth 托管抓取，再回退本地直连；凭据不发往该端点 | 非空字符串；空白值被忽略 |
+| `NIGHTHAWK_WEB_FETCH_BASE_URL` | 网页抓取（`FetchURL`）服务的 API URL，优先级高于配置文件；未指定端点时回退本地直连抓取；凭据不发往该端点 | 非空字符串；空白值被忽略 |
 | `NIGHTHAWK_WEB_FETCH_API_KEY` | 网页抓取（`FetchURL`）服务的 API 密钥；设置后同时替换配置中的 API 密钥和 OAuth 凭据 | 非空字符串；空白值被忽略 |
 | `NIGHTHAWK_EXPERIMENTAL_FLAG` | 在当前进程启用所有已注册的实验功能 | `1`、`true`、`yes`、`on` |
 | `NIGHTHAWK_SHELL_PATH` | Windows 上覆盖 Git Bash 路径（自动探测失败时使用） | 绝对路径 |

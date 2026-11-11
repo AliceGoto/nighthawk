@@ -21,37 +21,30 @@ TOML 字段名一律用下划线（snake_case），如 `default_model`、`max_co
 以下示例覆盖最常用的配置项，可直接复制后按需修改：
 
 ```toml
-default_model = "nighthawk/k3"
+default_model = "deepseek-chat"
 default_permission_mode = "manual"
 default_plan_mode = false
 merge_all_available_skills = true
 telemetry = true
 
-[providers."managed:nighthawk"]
-type = "kimi"
-base_url = "https://api.kimi.com/coding/v1"
-api_key = ""
+[providers.deepseek]
+type = "openai"
+base_url = "https://api.deepseek.com"
+api_key_env = "DEEPSEEK_API_KEY"
 
-[models."nighthawk/k3"]
-provider = "managed:nighthawk"
-model = "k3"
-max_context_size = 1048576
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
-display_name = "K3"
+[models."deepseek-chat"]
+provider = "deepseek"
+model = "deepseek-chat"
+max_context_size = 131072
+capabilities = [ "thinking", "tool_use" ]
+
+[models."deepseek-reasoner"]
+provider = "deepseek"
+model = "deepseek-reasoner"
+max_context_size = 131072
+capabilities = [ "thinking", "tool_use" ]
 support_efforts = [ "low", "high", "max" ]
-default_effort = "max"
-
-[models."nighthawk/kimi-for-coding"]
-provider = "managed:nighthawk"
-model = "kimi-for-coding"
-max_context_size = 262144
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
-
-[models."nighthawk/kimi-for-coding-highspeed"]
-provider = "managed:nighthawk"
-model = "kimi-for-coding-highspeed"
-max_context_size = 262144
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
+default_effort = "high"
 
 [thinking]
 enabled = true
@@ -178,14 +171,14 @@ max_context_size = 1047576
 如果某些用户覆盖需要在 provider-model 刷新后保留，请写到 `[models."<alias>".overrides]`。运行时读取的是 effective 值：有 override 时用 override，否则用顶层字段。
 
 ```toml
-[models."nighthawk/kimi-for-coding"]
-provider = "managed:nighthawk"
-model = "kimi-for-coding"
-max_context_size = 262144
-
-[models."nighthawk/kimi-for-coding".overrides]
+[models."deepseek-chat"]
+provider = "deepseek"
+model = "deepseek-chat"
 max_context_size = 131072
-display_name = "NightHawk for Coding (custom)"
+
+[models."deepseek-chat".overrides]
+max_context_size = 65536
+display_name = "DeepSeek Chat (custom)"
 ```
 
 `[models."<alias>".overrides]` 接受普通模型字段，例如 `max_context_size`、`max_input_size`、`max_output_size`、`capabilities`、`display_name`、`reasoning_key`、`adaptive_thinking`、`support_efforts`、`default_effort` 和 `off_effort`。不接受身份 / 路由字段（`provider`、`model`、`protocol`、`beta_api` 和 `base_url`），也不接受由 registry 管理的 `upgrade` 元数据。
@@ -224,15 +217,14 @@ default_model = "nighthawk/kimi-for-coding-highspeed"
 
 在交互式 TUI 中，也可以用 [`/secondary-model`](../reference/slash-commands.md) 命令（别名 `/subagent-model`）打开模型选择器：选择后写入 `default_model`（已有 models 表而所选别名不在其中时，会一并补一条空描述条目），之后派生的 subagent 立即按新默认值绑定，无需重启会话。
 
-subagent 只会运行在模型池列出的模型上。单独一行 `default_model`（或只有一个条目的 `models` 表）会把所有 subagent 固定到该模型。池中有两个及以上条目时启用模型选择：`Agent` / `AgentSwarm` 工具会获得 `model` 参数，工具描述中列出模型池（默认模型标注 `[default]`），main agent 可按次派生选择模型。池 key 只能引用已配置的 [`[models]`](#models) 条目。下面的 `nighthawk/*` 别名由 `/login` 自动提供：
+subagent 只会运行在模型池列出的模型上。单独一行 `default_model`（或只有一个条目的 `models` 表）会把所有 subagent 固定到该模型。池中有两个及以上条目时启用模型选择：`Agent` / `AgentSwarm` 工具会获得 `model` 参数，工具描述中列出模型池（默认模型标注 `[default]`），main agent 可按次派生选择模型。池 key 只能引用已配置的 [`[models]`](#models) 条目，例如：
 
 ```toml
 [secondary_model]
-default_model = "nighthawk/kimi-for-coding-highspeed"
+default_model = "deepseek-chat"
 [secondary_model.models]
-"nighthawk/k3" = "难题选它。擅长复杂推理、算法设计、深度调试、数学和系统性难题。"
-"nighthawk/kimi-for-coding-highspeed" = "速度快但单价较高。适合日常重构、代码解释、小改动、总结等看重响应速度的任务。"
-"nighthawk/kimi-for-coding" = "均衡的编码主力。适合大多数功能开发和代码修改任务。"
+"deepseek-chat" = "日常开发主力。适合重构、代码解释和小改动。"
+"deepseek-reasoner" = "难题选它。擅长复杂推理、算法设计和深度调试。"
 ```
 
 派生时按以下顺序解析 subagent 的模型：
@@ -257,27 +249,31 @@ default_model = "nighthawk/kimi-for-coding-highspeed"
 2. 把原别名和变体别名都放进模型池。
 
 ```toml
-# "nighthawk/k3" 由 /login 提供（默认 high 档）；这里为同一模型注册一个 max 档位变体
-[models.k3-max]
-provider = "managed:nighthawk"
-model = "k3"
-max_context_size = 1048576
-capabilities = [ "thinking", "always_thinking", "image_in", "video_in", "tool_use" ]
+# 为同一底层模型注册一个 max 档位变体
+[models.chat]
+provider = "deepseek"
+model = "deepseek-chat"
+
+[models.chat-max]
+provider = "deepseek"
+model = "deepseek-chat"
+max_context_size = 131072
+capabilities = [ "thinking", "tool_use" ]
 support_efforts = [ "low", "high", "max" ]
 
-[models.k3-max.overrides]
+[models.chat-max.overrides]
 default_effort = "max"
 
 [secondary_model]
-default_model = "nighthawk/k3"
+default_model = "chat"
 [secondary_model.models]
-"nighthawk/k3" = "默认 high 档位。适合大多数实现、分析和多轮交互任务。"
-k3-max = "同一模型的 max Thinking 档位。适合最难的子任务。"
+chat = "默认档位。适合大多数实现、分析和多轮交互任务。"
+chat-max = "同一模型的 max Thinking 档位。适合最难的子任务。"
 ```
 
 两个前提：
 
-- 底层模型必须声明了 `support_efforts`（`managed:nighthawk` 下目前只有 k3 系列声明了档位）。
+- 底层模型必须声明了 `support_efforts`，否则档位没有可选值。
 - 变体是独立条目，不会继承被指向条目的字段：`capabilities`、`support_efforts` 等元数据要完整照抄，否则 `default_effort` 不生效（它必须是 `support_efforts` 列表中的值）。
 
 另外注意 main agent 与 subagent 的不对称：对 main agent，全局 `[thinking].effort` 一旦设置就压过变体的 `default_effort`；对绑定池内别名的 subagent，变体的 `default_effort` 优先于全局值，只有 `[secondary_model].default_effort` 的优先级更高。取值与回落规则同 [`[models]` 条目的 `default_effort`](#models)。
@@ -717,6 +713,6 @@ additional_dir = ["/absolute/path/to/shared"]
 
 ## 下一步
 
-- [平台与模型](./providers.md) — 各供应商类型（NightHawk、Claude、OpenAI、Gemini）的接入示例
+- [平台与模型](./providers.md) — 各供应商类型（Claude、OpenAI、Gemini 及兼容服务）的接入示例
 - [配置覆盖](./overrides.md) — CLI 选项、配置文件、环境变量的优先级规则
 - [环境变量](./env-vars.md) — `NIGHTHAWK_HOME` 等运行时变量的完整列表
