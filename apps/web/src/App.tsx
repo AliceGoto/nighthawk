@@ -9,18 +9,25 @@ import {
   getMeta,
   getSnapshot,
   listModels,
+  listMcpServers,
   listMessages,
+  listPlugins,
   listSessions,
   loadToken,
   sendPrompt,
+  renameSession,
   respondInteraction,
   setSessionConfig,
   setToken,
+  uploadFile,
+  type FileMeta,
   type ModelEntry,
+  type PluginSummary,
   type QuestionItem,
   type Message,
   type Session,
 } from './api';
+import { AuthImage } from './AuthImage';
 import { Markdown } from './Markdown';
 import {
   ApprovalCard,
@@ -45,19 +52,12 @@ interface Item {
   text: string;
   thinking: string;
   tools: ToolCall[];
-  images: string[];
+  images: ImageRef[];
 }
 
-function imageUrlOf(block: { type: string; image_url?: { url: string }; imageUrl?: { url: string }; source?: { kind?: string; url?: string; data?: string; media_type?: string } }): string | undefined {
-  const direct = block.image_url?.url ?? block.imageUrl?.url;
-  if (typeof direct === 'string' && direct.length > 0) return direct;
-  const source = block.source;
-  if (source === undefined) return undefined;
-  if (source.kind === 'url' && typeof source.url === 'string' && source.url.length > 0) return source.url;
-  if (source.kind === 'base64' && typeof source.data === 'string' && typeof source.media_type === 'string') {
-    return `data:${source.media_type};base64,${source.data}`;
-  }
-  return undefined;
+interface ImageRef {
+  url?: string;
+  fileId?: string;
 }
 
 const QUICK_PROMPTS = [
@@ -78,6 +78,35 @@ const EFFORT_LABELS: Record<string, string> = {
 
 function effortLabel(value: string): string {
   return EFFORT_LABELS[value] ?? value;
+}
+
+function imageRefOf(block: {
+  type: string;
+  image_url?: { url: string; id?: string };
+  imageUrl?: { url: string };
+  source?: { kind?: string; url?: string; data?: string; media_type?: string; file_id?: string };
+}): ImageRef | undefined {
+  const direct = block.image_url?.url ?? block.imageUrl?.url;
+  if (typeof direct === 'string' && direct.length > 0) return { url: direct };
+  const source = block.source;
+  if (source === undefined) return undefined;
+  if (source.kind === 'url' && typeof source.url === 'string' && source.url.length > 0) {
+    return { url: source.url };
+  }
+  if (
+    source.kind === 'base64' &&
+    typeof source.data === 'string' &&
+    typeof source.media_type === 'string'
+  ) {
+    return { url: `data:${source.media_type};base64,${source.data}` };
+  }
+  if (
+    (source.kind === 'file' || source.kind === 'session_media') &&
+    typeof source.file_id === 'string'
+  ) {
+    return { fileId: source.file_id };
+  }
+  return undefined;
 }
 
 function str(value: unknown, fallback = ''): string {
@@ -105,8 +134,8 @@ function toItems(messages: Message[]): Item[] {
     if (message.role === 'user') {
       const text = message.content.map(textOf).join('');
       const images = message.content
-        .map((block) => imageUrlOf(block))
-        .filter((url): url is string => url !== undefined);
+        .map((block) => imageRefOf(block))
+        .filter((ref): ref is ImageRef => ref !== undefined);
       const trimmed = text.trimStart();
       if ((text.trim().length === 0 && images.length === 0) || trimmed.startsWith('<system-reminder>')) {
         continue;
@@ -122,8 +151,8 @@ function toItems(messages: Message[]): Item[] {
         .join('');
       const tools = toolsOf(message);
       const images = message.content
-        .map((block) => imageUrlOf(block))
-        .filter((url): url is string => url !== undefined);
+        .map((block) => imageRefOf(block))
+        .filter((ref): ref is ImageRef => ref !== undefined);
       if (text.length > 0 || tools.length > 0 || thinking.length > 0 || images.length > 0) {
         items.push({ id: message.id, role: 'assistant', text, thinking, tools, images });
       }
@@ -294,6 +323,22 @@ export function App(): ReactElement {
     () => new URLSearchParams(location.search).get('picker') === '1',
   );
   const [query, setQuery] = useState('');
+  const [attachments, setAttachments] = useState<FileMeta[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [renamingId, setRenamingId] = useState<string>();
+  const [renameValue, setRenameValue] = useState('');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const fromUrl = new URLSearchParams(location.search).get('theme');
+    if (fromUrl === 'light' || fromUrl === 'dark') return fromUrl;
+    return localStorage.getItem('nighthawk.theme') === 'light' ? 'light' : 'dark';
+  });
+  const [panel, setPanel] = useState<'none' | 'plugins' | 'mcp'>(() => {
+    const fromUrl = new URLSearchParams(location.search).get('panel');
+    return fromUrl === 'plugins' || fromUrl === 'mcp' ? fromUrl : 'none';
+  });
+  const [plugins, setPlugins] = useState<PluginSummary[]>([]);
+  const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
   const [pending, setPending] = useState<
     ({ kind: 'approval'; item: ApprovalItem } | { kind: 'question'; item: QuestionPrompt })[]
   >([]);
@@ -539,6 +584,50 @@ export function App(): ReactElement {
     setLive(undefined);
   }, [currentId, refreshMessages]);
 
+  const addFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      const uploaded: FileMeta[] = [];
+      for (const file of files) uploaded.push(await uploadFile(file));
+      setAttachments((previous) => [...previous, ...uploaded]);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const commitRename = useCallback(
+    async (id: string) => {
+      const title = renameValue.trim();
+      setRenamingId(undefined);
+      if (title.length === 0) return;
+      try {
+        await renameSession(id, title);
+        await reload();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [renameValue, reload],
+  );
+
+  const loadPanels = useCallback(async (which: 'plugins' | 'mcp') => {
+    setPanel(which);
+    try {
+      if (which === 'plugins') {
+        const result = await listPlugins();
+        setPlugins(result.plugins);
+      } else {
+        const result = await listMcpServers();
+        setMcpServers(result);
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
   const startWithPrompt = useCallback(
     async (text: string) => {
       setBusy(true);
@@ -563,25 +652,36 @@ export function App(): ReactElement {
 
   const submit = useCallback(async () => {
     const text = composer.trim();
-    if (text.length === 0) return;
+    if (text.length === 0 && attachments.length === 0) return;
     setComposer('');
     if (currentId === undefined) {
       await startWithPrompt(text);
       return;
     }
+    const pendingFiles = attachments;
+    setAttachments([]);
     setItems((previous) => [
       ...previous,
-      { id: `local_${crypto.randomUUID()}`, role: 'user', text, thinking: '', tools: [], images: [] },
+      {
+        id: `local_${crypto.randomUUID()}`,
+        role: 'user',
+        text,
+        thinking: '',
+        tools: [],
+        images: pendingFiles
+          .filter((file) => file.media_type.startsWith('image/'))
+          .map((file) => ({ fileId: file.id })),
+      },
     ]);
     setBusy(true);
     framesRef.current = {};
     try {
-      await sendPrompt(currentId, text);
+      await sendPrompt(currentId, text, pendingFiles);
     } catch (error) {
       setBusy(false);
       setError(error instanceof Error ? error.message : String(error));
     }
-  }, [composer, currentId, startWithPrompt]);
+  }, [composer, currentId, attachments, startWithPrompt]);
 
   const stop = useCallback(async () => {
     if (currentId === undefined) return;
@@ -614,6 +714,16 @@ export function App(): ReactElement {
     }
     return [...groups.entries()].toSorted(([a], [b]) => a.localeCompare(b));
   }, [models]);
+
+  useEffect(() => {
+    if (panel !== 'none') void loadPanels(panel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset['theme'] = theme;
+    localStorage.setItem('nighthawk.theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -828,9 +938,45 @@ export function App(): ReactElement {
                   </div>
                 </div>
               )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  event.target.value = '';
+                  void addFiles(files);
+                }}
+              />
+              {attachments.length > 0 && (
+                <div className="attachments">
+                  {attachments.map((file) => (
+                    <span className="attachment-chip" key={file.id}>
+                      <span className="attachment-name">{file.name}</span>
+                      <button
+                        type="button"
+                        aria-label="移除附件"
+                        onClick={() =>
+                          setAttachments((previous) => previous.filter((item) => item.id !== file.id))
+                        }
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
               <textarea
                 value={composer}
                 onChange={(event) => setComposer(event.target.value)}
+                onPaste={(event) => {
+                  const files = Array.from(event.clipboardData.files);
+                  if (files.length > 0) {
+                    event.preventDefault();
+                    void addFiles(files);
+                  }
+                }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
@@ -841,14 +987,29 @@ export function App(): ReactElement {
                 rows={2}
               />
               <div className="composer-bar">
-                <button
-                  type="button"
-                  className="bar-icon"
-                  title="在当前目录新建会话"
-                  onClick={() => void newSession()}
-                >
-                  ＋
-                </button>
+                <div className="composer-left">
+                  <button
+                    type="button"
+                    className="bar-icon"
+                    title="在当前目录新建会话"
+                    onClick={() => void newSession()}
+                  >
+                    ＋
+                  </button>
+                  <button
+                    type="button"
+                    className="bar-icon"
+                    title="添加附件"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? '…' : (
+                      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                        <path d="M10.5 4.5 5.9 9.1a2 2 0 0 0 2.8 2.8l4.8-4.8a3.2 3.2 0 0 0-4.5-4.5L3.9 7.7a4.4 4.4 0 0 0 6.2 6.2l4-4" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 <div className="composer-right">
                   <button
                     type="button"
@@ -916,17 +1077,46 @@ export function App(): ReactElement {
         <nav className="sessions">
           {visibleSessions.map((session) => (
             <div key={session.id} className={session.id === currentId ? 'session-row active' : 'session-row'}>
-              <button type="button" className="session-main" onClick={() => setCurrentId(session.id)}>
-                <span className="session-title">
-                  {session.title.length > 0 ? session.title : session.last_prompt || '新会话'}
-                </span>
-                <span className="session-meta">
-                  {session.busy
-                    ? '运行中'
-                    : session.pending_interaction !== 'none'
-                      ? '待确认'
-                      : (session.metadata.cwd ?? '')}
-                </span>
+              {renamingId === session.id ? (
+                <div className="session-main">
+                  <input
+                    className="session-rename"
+                    autoFocus
+                    value={renameValue}
+                    onChange={(event) => setRenameValue(event.target.value)}
+                    onBlur={() => void commitRename(session.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') void commitRename(session.id);
+                      if (event.key === 'Escape') setRenamingId(undefined);
+                    }}
+                  />
+                </div>
+              ) : (
+                <button type="button" className="session-main" onClick={() => setCurrentId(session.id)}>
+                  <span className="session-title">
+                    {session.title.length > 0 ? session.title : session.last_prompt || '新会话'}
+                  </span>
+                  <span className="session-meta">
+                    {session.busy
+                      ? '运行中'
+                      : session.pending_interaction !== 'none'
+                        ? '待确认'
+                        : (session.metadata.cwd ?? '')}
+                  </span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="session-delete"
+                aria-label="重命名会话"
+                onClick={() => {
+                  setRenamingId(session.id);
+                  setRenameValue(session.title.length > 0 ? session.title : session.last_prompt);
+                }}
+              >
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 13.5h2.5L13 6a1.6 1.6 0 0 0-2.3-2.3L3 11.2V13.5Z" />
+                </svg>
               </button>
               {confirmDeleteId === session.id ? (
                 <span className="session-confirm">
@@ -962,9 +1152,24 @@ export function App(): ReactElement {
           ))}
           {visibleSessions.length === 0 && <div className="sessions-empty">没有会话</div>}
         </nav>
-        {meta !== undefined && str(meta['version']).length > 0 && (
-          <div className="version">v{str(meta['version'])}</div>
-        )}
+        <div className="sidebar-footer">
+          <button type="button" className="footer-btn" onClick={() => void loadPanels('plugins')}>
+            插件
+          </button>
+          <button type="button" className="footer-btn" onClick={() => void loadPanels('mcp')}>
+            MCP
+          </button>
+          <button
+            type="button"
+            className="footer-btn"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? '浅色' : '深色'}
+          </button>
+          {meta !== undefined && str(meta['version']).length > 0 && (
+            <span className="version">v{str(meta['version'])}</span>
+          )}
+        </div>
       </aside>
 
       <main className="main">
@@ -1007,9 +1212,17 @@ export function App(): ReactElement {
                 <div className="role">{item.role === 'user' ? '你' : 'NightHawk'}</div>
                 {item.images.length > 0 && (
                   <div className="msg-images">
-                    {item.images.map((src, index) => (
-                      <img key={`${item.id}_${String(index)}`} src={src} alt="" loading="lazy" />
-                    ))}
+                    {item.images.map((ref, index) =>
+                      ref.url !== undefined ? (
+                        <img key={`${item.id}_${String(index)}`} src={ref.url} alt="" loading="lazy" />
+                      ) : (
+                        <AuthImage
+                          key={`${item.id}_${String(index)}`}
+                          sessionId={current?.id ?? ''}
+                          fileId={ref.fileId ?? ''}
+                        />
+                      ),
+                    )}
                   </div>
                 )}
                 {item.role === 'assistant' && item.text.length > 0 && (
@@ -1068,6 +1281,78 @@ export function App(): ReactElement {
           </div>
         )}
       </main>
+
+      {panel !== 'none' && (
+        <>
+          <div className="sheet-backdrop" onClick={() => setPanel('none')} />
+          <aside className="sheet">
+            <div className="sheet-head">
+              <button
+                type="button"
+                className={panel === 'plugins' ? 'sheet-tab active' : 'sheet-tab'}
+                onClick={() => void loadPanels('plugins')}
+              >
+                插件
+              </button>
+              <button
+                type="button"
+                className={panel === 'mcp' ? 'sheet-tab active' : 'sheet-tab'}
+                onClick={() => void loadPanels('mcp')}
+              >
+                MCP
+              </button>
+              <button type="button" className="sheet-close" onClick={() => setPanel('none')}>
+                ×
+              </button>
+            </div>
+            <div className="sheet-body">
+              {panel === 'plugins' ? (
+                plugins.length === 0 ? (
+                  <div className="sheet-empty">没有已安装的插件</div>
+                ) : (
+                  plugins.map((plugin) => (
+                    <div className="sheet-item" key={plugin.id}>
+                      <div className="sheet-item-head">
+                        <span className="sheet-item-name">{plugin.displayName}</span>
+                        <span className={plugin.enabled ? 'sheet-badge on' : 'sheet-badge'}>
+                          {plugin.enabled ? '已启用' : '已停用'}
+                        </span>
+                      </div>
+                      <div className="sheet-item-meta">
+                        {[plugin.version, plugin.description].filter((part) => part !== undefined).join(' · ')}
+                      </div>
+                      <div className="sheet-item-sub">
+                        skills {plugin.skillCount} · mcp {plugin.mcpServerCount}
+                      </div>
+                    </div>
+                  ))
+                )
+              ) : mcpServers.length === 0 ? (
+                <div className="sheet-empty">没有 MCP 服务</div>
+              ) : (
+                mcpServers.map((server, index) => {
+                  const name = str(server['name'], `server ${String(index)}`);
+                  const enabled = server['enabled'] === true;
+                  const where = str(server['url']) || str(server['command']);
+                  return (
+                    <div className="sheet-item" key={name}>
+                      <div className="sheet-item-head">
+                        <span className="sheet-item-name">{name}</span>
+                        <span className={enabled ? 'sheet-badge on' : 'sheet-badge'}>
+                          {enabled ? '已启用' : '已停用'}
+                        </span>
+                      </div>
+                      <div className="sheet-item-meta">
+                        {[str(server['transport']), where].filter((part) => part.length > 0).join(' · ')}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }

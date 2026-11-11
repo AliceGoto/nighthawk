@@ -150,10 +150,25 @@ export function listMessages(sessionId: string): Promise<{ items: Message[] }> {
   return request(`/api/v1/sessions/${sessionId}/messages?page_size=100`);
 }
 
-export function sendPrompt(sessionId: string, text: string): Promise<unknown> {
+export function sendPrompt(sessionId: string, text: string, files: FileMeta[] = []): Promise<unknown> {
+  const content: Record<string, unknown>[] = [];
+  if (text.length > 0) content.push({ type: 'text', text });
+  for (const file of files) {
+    if (file.media_type.startsWith('image/')) {
+      content.push({ type: 'image', source: { kind: 'file', file_id: file.id } });
+    } else {
+      content.push({
+        type: 'file',
+        file_id: file.id,
+        name: file.name,
+        media_type: file.media_type,
+        size: file.size,
+      });
+    }
+  }
   return request(`/api/v1/sessions/${sessionId}/prompts`, {
     method: 'POST',
-    body: JSON.stringify({ content: [{ type: 'text', text }] }),
+    body: JSON.stringify({ content }),
   });
 }
 
@@ -192,6 +207,52 @@ export interface QuestionWire {
   agent_id?: string;
   questions: QuestionItem[];
   created_at: string;
+}
+
+export interface FileMeta {
+  id: string;
+  name: string;
+  media_type: string;
+  size: number;
+}
+
+export interface PluginSummary {
+  id: string;
+  displayName: string;
+  description?: string;
+  version?: string;
+  enabled: boolean;
+  state: 'ok' | 'error';
+  skillCount: number;
+  mcpServerCount: number;
+}
+
+export function renameSession(sessionId: string, title: string): Promise<Session> {
+  return request(`/api/v1/sessions/${sessionId}/profile`, {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  });
+}
+
+export async function uploadFile(file: File): Promise<FileMeta> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/api/v1/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: form,
+  });
+  const envelope = (await res.json()) as Envelope<FileMeta>;
+  if (envelope.code !== 0) throw new ApiError(envelope.code, envelope.msg);
+  return envelope.data;
+}
+
+export function listPlugins(): Promise<{ plugins: PluginSummary[] }> {
+  return request('/api/v1/plugins');
+}
+
+export function listMcpServers(): Promise<Record<string, unknown>[]> {
+  return request('/api/v2/mcp/servers');
 }
 
 export function respondInteraction(
