@@ -547,7 +547,8 @@ export function App(): ReactElement {
             </div>
 
             <footer className="composer">
-              <textarea
+              <div className="composer-inner">
+                <textarea
                 value={composer}
                 onChange={(event) => setComposer(event.target.value)}
                 onKeyDown={(event) => {
@@ -556,19 +557,20 @@ export function App(): ReactElement {
                     void submit();
                   }
                 }}
-                placeholder="问点什么，Enter 发送，Shift+Enter 换行"
-                rows={3}
-              />
-              <div className="composer-actions">
-                {busy ? (
-                  <button type="button" className="stop" onClick={() => void stop()}>
-                    停止
-                  </button>
-                ) : (
-                  <button type="button" disabled={composer.trim().length === 0} onClick={() => void submit()}>
-                    发送
-                  </button>
-                )}
+                  placeholder="问点什么，Enter 发送，Shift+Enter 换行"
+                  rows={3}
+                />
+                <div className="composer-actions">
+                  {busy ? (
+                    <button type="button" className="stop" onClick={() => void stop()}>
+                      停止
+                    </button>
+                  ) : (
+                    <button type="button" disabled={composer.trim().length === 0} onClick={() => void submit()}>
+                      发送
+                    </button>
+                  )}
+                </div>
               </div>
             </footer>
           </>
