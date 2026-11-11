@@ -3,6 +3,16 @@ dist/
 dist-single/
 dist-native/
 dist-native-release/
+*.d.ts
+!apps/nighthawk/src/generated/vis-web-asset.d.ts
+!apps/vscode/src/raw-modules.d.ts
+!apps/vscode/webview-ui/src/vite-env.d.ts
+!packages/agent-core-v2/docs/state-manifest.d.ts
+!packages/agent-core-v2/docs/wire-manifest.d.ts
+!packages/agent-core-v2/src/env.d.ts
+!packages/kap-server/src/env.d.ts
+!packages/migration-legacy/test/prompt-modules.d.ts
+!packages/product/src/env.d.ts
 .tmp-api-extractor/
 .contract-types-tmp/
 .local/

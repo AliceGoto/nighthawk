@@ -49,11 +49,6 @@ export function registerProviderDefinition<N extends Protocol>(
   byProtocol.set(definition.baseProtocol, definition);
 }
 
-/**
- * Older NightHawk builds exposed the Kimi provider under the id `nighthawk`.
- * Keep resolving that id so existing config files keep working after the rebrand
- * was reverted.
- */
 function resolveProviderId(id: string): string {
   return id === 'nighthawk' ? 'kimi' : id;
 }

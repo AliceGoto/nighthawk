@@ -138,9 +138,6 @@ export function lowerMessage(message: Message, lower: OpenAILowerContext): Nativ
       nonThinkParts.length > 1 &&
       nonThinkParts.every((part) => part.type === 'text')
     ) {
-      // A turn can accumulate several adjacent text parts. Sending them as a content
-      // array lets the provider join them with its own separators, and a model that
-      // sees its own history broken up starts imitating it. Fold them into one string.
       content = nonThinkParts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     } else if (nonThinkParts.length > 0) {
       content = nonThinkParts
