@@ -45,6 +45,19 @@ interface Item {
   text: string;
   thinking: string;
   tools: ToolCall[];
+  images: string[];
+}
+
+function imageUrlOf(block: { type: string; image_url?: { url: string }; imageUrl?: { url: string }; source?: { kind?: string; url?: string; data?: string; media_type?: string } }): string | undefined {
+  const direct = block.image_url?.url ?? block.imageUrl?.url;
+  if (typeof direct === 'string' && direct.length > 0) return direct;
+  const source = block.source;
+  if (source === undefined) return undefined;
+  if (source.kind === 'url' && typeof source.url === 'string' && source.url.length > 0) return source.url;
+  if (source.kind === 'base64' && typeof source.data === 'string' && typeof source.media_type === 'string') {
+    return `data:${source.media_type};base64,${source.data}`;
+  }
+  return undefined;
 }
 
 const QUICK_PROMPTS = [
@@ -91,9 +104,14 @@ function toItems(messages: Message[]): Item[] {
   for (const message of messages) {
     if (message.role === 'user') {
       const text = message.content.map(textOf).join('');
+      const images = message.content
+        .map((block) => imageUrlOf(block))
+        .filter((url): url is string => url !== undefined);
       const trimmed = text.trimStart();
-      if (text.trim().length === 0 || trimmed.startsWith('<system-reminder>')) continue;
-      items.push({ id: message.id, role: 'user', text, thinking: '', tools: [] });
+      if ((text.trim().length === 0 && images.length === 0) || trimmed.startsWith('<system-reminder>')) {
+        continue;
+      }
+      items.push({ id: message.id, role: 'user', text, thinking: '', tools: [], images });
       continue;
     }
     if (message.role === 'assistant') {
@@ -103,8 +121,11 @@ function toItems(messages: Message[]): Item[] {
         .map((block) => block.thinking ?? '')
         .join('');
       const tools = toolsOf(message);
-      if (text.length > 0 || tools.length > 0 || thinking.length > 0) {
-        items.push({ id: message.id, role: 'assistant', text, thinking, tools });
+      const images = message.content
+        .map((block) => imageUrlOf(block))
+        .filter((url): url is string => url !== undefined);
+      if (text.length > 0 || tools.length > 0 || thinking.length > 0 || images.length > 0) {
+        items.push({ id: message.id, role: 'assistant', text, thinking, tools, images });
       }
       continue;
     }
@@ -239,7 +260,7 @@ function buildLive(frames: Record<string, FrameState>): Item | undefined {
       };
     });
   if (text.length === 0 && thinking.length === 0 && tools.length === 0) return undefined;
-  return { id: 'live', role: 'assistant', text, thinking, tools };
+  return { id: 'live', role: 'assistant', text, thinking, tools, images: [] };
 }
 
 function useSessions(): {
@@ -303,7 +324,7 @@ export function App(): ReactElement {
       switch (event.type) {
         case 'turn.started':
           setBusy(true);
-          setLive({ id: 'live', role: 'assistant', text: '', thinking: '', tools: [] });
+          setLive({ id: 'live', role: 'assistant', text: '', thinking: '', tools: [], images: [] });
           break;
         case 'assistant.delta':
           setLive((previous) => ({
@@ -312,6 +333,7 @@ export function App(): ReactElement {
             text: (previous?.text ?? '') + str(payload['delta']),
             thinking: previous?.thinking ?? '',
             tools: previous?.tools ?? [],
+            images: previous?.images ?? [],
           }));
           break;
         case 'thinking.delta':
@@ -321,6 +343,7 @@ export function App(): ReactElement {
             text: previous?.text ?? '',
             thinking: (previous?.thinking ?? '') + str(payload['delta']),
             tools: previous?.tools ?? [],
+            images: previous?.images ?? [],
           }));
           break;
         case 'tool.call.started': {
@@ -336,6 +359,7 @@ export function App(): ReactElement {
             text: previous?.text ?? '',
             thinking: previous?.thinking ?? '',
             tools: [...(previous?.tools ?? []), tool],
+            images: previous?.images ?? [],
           }));
           break;
         }
@@ -547,7 +571,7 @@ export function App(): ReactElement {
     }
     setItems((previous) => [
       ...previous,
-      { id: `local_${crypto.randomUUID()}`, role: 'user', text, thinking: '', tools: [] },
+      { id: `local_${crypto.randomUUID()}`, role: 'user', text, thinking: '', tools: [], images: [] },
     ]);
     setBusy(true);
     framesRef.current = {};
@@ -981,6 +1005,13 @@ export function App(): ReactElement {
             {visibleItems.map((item) => (
               <article key={item.id} className={`message ${item.role}`}>
                 <div className="role">{item.role === 'user' ? '你' : 'NightHawk'}</div>
+                {item.images.length > 0 && (
+                  <div className="msg-images">
+                    {item.images.map((src, index) => (
+                      <img key={`${item.id}_${String(index)}`} src={src} alt="" loading="lazy" />
+                    ))}
+                  </div>
+                )}
                 {item.role === 'assistant' && item.text.length > 0 && (
                   <button
                     type="button"

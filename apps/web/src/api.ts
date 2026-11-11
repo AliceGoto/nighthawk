@@ -30,6 +30,15 @@ export interface ContentBlock {
   input?: unknown;
   output?: unknown;
   tool_use_id?: string;
+  image_url?: { url: string; id?: string };
+  imageUrl?: { url: string };
+  source?: {
+    kind?: string;
+    url?: string;
+    data?: string;
+    media_type?: string;
+    file_id?: string;
+  };
   content?: unknown;
   is_error?: boolean;
 }
