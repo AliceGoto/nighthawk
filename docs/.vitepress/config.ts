@@ -23,8 +23,9 @@ const config = withMermaid(defineConfig({
   description: 'NightHawk CLI Documentation',
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}nighthawk-logo.svg` }],
-    ['link', { rel: 'alternate icon', type: 'image/x-icon', href: `${base}favicon.ico` }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}nighthawk-icon.svg` }],
+    ['link', { rel: 'alternate icon', type: 'image/x-icon', href: `${base}nighthawk-icon.ico` }],
+    ['link', { rel: 'shortcut icon', type: 'image/x-icon', href: `${base}nighthawk-icon.ico` }],
     ['meta', { name: 'theme-color', content: '#0b1220' }],
   ],
 
