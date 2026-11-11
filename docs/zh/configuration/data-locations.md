@@ -1,6 +1,6 @@
 # 数据路径
 
-NightHawk CLI 把配置文件、会话历史、登录凭据、诊断日志等运行时数据集中存放在 `~/.nighthawk/` 下。本页帮你搞清楚每类数据在哪里、用来做什么，以及需要时怎么清理或搬迁。
+NightHawk CLI 把配置文件、会话历史、供应商凭据、诊断日志等运行时数据集中存放在 `~/.nighthawk/` 下。本页帮你搞清楚每类数据在哪里、用来做什么，以及需要时怎么清理或搬迁。
 
 ## 数据根目录
 
@@ -91,7 +91,7 @@ $NIGHTHAWK_HOME  （默认 ~/.nighthawk）
 
 ## 日志与更新状态
 
-- **`logs/nighthawk.log`**（全局）：记录启动、登录、导出等跨会话事件。
+- **`logs/nighthawk.log`**（全局）：记录启动、配置变更、导出等跨会话事件。
 - **`<sessionDir>/logs/nighthawk.log`**（会话级）：记录单个会话内的诊断事件。
 
 报 bug 时，优先用 `nighthawk export` 导出相关会话（详见 [nighthawk 命令](../reference/kimi-command.md)）；会话日志默认包含在导出包里。不想分享全局日志时加 `--no-include-global-log`。
@@ -115,7 +115,7 @@ $NIGHTHAWK_HOME  （默认 ~/.nighthawk）
 | 清理输入历史 | 删除 `~/.nighthawk/user-history/` |
 | 重置更新状态 | 删除 `~/.nighthawk/updates/latest.json` |
 | 强制重新下载托管 `rg` 和 `fd` | 删除 `~/.nighthawk/bin/` |
-| 清除供应商 OAuth 登录态 | 运行 `/logout`，或删除对应的 `credentials/<name>.json` |
+| 清除供应商凭据 | 运行 `/logout`，或删除对应的 `credentials/<name>.json` |
 | 清除 MCP server OAuth 登录态 | 删除 `credentials/mcp/`（`/logout` 不会清理 MCP 凭据） |
 | 移除用户级 MCP 声明 | 删除 `$NIGHTHAWK_HOME/mcp.json`（默认为 `~/.nighthawk/mcp.json`） |
 | 清理全局 NightHawk 专属 Agent 指令 | 删除 `$NIGHTHAWK_HOME/AGENTS.md`（默认为 `~/.nighthawk/AGENTS.md`） |

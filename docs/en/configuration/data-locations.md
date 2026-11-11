@@ -1,6 +1,6 @@
 # Data locations
 
-NightHawk CLI stores the config file, session history, login credentials, diagnostic logs, and other runtime data under `~/.nighthawk/`. This page helps you understand where each type of data lives, what it is for, and how to clean up or relocate it when needed.
+NightHawk CLI stores the config file, session history, provider credentials, diagnostic logs, and other runtime data under `~/.nighthawk/`. This page helps you understand where each type of data lives, what it is for, and how to clean up or relocate it when needed.
 
 ## Data root directory
 
@@ -16,7 +16,7 @@ If you need to move the data directory elsewhere (for example, to isolate config
 export NIGHTHAWK_HOME="$HOME/.config/nighthawk"
 ```
 
-Once set, **all** NightHawk data lands under the new path: config, sessions, logs, OAuth credentials, NightHawk-specific user Skills, global `AGENTS.md`, and more. For the full reference on `NIGHTHAWK_HOME`, see [Environment variables](./env-vars.md).
+Once set, **all** NightHawk data lands under the new path: config, sessions, logs, provider credentials, NightHawk-specific user Skills, global `AGENTS.md`, and more. For the full reference on `NIGHTHAWK_HOME`, see [Environment variables](./env-vars.md).
 
 ::: tip Note
 
@@ -36,7 +36,7 @@ $NIGHTHAWK_HOME  (default: ~/.nighthawk)
 │   ├── installed.json      # Installed plugin records and enabled state
 │   └── managed/            # Plugin copies installed from zip/local paths
 ├── session_index.jsonl     # Session index
-├── credentials/            # OAuth credentials (dir 0700, files 0600)
+├── credentials/            # provider credentials (dir 0700, files 0600)
 │   ├── <name>.json
 │   └── mcp/
 │       └── <key>-<suffix>.json
@@ -68,7 +68,7 @@ Each top-level file under the data root serves a specific purpose; most are mana
 - **`mcp.json`**: user-level MCP server declarations, merged with the project-local `.nighthawk/mcp.json` on startup. See [MCP](../customization/mcp.md).
 - **`skills/`**: NightHawk-specific user-level Skills. This directory moves with `NIGHTHAWK_HOME`; generic cross-tool Skills can still live under `~/.agents/skills/`. See [Agent Skills](../customization/skills.md).
 - **`plugins/installed.json`**: records installed plugins, each plugin's enabled state, and MCP server capability state changes made via `/plugins` or `/plugins mcp disable|enable`. Files installed from local paths or zip URLs are copied to `plugins/managed/<id>/`. See [Plugins](../customization/plugins.md).
-- **`credentials/`**: OAuth credential directory, with permissions `0o700` (directory) / `0o600` (files), readable and writable only by the current user. Managed provider credentials are stored as `credentials/<name>.json`; MCP server credentials are stored under `credentials/mcp/`. Credentials are written using an atomic flow (tmp → fsync → rename) to prevent corruption.
+- **`credentials/`**: local credential directory, with permissions `0o700` (directory) / `0o600` (files), readable and writable only by the current user. Provider credentials are stored as `credentials/<name>.json`; MCP server credentials are stored under `credentials/mcp/`. Credentials are written using an atomic flow (tmp → fsync → rename) to prevent corruption.
 
 ## Session data
 
@@ -115,7 +115,7 @@ Deleting the data root directory (`~/.nighthawk/` or the path set by `NIGHTHAWK_
 | Clear input history | Delete `~/.nighthawk/user-history/` |
 | Reset update state | Delete `~/.nighthawk/updates/latest.json` |
 | Force re-download of managed `rg` and `fd` | Delete `~/.nighthawk/bin/` |
-| Clear provider OAuth login state | Run `/logout`, or delete the corresponding `credentials/<name>.json` |
+| Clear provider credentials | Run `/logout`, or delete the corresponding `credentials/<name>.json` |
 | Clear MCP server OAuth login state | Delete `credentials/mcp/` (`/logout` does not clear MCP credentials) |
 | Remove user-level MCP declarations | Delete `$NIGHTHAWK_HOME/mcp.json` (default `~/.nighthawk/mcp.json`) |
 | Clear global NightHawk-specific agent instructions | Delete `$NIGHTHAWK_HOME/AGENTS.md` (default `~/.nighthawk/AGENTS.md`) |

@@ -221,7 +221,7 @@ CLI 还会读取一些标准系统变量来检测运行环境，不会修改它�
 
 ## HTTP 代理
 
-NightHawk 会遵循标准代理环境变量，让所有出网流量（模型 API 调用、MCP 服务、网络工具、遥测、登录、更新检查）都走代理：
+NightHawk 会遵循标准代理环境变量，让所有出网流量（模型 API 调用、MCP 服务、网络工具、遥测、更新检查）都走代理：
 
 - `HTTP_PROXY` / `http_proxy`：用于 `http://` 请求的代理
 - `HTTPS_PROXY` / `https_proxy`：用于 `https://` 请求的代理
