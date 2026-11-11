@@ -25,7 +25,10 @@ export interface ContentBlock {
   thinking?: string;
   id?: string;
   name?: string;
+  tool_call_id?: string;
+  tool_name?: string;
   input?: unknown;
+  output?: unknown;
   tool_use_id?: string;
   content?: unknown;
   is_error?: boolean;

@@ -79,8 +79,8 @@ function toolsOf(message: Message): ToolCall[] {
   return message.content
     .filter((block) => block.type === 'tool_use')
     .map((block) => ({
-      id: block.id ?? crypto.randomUUID(),
-      name: block.name ?? 'tool',
+      id: block.tool_call_id ?? block.id ?? crypto.randomUUID(),
+      name: block.tool_name ?? block.name ?? 'tool',
       args: block.input,
       running: false,
     }));
@@ -112,9 +112,12 @@ function toItems(messages: Message[]): Item[] {
       const last = items.at(-1);
       for (const block of message.content) {
         if (block.type !== 'tool_result' || last === undefined) continue;
-        const target = last.tools.find((tool) => tool.id === block.tool_use_id);
+        const target = last.tools.find(
+          (tool) => tool.id === (block.tool_call_id ?? block.tool_use_id),
+        );
         if (target !== undefined) {
-          target.output = typeof block.content === 'string' ? block.content : JSON.stringify(block.content);
+          const output = block.output ?? block.content;
+          target.output = typeof output === 'string' ? output : JSON.stringify(output);
           target.isError = block.is_error === true;
           target.running = false;
         }
@@ -124,9 +127,19 @@ function toItems(messages: Message[]): Item[] {
   return items;
 }
 
+interface FrameToolState {
+  id: string;
+  name: string;
+  state: string;
+  input?: unknown;
+  output?: unknown;
+  error?: string;
+}
+
 interface FrameState {
   kind: string;
   text: string;
+  tool?: FrameToolState;
 }
 
 function applyFrames(
@@ -146,8 +159,24 @@ function applyFrames(
       const record = frame as Record<string, unknown>;
       const id = record['frameId'];
       if (typeof id !== 'string') continue;
+      const frameKind = typeof record['kind'] === 'string' ? record['kind'] : 'text';
+      if (frameKind === 'tool') {
+        frames[id] = {
+          kind: 'tool',
+          text: '',
+          tool: {
+            id: typeof record['toolCallId'] === 'string' ? record['toolCallId'] : id,
+            name: typeof record['name'] === 'string' ? record['name'] : 'tool',
+            state: typeof record['state'] === 'string' ? record['state'] : 'running',
+            input: record['input'],
+            output: record['output'],
+            error: typeof record['error'] === 'string' ? record['error'] : undefined,
+          },
+        };
+        continue;
+      }
       frames[id] = {
-        kind: typeof record['kind'] === 'string' ? record['kind'] : 'text',
+        kind: frameKind,
         text: typeof record['text'] === 'string' ? record['text'] : '',
       };
       continue;
@@ -183,10 +212,34 @@ function applyFrames(
 
 function buildLive(frames: Record<string, FrameState>): Item | undefined {
   const values = Object.values(frames);
-  const text = values.filter((frame) => frame.kind !== 'thinking').map((frame) => frame.text).join('');
-  const thinking = values.filter((frame) => frame.kind === 'thinking').map((frame) => frame.text).join('');
-  if (text.length === 0 && thinking.length === 0) return undefined;
-  return { id: 'live', role: 'assistant', text, thinking, tools: [] };
+  const text = values
+    .filter((frame) => frame.kind === 'text')
+    .map((frame) => frame.text)
+    .join('');
+  const thinking = values
+    .filter((frame) => frame.kind === 'thinking')
+    .map((frame) => frame.text)
+    .join('');
+  const tools: ToolCall[] = values
+    .filter((frame) => frame.kind === 'tool' && frame.tool !== undefined)
+    .map((frame) => {
+      const tool = frame.tool as FrameToolState;
+      return {
+        id: tool.id,
+        name: tool.name,
+        args: tool.input,
+        output:
+          tool.output === undefined
+            ? tool.error
+            : typeof tool.output === 'string'
+              ? tool.output
+              : JSON.stringify(tool.output),
+        isError: tool.state === 'error',
+        running: tool.state === 'running',
+      };
+    });
+  if (text.length === 0 && thinking.length === 0 && tools.length === 0) return undefined;
+  return { id: 'live', role: 'assistant', text, thinking, tools };
 }
 
 function useSessions(): {
@@ -235,6 +288,7 @@ export function App(): ReactElement {
   const [cwd, setCwd] = useState('/Users/zhuyao/project/nighthawk');
   const socketRef = useRef<Socket | undefined>(undefined);
   const framesRef = useRef<Record<string, FrameState>>({});
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
   const effortTimer = useRef<number | undefined>(undefined);
   const currentIdRef = useRef<string | undefined>(undefined);
   const { sessions, reload } = useSessions();
@@ -641,6 +695,13 @@ export function App(): ReactElement {
     return [...items, live];
   }, [items, live]);
 
+  useEffect(() => {
+    const element = transcriptRef.current;
+    if (element === null) return;
+    const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
+    if (distance < 140) element.scrollTop = element.scrollHeight;
+  }, [visibleItems]);
+
   if (token.length === 0) {
     return (
       <div className="gate">
@@ -916,10 +977,22 @@ export function App(): ReactElement {
           </div>
         ) : (
           <>
-          <div className="transcript">
+          <div className="transcript" ref={transcriptRef}>
             {visibleItems.map((item) => (
               <article key={item.id} className={`message ${item.role}`}>
                 <div className="role">{item.role === 'user' ? '你' : 'NightHawk'}</div>
+                {item.role === 'assistant' && item.text.length > 0 && (
+                  <button
+                    type="button"
+                    className="msg-copy"
+                    title="复制这条回复"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(item.text);
+                    }}
+                  >
+                    复制
+                  </button>
+                )}
                 {item.thinking.length > 0 && (
                   <details className="thinking">
                     <summary>思考</summary>
