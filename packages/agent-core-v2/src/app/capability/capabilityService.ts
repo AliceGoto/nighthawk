@@ -71,8 +71,8 @@ export class CapabilityService extends Disposable implements ICapabilityService 
         resolveRegion: () => regions.getRegionAsync(),
       };
       this.entries = new Map<CapabilityId, CapabilityEntry>([
-        ['nighthawk-cu', createNightHawkCuEntry(ctx)],
-        ['nighthawk-webbridge', createNightHawkWebbridgeEntry(ctx)],
+        ['kimi-cu', createNightHawkCuEntry(ctx)],
+        ['kimi-webbridge', createNightHawkWebbridgeEntry(ctx)],
       ]);
     }
   }

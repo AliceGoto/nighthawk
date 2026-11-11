@@ -65,8 +65,8 @@ export interface SessionOptions {
 }
 
 /**
- * The capability surface (built-in product capabilities: nighthawk-cu,
- * nighthawk-webbridge) exists only on the v2 engine — v1 has no capability
+ * The capability surface (built-in product capabilities: kimi-cu,
+ * kimi-webbridge) exists only on the v2 engine — v1 has no capability
  * domain. Feature-detect structurally so a Session backed by v1 fails with
  * a clear message instead of a confusing missing-method error.
  */

@@ -69,7 +69,7 @@ const desktopPlatforms = ['darwin', 'win32', 'linux'] as const;
 
 const officialEntries = [
   {
-    id: 'nighthawk-datasource',
+    id: 'kimi-datasource',
     tier: 'official' as const,
     displayName: 'NightHawk Datasource',
     description: 'Query supported data sources',
@@ -117,10 +117,10 @@ function makePanel(opts: {
 }
 
 function makeCapability(overrides: Partial<CapabilityStatus> = {}): CapabilityStatus {
-  const id = overrides.id ?? 'nighthawk-cu';
+  const id = overrides.id ?? 'kimi-cu';
   return {
     id,
-    pluginId: id === 'nighthawk-webbridge' ? 'nighthawk-browser-extension' : 'nighthawk-cu',
+    pluginId: id === 'kimi-webbridge' ? 'kimi-browser-extension' : 'kimi-cu',
     displayName: 'NightHawk Computer Use',
     description: 'Background GUI automation',
     supported: true,
@@ -169,7 +169,7 @@ describe('plugins selector dialogs', () => {
 
   it('trusts only built-in NightHawk CDN plugin paths', () => {
     expect(pluginTrustLabel({
-      id: 'nighthawk-datasource',
+      id: 'kimi-datasource',
       displayName: 'NightHawk Datasource',
       enabled: true,
       state: 'ok',
@@ -180,7 +180,7 @@ describe('plugins selector dialogs', () => {
       commandCount: 0,
       hasErrors: false,
       source: 'zip-url',
-      originalSource: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+      originalSource: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
     })).toBe('official');
     expect(pluginTrustLabel({
       id: 'superpowers',
@@ -194,10 +194,10 @@ describe('plugins selector dialogs', () => {
       commandCount: 0,
       hasErrors: false,
       source: 'zip-url',
-      originalSource: 'https://code.kimi.com/nighthawk/plugins/curated/superpowers.zip',
+      originalSource: 'https://code.kimi.com/kimi-code/plugins/curated/superpowers.zip',
     })).toBe('curated');
     expect(pluginTrustLabel({
-      id: 'nighthawk-cu',
+      id: 'kimi-cu',
       displayName: 'NightHawk Computer Use',
       enabled: true,
       state: 'ok',
@@ -208,7 +208,7 @@ describe('plugins selector dialogs', () => {
       commandCount: 0,
       hasErrors: false,
       source: 'zip-url',
-      originalSource: 'https://cdn.kimi.com/nighthawk-computer-use/latest/nighthawk-cu-plugin.zip',
+      originalSource: 'https://cdn.kimi.com/kimi-computer-use/latest/kimi-cu-plugin.zip',
     })).toBe('official');
     expect(pluginTrustLabel({
       id: 'demo',
@@ -236,7 +236,7 @@ describe('plugins selector dialogs', () => {
       commandCount: 0,
       hasErrors: false,
       source: 'local-path',
-      originalSource: 'https://code.kimi.com/nighthawk/plugins/official/local',
+      originalSource: 'https://code.kimi.com/kimi-code/plugins/official/local',
     })).toBe('third-party');
   });
 
@@ -257,19 +257,19 @@ describe('plugins selector dialogs', () => {
         originalSource,
       });
     // code.kimi.ai mirrors the cdnBase rules; cdn.kimi.ai the content-CDN ones.
-    expect(labelFor('https://code.kimi.ai/nighthawk/plugins/official/nighthawk-datasource.zip')).toBe('official');
-    expect(labelFor('https://code.kimi.ai/nighthawk/plugins/curated/superpowers.zip')).toBe('curated');
-    expect(labelFor('https://cdn.kimi.ai/nighthawk-computer-use/latest/nighthawk-cu-plugin.zip')).toBe('official');
-    expect(labelFor('https://cdn.kimi.ai/nighthawk-computer-use-windows/latest/nighthawk-cu-win-plugin.zip')).toBe('official');
+    expect(labelFor('https://code.kimi.ai/kimi-code/plugins/official/kimi-datasource.zip')).toBe('official');
+    expect(labelFor('https://code.kimi.ai/kimi-code/plugins/curated/superpowers.zip')).toBe('curated');
+    expect(labelFor('https://cdn.kimi.ai/kimi-computer-use/latest/kimi-cu-plugin.zip')).toBe('official');
+    expect(labelFor('https://cdn.kimi.ai/kimi-computer-use-windows/latest/kimi-cu-win-plugin.zip')).toBe('official');
     // Non-plugin paths on the .ai hosts, and lookalike hosts, stay third-party.
     expect(labelFor('https://code.kimi.ai/demo.zip')).toBe('third-party');
     expect(labelFor('https://cdn.kimi.ai/unrelated/plugin.zip')).toBe('third-party');
-    expect(labelFor('https://code.kimi.ai.example.test/nighthawk/plugins/official/x.zip')).toBe('third-party');
+    expect(labelFor('https://code.kimi.ai.example.test/kimi-code/plugins/official/x.zip')).toBe('third-party');
   });
 
   it('recognizes installed plugins by official provenance', () => {
     const base = {
-      id: 'nighthawk-datasource',
+      id: 'kimi-datasource',
       displayName: 'NightHawk Datasource',
       enabled: true,
       state: 'ok' as const,
@@ -284,19 +284,19 @@ describe('plugins selector dialogs', () => {
     expect(isOfficialPluginInstall({
       ...base,
       source: 'zip-url',
-      originalSource: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+      originalSource: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
     })).toBe(true);
     expect(isOfficialPluginInstall({
       ...base,
       source: 'zip-url',
-      originalSource: 'https://code.kimi.ai/nighthawk/plugins/official/nighthawk-datasource.zip',
+      originalSource: 'https://code.kimi.ai/kimi-code/plugins/official/kimi-datasource.zip',
     })).toBe(true);
     expect(isOfficialPluginInstall({
       ...base,
-      id: 'nighthawk-cu',
+      id: 'kimi-cu',
       displayName: 'NightHawk Computer Use',
       source: 'zip-url',
-      originalSource: 'https://cdn.kimi.com/nighthawk-computer-use/latest/nighthawk-cu-plugin.zip',
+      originalSource: 'https://cdn.kimi.com/kimi-computer-use/latest/kimi-cu-plugin.zip',
     })).toBe(true);
     // Same manifest id from a local path, GitHub, a loopback URL, or a
     // third-party URL is not the official build.
@@ -305,12 +305,12 @@ describe('plugins selector dialogs', () => {
     expect(isOfficialPluginInstall({
       ...base,
       source: 'zip-url',
-      originalSource: 'http://127.0.0.1:58627/nighthawk/plugins/official/nighthawk-datasource.zip',
+      originalSource: 'http://127.0.0.1:58627/kimi-code/plugins/official/kimi-datasource.zip',
     })).toBe(false);
     expect(isOfficialPluginInstall({
       ...base,
       source: 'zip-url',
-      originalSource: 'https://example.test/nighthawk/plugins/official/nighthawk-datasource.zip',
+      originalSource: 'https://example.test/kimi-code/plugins/official/kimi-datasource.zip',
     })).toBe(false);
   });
 
@@ -318,57 +318,57 @@ describe('plugins selector dialogs', () => {
     const installed: PluginSummary[] = [
       {
         ...superpowers,
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         displayName: 'NightHawk Computer Use',
         source: 'zip-url',
-        originalSource: 'https://cdn.kimi.com/nighthawk-computer-use/latest/nighthawk-cu-plugin.zip',
+        originalSource: 'https://cdn.kimi.com/kimi-computer-use/latest/kimi-cu-plugin.zip',
       },
       {
         ...superpowers,
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         displayName: 'NightHawk Browser Extension',
         source: 'zip-url',
-        originalSource: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-webbridge.zip',
+        originalSource: 'https://code.kimi.com/kimi-code/plugins/official/kimi-webbridge.zip',
       },
     ];
 
     const { panel } = makePanel({ installed });
     const out = strip(renderRaw(panel));
 
-    expect(out).toContain('id nighthawk-cu');
+    expect(out).toContain('id kimi-cu');
     expect(out).toContain('via cdn.kimi.com · official');
-    expect(out).toContain('id nighthawk-webbridge');
+    expect(out).toContain('id kimi-webbridge');
     expect(out).toContain('via code.kimi.com · official');
   });
 
   it('treats only the official NightHawk CDN path as a trusted install source', () => {
-    expect(isOfficialPluginSource('https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip')).toBe(true);
-    expect(isOfficialPluginSource('https://cdn.kimi.com/nighthawk-computer-use/latest/nighthawk-cu-plugin.zip')).toBe(true);
+    expect(isOfficialPluginSource('https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip')).toBe(true);
+    expect(isOfficialPluginSource('https://cdn.kimi.com/kimi-computer-use/latest/kimi-cu-plugin.zip')).toBe(true);
     expect(
       isOfficialPluginSource(
-        'https://cdn.kimi.com/nighthawk-computer-use-windows/latest/nighthawk-cu-win-plugin.zip',
+        'https://cdn.kimi.com/kimi-computer-use-windows/latest/kimi-cu-win-plugin.zip',
       ),
     ).toBe(true);
     // The .ai region family follows the same path rules.
-    expect(isOfficialPluginSource('https://code.kimi.ai/nighthawk/plugins/official/nighthawk-datasource.zip')).toBe(true);
-    expect(isOfficialPluginSource('https://cdn.kimi.ai/nighthawk-computer-use/latest/nighthawk-cu-plugin.zip')).toBe(true);
+    expect(isOfficialPluginSource('https://code.kimi.ai/kimi-code/plugins/official/kimi-datasource.zip')).toBe(true);
+    expect(isOfficialPluginSource('https://cdn.kimi.ai/kimi-computer-use/latest/kimi-cu-plugin.zip')).toBe(true);
     expect(
       isOfficialPluginSource(
-        'https://cdn.kimi.ai/nighthawk-computer-use-windows/latest/nighthawk-cu-win-plugin.zip',
+        'https://cdn.kimi.ai/kimi-computer-use-windows/latest/kimi-cu-win-plugin.zip',
       ),
     ).toBe(true);
-    expect(isOfficialPluginSource('https://code.kimi.ai/nighthawk/plugins/curated/superpowers.zip')).toBe(false);
+    expect(isOfficialPluginSource('https://code.kimi.ai/kimi-code/plugins/curated/superpowers.zip')).toBe(false);
     expect(isOfficialPluginSource('https://cdn.kimi.ai/unrelated/plugin.zip')).toBe(false);
     // Curated and other NightHawk CDN paths are not "official" for the install gate.
-    expect(isOfficialPluginSource('https://code.kimi.com/nighthawk/plugins/curated/superpowers.zip')).toBe(false);
-    expect(isOfficialPluginSource('https://code.kimi.com/nighthawk/plugins/foo.zip')).toBe(false);
+    expect(isOfficialPluginSource('https://code.kimi.com/kimi-code/plugins/curated/superpowers.zip')).toBe(false);
+    expect(isOfficialPluginSource('https://code.kimi.com/kimi-code/plugins/foo.zip')).toBe(false);
     expect(isOfficialPluginSource('https://cdn.kimi.com/unrelated/plugin.zip')).toBe(false);
     // Non-NightHawk hosts (loopback included), non-https schemes, local paths, and
     // GitHub sources are unofficial.
-    expect(isOfficialPluginSource('https://example.test/nighthawk/plugins/official/x.zip')).toBe(false);
-    expect(isOfficialPluginSource('http://code.kimi.com/nighthawk/plugins/official/x.zip')).toBe(false);
-    expect(isOfficialPluginSource('http://127.0.0.1:58627/nighthawk/plugins/official/x.zip')).toBe(false);
-    expect(isOfficialPluginSource('./plugins/nighthawk-datasource')).toBe(false);
+    expect(isOfficialPluginSource('https://example.test/kimi-code/plugins/official/x.zip')).toBe(false);
+    expect(isOfficialPluginSource('http://code.kimi.com/kimi-code/plugins/official/x.zip')).toBe(false);
+    expect(isOfficialPluginSource('http://127.0.0.1:58627/kimi-code/plugins/official/x.zip')).toBe(false);
+    expect(isOfficialPluginSource('./plugins/kimi-datasource')).toBe(false);
     expect(isOfficialPluginSource('/abs/path/to/plugin')).toBe(false);
     expect(isOfficialPluginSource('github.com/owner/repo')).toBe(false);
     expect(isOfficialPluginSource('not a url')).toBe(false);
@@ -480,11 +480,11 @@ describe('plugins selector dialogs', () => {
   });
 
   it('renders the inline plugin hint on the installed row', () => {
-    const datasource = { ...superpowers, id: 'nighthawk-datasource', displayName: 'NightHawk Datasource', skillCount: 1 };
+    const datasource = { ...superpowers, id: 'kimi-datasource', displayName: 'NightHawk Datasource', skillCount: 1 };
     const { panel } = makePanel({
       installed: [datasource],
-      selectedId: 'nighthawk-datasource',
-      pluginHint: { id: 'nighthawk-datasource', text: 'pending /new' },
+      selectedId: 'kimi-datasource',
+      pluginHint: { id: 'kimi-datasource', text: 'pending /new' },
     });
     const out = strip(renderRaw(panel));
     expect(out).toContain('? NightHawk Datasource  enabled  pending /new');
@@ -501,7 +501,7 @@ describe('plugins selector dialogs', () => {
     expect(out).toContain('NightHawk Datasource  install');
     expect(out).toContain('Query supported data sources (CLI)');
     expect(out).not.toContain('Query supported data sources · v3.1.1');
-    expect(out).not.toContain('id nighthawk-datasource');
+    expect(out).not.toContain('id kimi-datasource');
     expect(out).not.toContain('Official plugin');
     expect(out).not.toContain('· data');
     expect(out).toContain('0 installed · 1 available');
@@ -567,14 +567,14 @@ describe('plugins selector dialogs', () => {
 
   it.each([
     {
-      pluginId: 'nighthawk-cu',
-      otherId: 'nighthawk-cu-win',
+      pluginId: 'kimi-cu',
+      otherId: 'kimi-cu-win',
       displayName: 'macOS Computer Use',
       otherDisplayName: 'Windows Computer Use',
     },
     {
-      pluginId: 'nighthawk-cu-win',
-      otherId: 'nighthawk-cu',
+      pluginId: 'kimi-cu-win',
+      otherId: 'kimi-cu',
       displayName: 'Windows Computer Use',
       otherDisplayName: 'macOS Computer Use',
     },
@@ -605,16 +605,16 @@ describe('plugins selector dialogs', () => {
   });
 
   it('shows only canonical WebBridge when legacy and canonical entries coexist', () => {
-    const legacy = makeMarketplaceEntry('nighthawk-webbridge', desktopPlatforms, 'Legacy WebBridge');
+    const legacy = makeMarketplaceEntry('kimi-webbridge', desktopPlatforms, 'Legacy WebBridge');
     const canonical = makeMarketplaceEntry(
-      'nighthawk-browser-extension',
+      'kimi-browser-extension',
       desktopPlatforms,
       'Canonical WebBridge',
     );
     const { panel, onSelect } = makePanel({
       initialTab: 'official',
       capabilities: [
-        makeCapability({ id: 'nighthawk-webbridge', pluginId: 'nighthawk-browser-extension' }),
+        makeCapability({ id: 'kimi-webbridge', pluginId: 'kimi-browser-extension' }),
       ],
     });
     panel.setMarketplace([legacy, canonical], '/tmp/marketplace.json');
@@ -658,7 +658,7 @@ describe('plugins selector dialogs', () => {
   it('keeps built-in capability rows while the Official catalog is unavailable', () => {
     const capabilities = [
       makeCapability(),
-      makeCapability({ id: 'nighthawk-webbridge', displayName: 'NightHawk Browser Extension' }),
+      makeCapability({ id: 'kimi-webbridge', displayName: 'NightHawk Browser Extension' }),
     ];
     const { panel } = makePanel({ initialTab: 'official', capabilities });
     const out = strip(renderRaw(panel));
@@ -691,18 +691,18 @@ describe('plugins selector dialogs', () => {
   it('does not borrow capability state for a forged custom catalog entry', () => {
     const capabilities = [
       makeCapability({
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         displayName: 'NightHawk Browser Extension',
         install: { running: true, step: 'download' },
       }),
     ];
     const entry = {
-      id: 'nighthawk-browser-extension',
+      id: 'kimi-browser-extension',
       tier: 'official' as const,
       displayName: 'NightHawk Browser Extension (fork)',
       version: '1.2.3',
       platforms: desktopPlatforms,
-      source: 'capability:nighthawk-webbridge',
+      source: 'capability:kimi-webbridge',
       builtIn: true,
     };
     const { panel, onSelect } = makePanel({
@@ -722,29 +722,29 @@ describe('plugins selector dialogs', () => {
 
   it('uses the closed capability mapping for real default-catalog entries', () => {
     const capabilities = [
-      makeCapability({ pluginId: 'nighthawk-cu-win' }),
+      makeCapability({ pluginId: 'kimi-cu-win' }),
       makeCapability({
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         displayName: 'NightHawk Browser Extension',
         install: { running: true, step: 'download' },
       }),
     ];
     const entries = [
       {
-        id: 'nighthawk-cu-win',
+        id: 'kimi-cu-win',
         tier: 'official' as const,
         displayName: 'NightHawk Computer Use for Windows',
         version: '1.0.0',
         platforms: desktopPlatforms,
-        source: 'https://example.test/nighthawk-cu-win.zip',
+        source: 'https://example.test/kimi-cu-win.zip',
       },
       {
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         tier: 'official' as const,
         displayName: 'NightHawk Browser Extension',
         version: '2.0.0',
         platforms: desktopPlatforms,
-        source: 'https://example.test/nighthawk-browser-extension.zip',
+        source: 'https://example.test/kimi-browser-extension.zip',
       },
     ];
     const { panel, onSelect } = makePanel({ initialTab: 'official', capabilities });
@@ -768,18 +768,18 @@ describe('plugins selector dialogs', () => {
     panel.handleInput('\r');
     expect(onSelect).toHaveBeenCalledWith({
       kind: 'install',
-      entry: expect.objectContaining({ id: 'nighthawk-datasource' }),
+      entry: expect.objectContaining({ id: 'kimi-datasource' }),
     });
   });
 
   it('does not offer legacy WebBridge from a custom catalog', () => {
     const entry = {
-      id: 'nighthawk-webbridge',
+      id: 'kimi-webbridge',
       tier: 'curated' as const,
       displayName: 'NightHawk Browser Extension',
       version: '1.0.0',
       platforms: desktopPlatforms,
-      source: 'https://example.test/nighthawk-webbridge.zip',
+      source: 'https://example.test/kimi-webbridge.zip',
     };
     const { panel, onSelect } = makePanel({ initialTab: 'third-party', catalogIsDefault: false });
     panel.setMarketplace([entry], '/tmp/marketplace.json');
@@ -916,19 +916,19 @@ describe('plugins selector dialogs', () => {
     const installed = [
       {
         ...superpowers,
-        id: 'nighthawk-cu-win',
+        id: 'kimi-cu-win',
         displayName: 'NightHawk Computer Use for Windows',
         version: '0.2.13',
       },
     ];
-    const capability = makeCapability({ pluginId: 'nighthawk-cu-win' });
+    const capability = makeCapability({ pluginId: 'kimi-cu-win' });
     const entry = {
-      id: 'nighthawk-cu-win',
+      id: 'kimi-cu-win',
       tier: 'official' as const,
       displayName: 'NightHawk Computer Use',
       version: '0.2.14',
       platforms: desktopPlatforms,
-      source: 'https://example.test/nighthawk-cu-win.zip',
+      source: 'https://example.test/kimi-cu-win.zip',
     };
     const { panel, onSelect } = makePanel({ installed, capabilities: [capability] });
     panel.setMarketplace([entry], '/tmp/marketplace.json');
@@ -942,17 +942,17 @@ describe('plugins selector dialogs', () => {
 
   it('keeps installation state separate from capability readiness', () => {
     const installed = [
-      { ...superpowers, id: 'nighthawk-cu', displayName: 'NightHawk Computer Use', version: '0.5.4' },
+      { ...superpowers, id: 'kimi-cu', displayName: 'NightHawk Computer Use', version: '0.5.4' },
     ];
     const capabilities = [makeCapability()];
     const entries = [
       {
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         tier: 'official' as const,
         displayName: 'NightHawk Computer Use',
         version: '0.5.4',
         platforms: desktopPlatforms,
-        source: 'https://example.test/nighthawk-cu.zip',
+        source: 'https://example.test/kimi-cu.zip',
       },
     ];
     const { panel } = makePanel({ installed, capabilities });
@@ -974,20 +974,20 @@ describe('plugins selector dialogs', () => {
     const installed = [
       {
         ...superpowers,
-        id: 'nighthawk-cu-win',
+        id: 'kimi-cu-win',
         displayName: 'NightHawk Computer Use for Windows',
         version: '0.2.14',
       },
     ];
-    const capabilities = [makeCapability({ pluginId: 'nighthawk-cu-win' })];
+    const capabilities = [makeCapability({ pluginId: 'kimi-cu-win' })];
     const entries = [
       {
-        id: 'nighthawk-cu-win',
+        id: 'kimi-cu-win',
         tier: 'official' as const,
         displayName: 'NightHawk Computer Use',
         version: '0.2.14',
         platforms: desktopPlatforms,
-        source: 'https://example.test/nighthawk-cu-win.zip',
+        source: 'https://example.test/kimi-cu-win.zip',
       },
     ];
     const { panel } = makePanel({ installed, capabilities, initialTab: 'official' });
@@ -1000,18 +1000,18 @@ describe('plugins selector dialogs', () => {
 
   it('keeps Enter on the Installed tab consistent with other plugins', () => {
     const installed = [
-      { ...superpowers, id: 'nighthawk-cu', displayName: 'NightHawk Computer Use', version: '0.5.4' },
+      { ...superpowers, id: 'kimi-cu', displayName: 'NightHawk Computer Use', version: '0.5.4' },
     ];
     const { panel, onSelect } = makePanel({ installed, capabilities: [makeCapability()] });
 
     panel.handleInput('\r');
 
-    expect(onSelect).toHaveBeenCalledWith({ kind: 'details', id: 'nighthawk-cu' });
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'details', id: 'kimi-cu' });
   });
 
   it('keeps unsupported capability diagnostics out of the Installed list', () => {
     const installed = [
-      { ...superpowers, id: 'nighthawk-cu', displayName: 'NightHawk Computer Use', version: '0.5.4' },
+      { ...superpowers, id: 'kimi-cu', displayName: 'NightHawk Computer Use', version: '0.5.4' },
     ];
     const capabilities = [
       makeCapability({ supported: false, state: 'unsupported', steps: [] }),
@@ -1023,14 +1023,14 @@ describe('plugins selector dialogs', () => {
     expect(out).not.toContain('unsupported');
 
     panel.handleInput('\r');
-    expect(onSelect).toHaveBeenCalledWith({ kind: 'details', id: 'nighthawk-cu' });
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'details', id: 'kimi-cu' });
   });
 
   it('associates a canonical marketplace entry with the legacy installed plugin', () => {
     const capabilities = [
       makeCapability({
-        id: 'nighthawk-webbridge',
-        pluginId: 'nighthawk-browser-extension',
+        id: 'kimi-webbridge',
+        pluginId: 'kimi-browser-extension',
         displayName: 'NightHawk Browser Extension',
         state: 'ready',
         version: 'v1.11.5',
@@ -1043,16 +1043,16 @@ describe('plugins selector dialogs', () => {
       }),
     ];
     const installed = [
-      { ...superpowers, id: 'nighthawk-webbridge', displayName: 'NightHawk Browser Extension', version: '1.11.3' },
+      { ...superpowers, id: 'kimi-webbridge', displayName: 'NightHawk Browser Extension', version: '1.11.3' },
     ];
     const { panel } = makePanel({ installed, capabilities, initialTab: 'official' });
     panel.setMarketplace(
       [{
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         displayName: 'NightHawk Browser Extension',
         version: '1.11.3',
         platforms: desktopPlatforms,
-        source: 'https://example.test/nighthawk-browser-extension.zip',
+        source: 'https://example.test/kimi-browser-extension.zip',
         tier: 'official',
       }],
       '/tmp/marketplace.json',
@@ -1067,18 +1067,18 @@ describe('plugins selector dialogs', () => {
 
   it('prefers the canonical installed plugin when legacy and canonical ids coexist', () => {
     const installed = [
-      { ...superpowers, id: 'nighthawk-webbridge', version: '1.0.0' },
-      { ...superpowers, id: 'nighthawk-browser-extension', version: '2.0.0' },
+      { ...superpowers, id: 'kimi-webbridge', version: '1.0.0' },
+      { ...superpowers, id: 'kimi-browser-extension', version: '2.0.0' },
     ];
     const capabilities = [
-      makeCapability({ id: 'nighthawk-webbridge', pluginId: 'nighthawk-browser-extension' }),
+      makeCapability({ id: 'kimi-webbridge', pluginId: 'kimi-browser-extension' }),
     ];
     const entry = {
-      id: 'nighthawk-browser-extension',
+      id: 'kimi-browser-extension',
       displayName: 'NightHawk Browser Extension',
       version: '2.0.0',
       platforms: desktopPlatforms,
-      source: 'https://example.test/nighthawk-browser-extension.zip',
+      source: 'https://example.test/kimi-browser-extension.zip',
       tier: 'official' as const,
     };
     const { panel } = makePanel({ installed, capabilities, initialTab: 'official' });
@@ -1092,7 +1092,7 @@ describe('plugins selector dialogs', () => {
   it('keeps capability repair details out of marketplace rows', () => {
     const capabilities = [
       makeCapability({
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         displayName: 'NightHawk Browser Extension',
         state: 'partial',
         steps: [
@@ -1106,10 +1106,10 @@ describe('plugins selector dialogs', () => {
     const { panel } = makePanel({ capabilities, initialTab: 'official' });
     panel.setMarketplace(
       [{
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         displayName: 'NightHawk Browser Extension',
         platforms: desktopPlatforms,
-        source: 'https://example.test/nighthawk-browser-extension.zip',
+        source: 'https://example.test/kimi-browser-extension.zip',
         tier: 'official',
       }],
       '/tmp/marketplace.json',
@@ -1183,7 +1183,7 @@ describe('plugins selector dialogs', () => {
     const selections: PluginMcpSelection[] = [];
     const picker = new PluginMcpSelectorComponent({
       info: {
-        id: 'nighthawk-datasource',
+        id: 'kimi-datasource',
         displayName: 'NightHawk Datasource',
         version: '1.0.0',
         enabled: true,
@@ -1197,18 +1197,18 @@ describe('plugins selector dialogs', () => {
         source: 'local-path',
         origin: 'custom',
         installedAt: '2026-05-29T00:00:00.000Z',
-        root: '/plugins/nighthawk-datasource',
+        root: '/plugins/kimi-datasource',
         manifest: undefined,
         skills: [],
         mcpServers: [
           {
             name: 'data',
-            runtimeName: 'plugin-nighthawk-datasource-data',
+            runtimeName: 'plugin-kimi-datasource-data',
             enabled: true,
             transport: 'stdio',
             command: 'node',
-            args: ['./bin/nighthawk-datasource.mjs'],
-            cwd: '/plugins/nighthawk-datasource',
+            args: ['./bin/kimi-datasource.mjs'],
+            cwd: '/plugins/kimi-datasource',
           },
         ],
         diagnostics: [],
@@ -1228,7 +1228,7 @@ describe('plugins selector dialogs', () => {
     picker.handleInput(' ');
 
     expect(selections).toEqual([
-      { kind: 'toggle', pluginId: 'nighthawk-datasource', server: 'data', enabled: false },
+      { kind: 'toggle', pluginId: 'kimi-datasource', server: 'data', enabled: false },
     ]);
   });
 
@@ -1262,7 +1262,7 @@ describe('plugins selector dialogs', () => {
   it('defaults plugin removal confirmation to cancel', () => {
     const results: PluginRemoveConfirmResult[] = [];
     const picker = new PluginRemoveConfirmComponent({
-      id: 'nighthawk-datasource',
+      id: 'kimi-datasource',
       displayName: 'NightHawk Datasource',
       onDone: (result) => {
         results.push(result);
@@ -1270,7 +1270,7 @@ describe('plugins selector dialogs', () => {
     });
 
     const out = picker.render(120).map(strip);
-    expect(out).toContain(' Remove NightHawk Datasource (nighthawk-datasource)?');
+    expect(out).toContain(' Remove NightHawk Datasource (kimi-datasource)?');
     expect(out).toContain('  ? Cancel');
     expect(out).toContain('    Keep this plugin installed.');
     expect(out).toContain('    Remove only the install record; plugin files are left in place.');
@@ -1282,7 +1282,7 @@ describe('plugins selector dialogs', () => {
   it('confirms plugin removal only after choosing remove', () => {
     const results: PluginRemoveConfirmResult[] = [];
     const picker = new PluginRemoveConfirmComponent({
-      id: 'nighthawk-datasource',
+      id: 'kimi-datasource',
       displayName: 'NightHawk Datasource',
       onDone: (result) => {
         results.push(result);

@@ -903,7 +903,7 @@ describe('SessionEventBroadcaster', () => {
       eventBus.emit({
         type: 'event.capability.changed',
         payload: {
-          capability_id: 'nighthawk-webbridge',
+          capability_id: 'kimi-webbridge',
           install: { running: true, step: 'download', percent: 42 },
         },
       });
@@ -917,7 +917,7 @@ describe('SessionEventBroadcaster', () => {
         type: 'event.capability.changed',
         session_id: '__global__',
         payload: {
-          capability_id: 'nighthawk-webbridge',
+          capability_id: 'kimi-webbridge',
           install: { running: true, step: 'download', percent: 42 },
         },
       });
@@ -929,7 +929,7 @@ describe('SessionEventBroadcaster', () => {
       eventBus.emit({
         type: 'event.capability.changed',
         payload: {
-          capability_id: 'nighthawk-cu',
+          capability_id: 'kimi-cu',
           install: { running: false, confirmationRequired: 'stop-processes' },
         },
       });
@@ -952,18 +952,18 @@ describe('SessionEventBroadcaster', () => {
       });
       eventBus.emit({
         type: 'event.capability.changed',
-        payload: { capability_id: 'nighthawk-cu' },
+        payload: { capability_id: 'kimi-cu' },
       });
 
       eventBus.emit({
         type: 'event.capability.changed',
-        payload: { capability_id: 'nighthawk-cu', install: { running: false } },
+        payload: { capability_id: 'kimi-cu', install: { running: false } },
       });
 
       await vi.waitFor(() => expect(globalView.envelopes).toHaveLength(1));
       expect(globalView.envelopes[0]).toMatchObject({
         type: 'event.capability.changed',
-        payload: { capability_id: 'nighthawk-cu', install: { running: false } },
+        payload: { capability_id: 'kimi-cu', install: { running: false } },
       });
     });
 

@@ -78,10 +78,10 @@ describe('CloudAppender', () => {
   beforeEach(() => {
     homeDir = mkdtempSync(join(tmpdir(), 'cloud-appender-'));
     savedOauthHost = process.env['NIGHTHAWK_OAUTH_HOST'];
-    savedLegacyOauthHost = process.env['NIGHTHAWK_OAUTH_HOST'];
+    savedLegacyOauthHost = process.env['KIMI_OAUTH_HOST'];
     savedNightHawkHome = process.env['NIGHTHAWK_HOME'];
     delete process.env['NIGHTHAWK_OAUTH_HOST'];
-    delete process.env['NIGHTHAWK_OAUTH_HOST'];
+    delete process.env['KIMI_OAUTH_HOST'];
     process.env['NIGHTHAWK_HOME'] = homeDir;
   });
 
@@ -89,8 +89,8 @@ describe('CloudAppender', () => {
     rmSync(homeDir, { recursive: true, force: true });
     if (savedOauthHost === undefined) delete process.env['NIGHTHAWK_OAUTH_HOST'];
     else process.env['NIGHTHAWK_OAUTH_HOST'] = savedOauthHost;
-    if (savedLegacyOauthHost === undefined) delete process.env['NIGHTHAWK_OAUTH_HOST'];
-    else process.env['NIGHTHAWK_OAUTH_HOST'] = savedLegacyOauthHost;
+    if (savedLegacyOauthHost === undefined) delete process.env['KIMI_OAUTH_HOST'];
+    else process.env['KIMI_OAUTH_HOST'] = savedLegacyOauthHost;
     if (savedNightHawkHome === undefined) delete process.env['NIGHTHAWK_HOME'];
     else process.env['NIGHTHAWK_HOME'] = savedNightHawkHome;
   });

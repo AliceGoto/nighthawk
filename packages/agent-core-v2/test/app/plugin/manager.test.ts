@@ -90,7 +90,7 @@ describe('PluginManager', () => {
     const legacyRoot = await mkdtemp(join(tmpdir(), 'plugin-legacy-webbridge-'));
     await writeFile(
       join(legacyRoot, 'nighthawk.plugin.json'),
-      JSON.stringify({ name: 'nighthawk-webbridge', version: '1.0.0' }),
+      JSON.stringify({ name: 'kimi-webbridge', version: '1.0.0' }),
       'utf8',
     );
     await writeFile(
@@ -99,11 +99,11 @@ describe('PluginManager', () => {
         version: 1,
         plugins: [
           {
-            id: 'nighthawk-webbridge',
+            id: 'kimi-webbridge',
             root: legacyRoot,
             source: 'zip-url',
             origin: 'marketplace',
-            catalogId: 'nighthawk-webbridge',
+            catalogId: 'kimi-webbridge',
             enabled: false,
             installedAt: '2020-01-01T00:00:00.000Z',
             capabilities: { mcpServers: { mac: { enabled: false } } },
@@ -119,13 +119,13 @@ describe('PluginManager', () => {
     manager: PluginManager,
     fixture: { readonly buffer: Buffer },
   ): ReturnType<PluginManager['installAndReload']> {
-    return manager.installAndReload('https://example.test/nighthawk-browser-extension.zip', {
+    return manager.installAndReload('https://example.test/kimi-browser-extension.zip', {
       expectedSha256: createHash('sha256').update(fixture.buffer).digest('hex'),
-      expectedPluginId: 'nighthawk-browser-extension',
+      expectedPluginId: 'kimi-browser-extension',
       origin: 'marketplace',
-      catalogId: 'nighthawk-browser-extension',
-      migrateFrom: 'nighthawk-webbridge',
-      requiredSkill: 'nighthawk-webbridge',
+      catalogId: 'kimi-browser-extension',
+      migrateFrom: 'kimi-webbridge',
+      requiredSkill: 'kimi-webbridge',
       fetchImpl: async () => new Response(fixture.buffer),
     });
   }
@@ -187,7 +187,7 @@ describe('PluginManager', () => {
           },
         },
         mcpServers: {
-          mac: { command: 'sh', args: ['./bin/nighthawk-cu-mcp'] },
+          mac: { command: 'sh', args: ['./bin/kimi-cu-mcp'] },
         },
       }),
       'utf8',
@@ -315,7 +315,7 @@ describe('PluginManager', () => {
           },
         },
         mcpServers: {
-          mac: { command: 'sh', args: ['./bin/nighthawk-cu-mcp'] },
+          mac: { command: 'sh', args: ['./bin/kimi-cu-mcp'] },
         },
       }),
       'utf8',
@@ -1010,7 +1010,7 @@ describe('PluginManager', () => {
 
   it('materializes the canonical WebBridge plugin and target skill before committing migration', async () => {
     const legacyRoot = await makeLegacyWebbridge();
-    const fixture = await makeZip('nighthawk-browser-extension', '2.0.0', 'nighthawk-webbridge');
+    const fixture = await makeZip('kimi-browser-extension', '2.0.0', 'kimi-webbridge');
     try {
       const manager = new PluginManager({ nighthawkHomeDir: home });
       await manager.load();
@@ -1018,7 +1018,7 @@ describe('PluginManager', () => {
       const { record, summary } = await installWebbridge(manager, fixture);
 
       expect(record).toMatchObject({
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         enabled: false,
         installedAt: '2020-01-01T00:00:00.000Z',
         state: 'ok',
@@ -1026,11 +1026,11 @@ describe('PluginManager', () => {
         capabilities: { mcpServers: { mac: { enabled: false } } },
       });
       expect(summary).toEqual({ added: [], removed: [], errors: [] });
-      expect(manager.get('nighthawk-webbridge')).toBeUndefined();
+      expect(manager.get('kimi-webbridge')).toBeUndefined();
       const stored = JSON.parse(
         await readFile(join(home, 'plugins', 'installed.json'), 'utf8'),
       ) as { plugins: Array<{ id: string }> };
-      expect(stored.plugins.map((plugin) => plugin.id)).toEqual(['nighthawk-browser-extension']);
+      expect(stored.plugins.map((plugin) => plugin.id)).toEqual(['kimi-browser-extension']);
     } finally {
       await rm(legacyRoot, { recursive: true, force: true });
       await rm(fixture.dir, { recursive: true, force: true });
@@ -1042,18 +1042,18 @@ describe('PluginManager', () => {
     { label: 'wrong', skillName: 'other-skill' },
   ])('keeps the legacy WebBridge record when the new package has a $label target skill', async ({ skillName }) => {
     const legacyRoot = await makeLegacyWebbridge();
-    const fixture = await makeZip('nighthawk-browser-extension', '2.0.0', skillName);
+    const fixture = await makeZip('kimi-browser-extension', '2.0.0', skillName);
     try {
       const manager = new PluginManager({ nighthawkHomeDir: home });
       await manager.load();
       const before = await readFile(join(home, 'plugins', 'installed.json'), 'utf8');
 
       await expect(installWebbridge(manager, fixture)).rejects.toThrow(
-        'does not provide required skill "nighthawk-webbridge"',
+        'does not provide required skill "kimi-webbridge"',
       );
 
-      expect(manager.get('nighthawk-browser-extension')).toBeUndefined();
-      expect(manager.get('nighthawk-webbridge')).toMatchObject({
+      expect(manager.get('kimi-browser-extension')).toBeUndefined();
+      expect(manager.get('kimi-webbridge')).toMatchObject({
         enabled: false,
         installedAt: '2020-01-01T00:00:00.000Z',
         capabilities: { mcpServers: { mac: { enabled: false } } },
@@ -1068,7 +1068,7 @@ describe('PluginManager', () => {
   it('ignores unrelated plugin reload errors when validating the WebBridge migration', async () => {
     const legacyRoot = await makeLegacyWebbridge();
     const brokenRoot = await mkdtemp(join(tmpdir(), 'plugin-broken-'));
-    const fixture = await makeZip('nighthawk-browser-extension', '2.0.0', 'nighthawk-webbridge');
+    const fixture = await makeZip('kimi-browser-extension', '2.0.0', 'kimi-webbridge');
     try {
       const installedPath = join(home, 'plugins', 'installed.json');
       const installed = JSON.parse(await readFile(installedPath, 'utf8')) as {
@@ -1107,7 +1107,7 @@ describe('PluginManager', () => {
       expect(result.summary.errors).toEqual([
         expect.objectContaining({ id: 'broken-plugin' }),
       ]);
-      expect(manager.get('nighthawk-browser-extension')?.state).toBe('ok');
+      expect(manager.get('kimi-browser-extension')?.state).toBe('ok');
     } finally {
       await rm(legacyRoot, { recursive: true, force: true });
       await rm(brokenRoot, { recursive: true, force: true });
@@ -1117,7 +1117,7 @@ describe('PluginManager', () => {
 
   it('restores the legacy record and managed copy when WebBridge reload materialization fails', async () => {
     const legacyRoot = await makeLegacyWebbridge();
-    const fixture = await makeZip('nighthawk-browser-extension', '2.0.0', 'nighthawk-webbridge');
+    const fixture = await makeZip('kimi-browser-extension', '2.0.0', 'kimi-webbridge');
     try {
       let discoveries = 0;
       const manager = new PluginManager({
@@ -1135,8 +1135,8 @@ describe('PluginManager', () => {
         /failed to reload after installation.*reload materialize failed/,
       );
 
-      expect(manager.get('nighthawk-browser-extension')).toBeUndefined();
-      expect(manager.get('nighthawk-webbridge')).toMatchObject({
+      expect(manager.get('kimi-browser-extension')).toBeUndefined();
+      expect(manager.get('kimi-webbridge')).toMatchObject({
         enabled: false,
         installedAt: '2020-01-01T00:00:00.000Z',
       });
@@ -1144,7 +1144,7 @@ describe('PluginManager', () => {
       expect(JSON.parse(restored)).toEqual(JSON.parse(before));
       await expect(
         readFile(
-          join(home, 'plugins', 'managed', 'nighthawk-browser-extension', 'nighthawk.plugin.json'),
+          join(home, 'plugins', 'managed', 'kimi-browser-extension', 'nighthawk.plugin.json'),
           'utf8',
         ),
       ).rejects.toThrow();
@@ -1156,7 +1156,7 @@ describe('PluginManager', () => {
 
   it('rejects migration when the target skill is absent from the reloaded canonical plugin', async () => {
     const legacyRoot = await makeLegacyWebbridge();
-    const fixture = await makeZip('nighthawk-browser-extension', '2.0.0', 'nighthawk-webbridge');
+    const fixture = await makeZip('kimi-browser-extension', '2.0.0', 'kimi-webbridge');
     try {
       let discoveries = 0;
       const manager = new PluginManager({
@@ -1172,18 +1172,18 @@ describe('PluginManager', () => {
       await manager.load();
 
       await expect(installWebbridge(manager, fixture)).rejects.toThrow(
-        /failed to reload after installation.*does not provide required skill "nighthawk-webbridge"/,
+        /failed to reload after installation.*does not provide required skill "kimi-webbridge"/,
       );
 
-      expect(manager.get('nighthawk-browser-extension')).toBeUndefined();
-      expect(manager.get('nighthawk-webbridge')).toMatchObject({
+      expect(manager.get('kimi-browser-extension')).toBeUndefined();
+      expect(manager.get('kimi-webbridge')).toMatchObject({
         enabled: false,
         installedAt: '2020-01-01T00:00:00.000Z',
       });
       const stored = JSON.parse(
         await readFile(join(home, 'plugins', 'installed.json'), 'utf8'),
       ) as { plugins: Array<{ id: string }> };
-      expect(stored.plugins.map((plugin) => plugin.id)).toEqual(['nighthawk-webbridge']);
+      expect(stored.plugins.map((plugin) => plugin.id)).toEqual(['kimi-webbridge']);
     } finally {
       await rm(legacyRoot, { recursive: true, force: true });
       await rm(fixture.dir, { recursive: true, force: true });
@@ -1192,7 +1192,7 @@ describe('PluginManager', () => {
 
   it('reports compensation failure while restoring the in-memory legacy WebBridge record', async () => {
     const legacyRoot = await makeLegacyWebbridge();
-    const fixture = await makeZip('nighthawk-browser-extension', '2.0.0', 'nighthawk-webbridge');
+    const fixture = await makeZip('kimi-browser-extension', '2.0.0', 'kimi-webbridge');
     try {
       let discoveries = 0;
       const manager = new PluginManager({
@@ -1215,8 +1215,8 @@ describe('PluginManager', () => {
         'previous plugin state could not be fully restored',
       );
       expect((failure as Error).cause).toBeInstanceOf(AggregateError);
-      expect(manager.get('nighthawk-browser-extension')).toBeUndefined();
-      expect(manager.get('nighthawk-webbridge')).toMatchObject({
+      expect(manager.get('kimi-browser-extension')).toBeUndefined();
+      expect(manager.get('kimi-webbridge')).toMatchObject({
         enabled: false,
         installedAt: '2020-01-01T00:00:00.000Z',
       });

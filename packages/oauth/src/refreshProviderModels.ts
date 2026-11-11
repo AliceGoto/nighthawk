@@ -49,7 +49,7 @@ export interface RefreshProviderHost {
   resolveOAuthToken(providerName: string, oauthRef?: ManagedNightHawkOAuthRef): Promise<string>;
   /**
    * Product User-Agent sent on custom-registry (api.json) fetches, e.g.
-   * `nighthawk-cli/1.2.3`. When omitted the fetch falls back to the runtime
+   * `kimi-code-cli/1.2.3`. When omitted the fetch falls back to the runtime
    * default (`User-Agent: node`).
    */
   readonly userAgent?: string;

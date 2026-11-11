@@ -429,7 +429,7 @@ export class NightHawkHarness {
 
   /**
    * App-global capability readiness and setup (the built-in product
-   * capabilities nighthawk-cu / nighthawk-webbridge), no session required. Routed
+   * capabilities kimi-cu / kimi-webbridge), no session required. Routed
    * through the same global channel as session capability calls; requires
    * the v2 engine and throws on v1, which has no capability surface.
    */

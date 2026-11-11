@@ -548,7 +548,7 @@ async function installCapabilityFromPanel(
   }
   if (result.state !== 'ready') {
     const permissionsRequired =
-      capabilityId === 'nighthawk-cu' &&
+      capabilityId === 'kimi-cu' &&
       result.steps.some((step) => step.id.startsWith('permissions.') && step.state !== 'ok');
     if (permissionsRequired) {
       host.showStatus(
@@ -563,7 +563,7 @@ async function installCapabilityFromPanel(
     host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
     return;
   }
-  if (capabilityId === 'nighthawk-webbridge') {
+  if (capabilityId === 'kimi-webbridge') {
     host.showNotice(`${label} is installed.`);
     host.state.transcriptContainer.addChild(new Spacer(1));
     host.state.transcriptContainer.addChild(
@@ -619,9 +619,9 @@ async function installMarketplaceEntryFromPanel(
   catalogIsDefault: boolean,
   marketplaceSource?: string,
 ): Promise<void> {
-  if (entry.id === 'nighthawk-webbridge') {
+  if (entry.id === 'kimi-webbridge') {
     throw new Error(
-      'Marketplace plugin "nighthawk-webbridge" is legacy; install "nighthawk-browser-extension" instead',
+      'Marketplace plugin "kimi-webbridge" is legacy; install "kimi-browser-extension" instead',
     );
   }
   const capabilityId = capabilityIdForMarketplaceEntry(entry.id, catalogIsDefault);
@@ -808,9 +808,9 @@ async function installPluginFromMarketplace(
   const session = await resolvePluginApi(host);
   const beforeList = await session.listPlugins();
   const migrateFrom =
-    entry.id === 'nighthawk-browser-extension' &&
-    beforeList.some((plugin) => plugin.id === 'nighthawk-webbridge')
-      ? 'nighthawk-webbridge'
+    entry.id === 'kimi-browser-extension' &&
+    beforeList.some((plugin) => plugin.id === 'kimi-webbridge')
+      ? 'kimi-webbridge'
       : undefined;
   const summary = await session.installPlugin({
     marketplaceId: entry.id,
@@ -828,8 +828,8 @@ const WEBBRIDGE_POST_INSTALL_MARKDOWN = [
   '*Two steps left to use NightHawk Browser Extension:*',
   '1. Install the browser extension',
   '',
-  '   - [Chrome Web Store](https://chromewebstore.google.com/detail/nighthawk-webbridge/fldmhceldgbpfpkbgopacenieobmligc)',
-  '   - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/nighthawk-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg)',
+  '   - [Chrome Web Store](https://chromewebstore.google.com/detail/kimi-webbridge/fldmhceldgbpfpkbgopacenieobmligc)',
+  '   - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/kimi-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg)',
   '   - [Manual installation guide](https://www.kimi.com/code/docs/nighthawk-cli/customization/plugins.html#install-the-browser-extension)',
   '',
   '2. Run `/reload` or `/new` to apply it.',

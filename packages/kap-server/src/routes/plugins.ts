@@ -75,9 +75,9 @@ async function removePluginAction(ctx: PluginActionCtx): Promise<void> {
 }
 
 const CAPABILITY_ROW_IDS: Readonly<Record<string, string>> = {
-  'nighthawk-cu': 'nighthawk-cu',
-  'nighthawk-cu-win': 'nighthawk-cu',
-  'nighthawk-browser-extension': 'nighthawk-webbridge',
+  'kimi-cu': 'kimi-cu',
+  'kimi-cu-win': 'kimi-cu',
+  'kimi-browser-extension': 'kimi-webbridge',
 };
 
 export function registerPluginsRoutes(
@@ -121,7 +121,7 @@ export function registerPluginsRoutes(
       const client = pluginClientForIdentity(bootstrap.clientIdentity.platform);
       const entries: PluginMarketplaceEntryWire[] = [];
       for (const entry of marketplace.plugins) {
-        if (entry.id === 'nighthawk-webbridge') continue;
+        if (entry.id === 'kimi-webbridge') continue;
         if (!marketplaceEntryVisibleOnHost(entry, client, bootstrap.platform)) continue;
         const capabilityId =
           marketplaceIsDefault ? CAPABILITY_ROW_IDS[entry.id] : undefined;
@@ -136,8 +136,8 @@ export function registerPluginsRoutes(
         const byIdRecord = byId.get(entry.id);
         const record =
           capability !== undefined
-            ? capability.id === 'nighthawk-webbridge'
-              ? (byIdRecord ?? byId.get('nighthawk-webbridge'))
+            ? capability.id === 'kimi-webbridge'
+              ? (byIdRecord ?? byId.get('kimi-webbridge'))
               : byIdRecord
             : (byCatalogId.get(entry.id) ??
               (byIdRecord?.origin === 'unknown' ? byIdRecord : undefined));

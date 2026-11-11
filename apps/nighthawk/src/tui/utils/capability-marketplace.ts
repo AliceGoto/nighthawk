@@ -5,8 +5,8 @@ import type { PluginMarketplaceEntry } from '#/utils/plugin-marketplace';
 type CapabilityId = CapabilityStatus['id'];
 
 const CAPABILITY_PLUGIN_IDS: Readonly<Record<CapabilityId, readonly string[]>> = {
-  'nighthawk-webbridge': ['nighthawk-browser-extension', 'nighthawk-webbridge'],
-  'nighthawk-cu': ['nighthawk-cu', 'nighthawk-cu-win'],
+  'kimi-webbridge': ['kimi-browser-extension', 'kimi-webbridge'],
+  'kimi-cu': ['kimi-cu', 'kimi-cu-win'],
 };
 
 const CAPABILITY_PLUGIN_ID_SET = new Set(Object.values(CAPABILITY_PLUGIN_IDS).flat());
@@ -17,11 +17,11 @@ export function capabilityIdForMarketplaceEntry(
 ): CapabilityId | undefined {
   if (!catalogIsDefault) return undefined;
   switch (entryId) {
-    case 'nighthawk-browser-extension':
-      return 'nighthawk-webbridge';
-    case 'nighthawk-cu':
-    case 'nighthawk-cu-win':
-      return 'nighthawk-cu';
+    case 'kimi-browser-extension':
+      return 'kimi-webbridge';
+    case 'kimi-cu':
+    case 'kimi-cu-win':
+      return 'kimi-cu';
     default:
       return undefined;
   }
@@ -31,7 +31,7 @@ export function marketplaceEntryIdForInstalledPlugin(
   pluginId: string,
   catalogIsDefault: boolean,
 ): string {
-  return catalogIsDefault && pluginId === 'nighthawk-webbridge' ? 'nighthawk-browser-extension' : pluginId;
+  return catalogIsDefault && pluginId === 'kimi-webbridge' ? 'kimi-browser-extension' : pluginId;
 }
 
 export function dedupeCapabilityMarketplaceEntries(
@@ -40,7 +40,7 @@ export function dedupeCapabilityMarketplaceEntries(
   catalogIsDefault: boolean,
 ): readonly PluginMarketplaceEntry[] {
   return entries.filter((entry) => {
-    if (entry.id === 'nighthawk-webbridge') return false;
+    if (entry.id === 'kimi-webbridge') return false;
     if (!catalogIsDefault) return true;
     const capabilityId = capabilityIdForMarketplaceEntry(entry.id, true);
     if (capabilityId === undefined) return true;

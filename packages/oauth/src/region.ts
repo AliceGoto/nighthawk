@@ -62,7 +62,7 @@ export const NIGHTHAWK_REGION_PROFILES: Record<NightHawkRegion, NightHawkRegionP
   'mainland-cn': {
     oauthHost: DEFAULT_NIGHTHAWK_OAUTH_HOST,
     baseUrl: DEFAULT_NIGHTHAWK_BASE_URL,
-    cdnBase: 'https://code.kimi.com/nighthawk',
+    cdnBase: 'https://code.kimi.com/kimi-code',
     siteBase: 'https://www.kimi.com',
     telemetryEndpoint: 'https://telemetry-logs.kimi.com/v1/event',
     relayOrigin: 'https://code-rc.kimi.com',
@@ -70,7 +70,7 @@ export const NIGHTHAWK_REGION_PROFILES: Record<NightHawkRegion, NightHawkRegionP
   global: {
     oauthHost: 'https://auth.kimi.ai',
     baseUrl: 'https://api.kimi.ai/coding/v1',
-    cdnBase: 'https://code.kimi.ai/nighthawk',
+    cdnBase: 'https://code.kimi.ai/kimi-code',
     siteBase: 'https://www.kimi.ai',
     telemetryEndpoint: 'https://telemetry-logs.kimi.ai/v1/event',
     relayOrigin: 'https://code-rc.kimi.ai',

@@ -77,7 +77,7 @@ export interface FetchCatalogOptions {
 
 /**
  * Fetches a models.dev-style catalog. Public endpoint, no credentials needed.
- * `userAgent` identifies the host product (e.g. `nighthawk-cli/1.2.3`); when
+ * `userAgent` identifies the host product (e.g. `kimi-code-cli/1.2.3`); when
  * omitted the request falls back to the runtime default (`User-Agent: node`).
  */
 export async function fetchCatalog(

@@ -79,21 +79,21 @@ function createCatalog(): { plugins: Array<Record<string, unknown>> } {
         source: './plugins/relative.zip',
       }),
       catalogEntry({
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         displayName: 'NightHawk Browser Extension',
-        source: 'https://cdn.example.test/nighthawk-browser-extension.zip',
+        source: 'https://cdn.example.test/kimi-browser-extension.zip',
         distribution: { category: 'official', weight: 1 },
       }),
       catalogEntry({
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         displayName: 'NightHawk Computer Use',
-        source: 'https://cdn.example.test/nighthawk-cu.zip',
+        source: 'https://cdn.example.test/kimi-cu.zip',
         distribution: { category: 'official', weight: 1 },
       }),
       catalogEntry({
-        id: 'nighthawk-cu-win',
+        id: 'kimi-cu-win',
         displayName: 'NightHawk Computer Use for Windows',
-        source: 'https://cdn.example.test/nighthawk-cu-win.zip',
+        source: 'https://cdn.example.test/kimi-cu-win.zip',
         distribution: { category: 'official', weight: 1 },
       }),
       catalogEntry({
@@ -663,9 +663,9 @@ describe('server-v2 /api/v1 plugins', () => {
       'demo-plugin',
       'third-party-plugin',
       'relative-plugin',
-      'nighthawk-browser-extension',
-      'nighthawk-cu',
-      'nighthawk-cu-win',
+      'kimi-browser-extension',
+      'kimi-cu',
+      'kimi-cu-win',
       'meta-plugin',
       'cloud-only',
       'cloud-and-local',
@@ -690,7 +690,7 @@ describe('server-v2 /api/v1 plugins', () => {
       billing: 'free',
       distribution: { userLevel: 'pro' },
     });
-    expect(before.body.data.entries.find((entry) => entry.id === 'nighthawk-browser-extension')?.capabilityId).toBeUndefined();
+    expect(before.body.data.entries.find((entry) => entry.id === 'kimi-browser-extension')?.capabilityId).toBeUndefined();
 
     await useDemoArtifact('demo-plugin', '1.0.0');
     await call('POST', '/api/v1/plugins', {
@@ -782,22 +782,22 @@ describe('server-v2 /api/v1 plugins', () => {
     );
     expect(body.code).toBe(0);
     expect(
-      body.data.entries.find((entry) => entry.id === 'nighthawk-browser-extension')?.capabilityId,
-    ).toBe('nighthawk-webbridge');
+      body.data.entries.find((entry) => entry.id === 'kimi-browser-extension')?.capabilityId,
+    ).toBe('kimi-webbridge');
     const expectedCuId =
       process.platform === 'darwin'
-        ? 'nighthawk-cu'
+        ? 'kimi-cu'
         : process.platform === 'win32' && process.arch === 'x64'
-          ? 'nighthawk-cu-win'
+          ? 'kimi-cu-win'
           : undefined;
     const cuIds = body.data.entries
       .map((entry) => entry.id)
-      .filter((id) => id === 'nighthawk-cu' || id === 'nighthawk-cu-win');
+      .filter((id) => id === 'kimi-cu' || id === 'kimi-cu-win');
     expect(cuIds).toEqual(expectedCuId === undefined ? [] : [expectedCuId]);
     if (expectedCuId === undefined) return;
     expect(
       body.data.entries.find((entry) => entry.id === expectedCuId)?.capabilityId,
-    ).toBe('nighthawk-cu');
+    ).toBe('kimi-cu');
 
     const cuSource = await makePluginDir(expectedCuId, '0.5.4');
     await call('POST', '/api/v1/plugins', { source: cuSource });
@@ -825,12 +825,12 @@ describe('server-v2 /api/v1 plugins', () => {
     custom = true;
     catalog.plugins.push(
       catalogEntry({
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         source: 'https://cdn.example.test/legacy-webbridge.zip',
         distribution: { category: 'official', weight: 1 },
       }),
     );
-    const legacySource = await makePluginDir('nighthawk-webbridge', '1.0.0');
+    const legacySource = await makePluginDir('kimi-webbridge', '1.0.0');
     await call('POST', '/api/v1/plugins', { source: legacySource });
 
     const { body } = await call<{
@@ -843,26 +843,26 @@ describe('server-v2 /api/v1 plugins', () => {
     }>('GET', '/api/v1/plugins/marketplace');
 
     expect(body.code).toBe(0);
-    expect(body.data.entries.map((entry) => entry.id)).not.toContain('nighthawk-webbridge');
-    expect(body.data.entries.find((entry) => entry.id === 'nighthawk-browser-extension')).toMatchObject({
-      capabilityId: 'nighthawk-webbridge',
+    expect(body.data.entries.map((entry) => entry.id)).not.toContain('kimi-webbridge');
+    expect(body.data.entries.find((entry) => entry.id === 'kimi-browser-extension')).toMatchObject({
+      capabilityId: 'kimi-webbridge',
       installed: { version: '1.0.0', enabled: true },
       updateAvailable: true,
     });
 
-    catalog.plugins = catalog.plugins.filter((entry) => entry['id'] !== 'nighthawk-browser-extension');
+    catalog.plugins = catalog.plugins.filter((entry) => entry['id'] !== 'kimi-browser-extension');
     const legacyOnly = await call<{ entries: Array<{ id: string }> }>(
       'GET',
       '/api/v1/plugins/marketplace',
     );
     expect(legacyOnly.body.code).toBe(0);
-    expect(legacyOnly.body.data.entries.map((entry) => entry.id)).not.toContain('nighthawk-webbridge');
+    expect(legacyOnly.body.data.entries.map((entry) => entry.id)).not.toContain('kimi-webbridge');
     const rejected = await call('POST', '/api/v1/plugins', {
-      marketplaceId: 'nighthawk-webbridge',
+      marketplaceId: 'kimi-webbridge',
       expectedVersion: '1.0.0',
     });
     expect(rejected.body.code).toBe(40001);
-    expect(rejected.body.msg).toContain('install "nighthawk-browser-extension" instead');
+    expect(rejected.body.msg).toContain('install "kimi-browser-extension" instead');
 
     await server?.close();
     vi.stubEnv('NIGHTHAWK_PLUGIN_MARKETPLACE_FROM_DEV_SERVER', undefined);
@@ -880,9 +880,9 @@ describe('server-v2 /api/v1 plugins', () => {
     );
     expect(customLegacyOnly.body.code).toBe(0);
     expect(customLegacyOnly.body.data.entries.map((entry) => entry.id)).not.toContain(
-      'nighthawk-webbridge',
+      'kimi-webbridge',
     );
-    await call('POST', '/api/v1/plugins/nighthawk-webbridge:remove');
+    await call('POST', '/api/v1/plugins/kimi-webbridge:remove');
   });
 
   it('maps an unreachable custom marketplace to a catalog error', async () => {
@@ -1237,8 +1237,8 @@ describe('server-v2 /api/v1 plugins', () => {
     }>('GET', '/api/v1/plugins/marketplace');
 
     expect(response.body.code).toBe(0);
-    expect(response.body.data.entries.find((entry) => entry.id === 'nighthawk-browser-extension')?.capabilityId)
-      .toBe('nighthawk-webbridge');
+    expect(response.body.data.entries.find((entry) => entry.id === 'kimi-browser-extension')?.capabilityId)
+      .toBe('kimi-webbridge');
   });
 
   it('keeps strict metadata requirements for the managed catalog', async () => {
@@ -1515,7 +1515,7 @@ describe('server-v2 /api/v1 plugins', () => {
     vi.stubEnv('NIGHTHAWK_PLUGIN_MARKETPLACE_URL', undefined);
     vi.stubEnv('NIGHTHAWK_BASE_URL', undefined);
     vi.stubEnv('NIGHTHAWK_OAUTH_HOST', undefined);
-    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', undefined);
+    vi.stubEnv('KIMI_OAUTH_HOST', undefined);
     vi.stubEnv('NIGHTHAWK_REGION_MARKER', 'on');
     const tokenProvider = vi.spyOn(NightHawkOAuthToolkit.prototype, 'tokenProvider').mockReturnValue({
       getAccessToken: async () => 'managed-token',
@@ -1573,7 +1573,7 @@ describe('server-v2 /api/v1 plugins', () => {
     vi.stubEnv('NIGHTHAWK_PLUGIN_MARKETPLACE_URL', undefined);
     vi.stubEnv('NIGHTHAWK_BASE_URL', undefined);
     vi.stubEnv('NIGHTHAWK_OAUTH_HOST', undefined);
-    vi.stubEnv('NIGHTHAWK_OAUTH_HOST', undefined);
+    vi.stubEnv('KIMI_OAUTH_HOST', undefined);
     vi.stubEnv('NIGHTHAWK_REGION_MARKER', 'on');
     const tokenProvider = vi.spyOn(NightHawkOAuthToolkit.prototype, 'tokenProvider').mockReturnValue({
       getAccessToken: async () => 'managed-token',

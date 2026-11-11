@@ -1,4 +1,4 @@
-export type CapabilityId = 'nighthawk-cu' | 'nighthawk-webbridge';
+export type CapabilityId = 'kimi-cu' | 'kimi-webbridge';
 
 export type CapabilityReadiness = 'not_installed' | 'partial' | 'ready' | 'unsupported';
 

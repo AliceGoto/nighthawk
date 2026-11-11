@@ -11417,11 +11417,11 @@ capabilities = ["image_in", "video_in"]
     const session = makeSession();
     const { driver } = await makeDriver(session);
 
-    driver.handleUserInput('/plugins mcp enable nighthawk-datasource data');
+    driver.handleUserInput('/plugins mcp enable kimi-datasource data');
 
     await vi.waitFor(() => {
       expect(session.setPluginMcpServerEnabled).toHaveBeenCalledWith(
-        'nighthawk-datasource',
+        'kimi-datasource',
         'data',
         true,
       );
@@ -11446,7 +11446,7 @@ capabilities = ["image_in", "video_in"]
     const session = makeSession();
     const { driver } = await makeDriver(session);
 
-    driver.handleUserInput('/plugins install ./plugins/nighthawk-datasource');
+    driver.handleUserInput('/plugins install ./plugins/kimi-datasource');
 
     await vi.waitFor(() => {
       expect(driver.state.editorContainer.children[0]).toBeInstanceOf(
@@ -11459,7 +11459,7 @@ capabilities = ["image_in", "video_in"]
 
     await vi.waitFor(() => {
       expect(session.installPlugin).toHaveBeenCalledWith({
-        source: resolve('/tmp/proj-a', './plugins/nighthawk-datasource'),
+        source: resolve('/tmp/proj-a', './plugins/kimi-datasource'),
       });
     });
   });
@@ -11467,7 +11467,7 @@ capabilities = ["image_in", "video_in"]
   it('shows a quota note after installing a quota-consuming official plugin', async () => {
     const session = makeSession({
       installPlugin: vi.fn(async () => ({
-        id: 'nighthawk-datasource',
+        id: 'kimi-datasource',
         displayName: 'NightHawk Datasource',
         version: '3.3.0',
         enabled: true,
@@ -11477,13 +11477,13 @@ capabilities = ["image_in", "video_in"]
         enabledMcpServerCount: 1,
         hasErrors: false,
         source: 'zip-url',
-        originalSource: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+        originalSource: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
       })),
     });
     const { driver } = await makeDriver(session);
 
     driver.handleUserInput(
-      '/plugins install https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+      '/plugins install https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
     );
 
     await vi.waitFor(() => {
@@ -11496,7 +11496,7 @@ capabilities = ["image_in", "video_in"]
   it('does not show the quota note for a same-id fork installed from a local path', async () => {
     const session = makeSession({
       installPlugin: vi.fn(async () => ({
-        id: 'nighthawk-datasource',
+        id: 'kimi-datasource',
         displayName: 'NightHawk Datasource',
         version: '3.3.0',
         enabled: true,
@@ -11510,7 +11510,7 @@ capabilities = ["image_in", "video_in"]
     });
     const { driver } = await makeDriver(session);
 
-    driver.handleUserInput('/plugins install ./plugins/nighthawk-datasource-fork');
+    driver.handleUserInput('/plugins install ./plugins/kimi-datasource-fork');
 
     await vi.waitFor(() => {
       expect(driver.state.editorContainer.children[0]).toBeInstanceOf(
@@ -11534,7 +11534,7 @@ capabilities = ["image_in", "video_in"]
     const session = makeSession();
     const { driver } = await makeDriver(session);
 
-    driver.handleUserInput('/plugins install ./plugins/nighthawk-datasource');
+    driver.handleUserInput('/plugins install ./plugins/kimi-datasource');
 
     await vi.waitFor(() => {
       expect(driver.state.editorContainer.children[0]).toBeInstanceOf(
@@ -11558,14 +11558,14 @@ capabilities = ["image_in", "video_in"]
       JSON.stringify({
         plugins: [
           {
-            id: 'nighthawk-datasource',
+            id: 'kimi-datasource',
             version: '1.0.0',
             sha256sum: 'a'.repeat(64),
             platforms: ['macos', 'windows', 'linux'],
             distribution: { category: 'official' },
             displayName: 'NightHawk Datasource',
             description: 'Datasource plugin',
-            source: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+            source: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
           },
         ],
       }),
@@ -11589,7 +11589,7 @@ capabilities = ["image_in", "video_in"]
 
     await vi.waitFor(() => {
       expect(session.installPlugin).toHaveBeenCalledWith({
-        marketplaceId: 'nighthawk-datasource',
+        marketplaceId: 'kimi-datasource',
         expectedVersion: '1.0.0',
         expectedSha256: 'a'.repeat(64),
         migrateFrom: undefined,
@@ -11615,13 +11615,13 @@ capabilities = ["image_in", "video_in"]
       JSON.stringify({
         plugins: [
           {
-            id: 'nighthawk-datasource',
+            id: 'kimi-datasource',
             version: '1.0.0',
             sha256sum: 'a'.repeat(64),
             platforms: ['macos', 'windows', 'linux'],
             distribution: { category: 'official' },
             displayName: 'NightHawk Datasource',
-            source: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+            source: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
           },
         ],
       }),
@@ -11764,7 +11764,7 @@ capabilities = ["image_in", "video_in"]
     const session = makeSession();
     const { driver } = await makeDriver(session);
 
-    driver.handleUserInput('/plugins remove nighthawk-webbridge');
+    driver.handleUserInput('/plugins remove kimi-webbridge');
 
     await vi.waitFor(() => {
       expect(driver.state.editorContainer.children[0]).toBeInstanceOf(
@@ -11776,7 +11776,7 @@ capabilities = ["image_in", "video_in"]
     confirm.handleInput('\r');
 
     await vi.waitFor(() => {
-      expect(session.removePlugin).toHaveBeenCalledWith('nighthawk-webbridge');
+      expect(session.removePlugin).toHaveBeenCalledWith('kimi-webbridge');
     });
     expect(session.activateSkill).not.toHaveBeenCalled();
   });
@@ -11797,14 +11797,14 @@ capabilities = ["image_in", "video_in"]
             JSON.stringify({
               plugins: [
                 {
-                  id: 'nighthawk-datasource',
+                  id: 'kimi-datasource',
                   version: '1.0.0',
                   sha256sum: 'a'.repeat(64),
                   platforms: ['macos', 'windows', 'linux'],
                   distribution: { category: 'official' },
                   displayName: 'NightHawk Datasource',
                   description: 'Datasource plugin',
-                  source: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+                  source: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
                 },
               ],
             }),
@@ -11829,7 +11829,7 @@ capabilities = ["image_in", "video_in"]
 
       await vi.waitFor(() => {
         expect(session.installPlugin).toHaveBeenCalledWith({
-          marketplaceId: 'nighthawk-datasource',
+          marketplaceId: 'kimi-datasource',
           expectedVersion: '1.0.0',
           expectedSha256: 'a'.repeat(64),
           migrateFrom: undefined,
@@ -11936,7 +11936,7 @@ capabilities = ["image_in", "video_in"]
     const session = makeSession({
       listPlugins: vi.fn(async () => [
         {
-          id: 'nighthawk-datasource',
+          id: 'kimi-datasource',
           displayName: 'NightHawk Datasource',
           version: '1.0.0',
           enabled: true,
@@ -11948,7 +11948,7 @@ capabilities = ["image_in", "video_in"]
         },
       ]),
       getPluginInfo: vi.fn(async () => ({
-        id: 'nighthawk-datasource',
+        id: 'kimi-datasource',
         displayName: 'NightHawk Datasource',
         version: '1.0.0',
         enabled: true,
@@ -11958,24 +11958,24 @@ capabilities = ["image_in", "video_in"]
         enabledMcpServerCount: [...serverEnabled.values()].filter(Boolean).length,
         hasErrors: false,
         source: 'local-path',
-        root: '/plugins/nighthawk-datasource',
+        root: '/plugins/kimi-datasource',
         manifest: undefined,
         mcpServers: [
           {
             name: 'metadata',
-            runtimeName: 'plugin-nighthawk-datasource-metadata',
+            runtimeName: 'plugin-kimi-datasource-metadata',
             enabled: serverEnabled.get('metadata') === true,
             transport: 'stdio',
             command: 'node',
-            args: ['./bin/nighthawk-datasource.mjs', 'metadata'],
+            args: ['./bin/kimi-datasource.mjs', 'metadata'],
           },
           {
             name: 'data',
-            runtimeName: 'plugin-nighthawk-datasource-data',
+            runtimeName: 'plugin-kimi-datasource-data',
             enabled: serverEnabled.get('data') === true,
             transport: 'stdio',
             command: 'node',
-            args: ['./bin/nighthawk-datasource.mjs', 'data'],
+            args: ['./bin/kimi-datasource.mjs', 'data'],
           },
         ],
         diagnostics: [],
@@ -12005,7 +12005,7 @@ capabilities = ["image_in", "video_in"]
 
     await vi.waitFor(() => {
       expect(session.setPluginMcpServerEnabled).toHaveBeenCalledWith(
-        'nighthawk-datasource',
+        'kimi-datasource',
         'data',
         false,
       );
@@ -12016,7 +12016,7 @@ capabilities = ["image_in", "video_in"]
     const out = stripSgr(driver.state.editorContainer.children[0]!.render(120).join('\n'));
     expect(out).toContain('❯ data  disabled  run /reload or /new to apply');
     expect(stripSgr(renderTranscript(driver))).not.toContain(
-      'Disabled MCP server data for nighthawk-datasource. Run /reload or /new to apply.',
+      'Disabled MCP server data for kimi-datasource. Run /reload or /new to apply.',
     );
   });
 

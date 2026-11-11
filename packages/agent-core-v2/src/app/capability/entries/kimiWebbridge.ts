@@ -19,9 +19,9 @@ import type {
 } from '../types';
 import type { CapabilityEntryContext } from './context';
 
-const PLUGIN_ID = 'nighthawk-browser-extension';
-const LEGACY_PLUGIN_ID = 'nighthawk-webbridge';
-const PLUGIN_ZIP_PATH = 'plugins/official/nighthawk-webbridge.zip';
+const PLUGIN_ID = 'kimi-browser-extension';
+const LEGACY_PLUGIN_ID = 'kimi-webbridge';
+const PLUGIN_ZIP_PATH = 'plugins/official/kimi-webbridge.zip';
 const BINARY_CDN_PATH = 'webbridge/latest/releases';
 const DEFAULT_DAEMON_BASE_URL = 'http://127.0.0.1:10086';
 const STATUS_TIMEOUT_MS = 1_500;
@@ -37,38 +37,38 @@ interface DaemonStatus {
 
 function binaryAssetName(platform: NodeJS.Platform, arch: string): string | undefined {
   if (platform === 'darwin') {
-    if (arch === 'arm64') return 'nighthawk-webbridge-darwin-arm64';
-    if (arch === 'x64') return 'nighthawk-webbridge-darwin-amd64';
+    if (arch === 'arm64') return 'kimi-webbridge-darwin-arm64';
+    if (arch === 'x64') return 'kimi-webbridge-darwin-amd64';
     return undefined;
   }
   if (platform === 'linux') {
-    if (arch === 'arm64') return 'nighthawk-webbridge-linux-arm64';
-    if (arch === 'x64') return 'nighthawk-webbridge-linux-amd64';
+    if (arch === 'arm64') return 'kimi-webbridge-linux-arm64';
+    if (arch === 'x64') return 'kimi-webbridge-linux-amd64';
     return undefined;
   }
-  if (platform === 'win32' && arch === 'x64') return 'nighthawk-webbridge-windows-amd64.exe';
+  if (platform === 'win32' && arch === 'x64') return 'kimi-webbridge-windows-amd64.exe';
   return undefined;
 }
 
 export function createNightHawkWebbridgeEntry(ctx: CapabilityEntryContext): CapabilityEntry {
   const baseUrl = ctx.webbridgeBaseUrl ?? DEFAULT_DAEMON_BASE_URL;
-  const binDir = path.join(ctx.userHomeDir, '.nighthawk-webbridge', 'bin');
-  const binName = ctx.platform === 'win32' ? 'nighthawk-webbridge.exe' : 'nighthawk-webbridge';
+  const binDir = path.join(ctx.userHomeDir, '.kimi-webbridge', 'bin');
+  const binName = ctx.platform === 'win32' ? 'kimi-webbridge.exe' : 'kimi-webbridge';
   const binPath = path.join(binDir, binName);
   const userSourceSkillDirs = [
     {
       label: 'nighthawk',
-      path: path.join(ctx.nighthawkHomeDir, 'skills', 'nighthawk-webbridge'),
+      path: path.join(ctx.nighthawkHomeDir, 'skills', 'kimi-webbridge'),
     },
     {
       label: 'agents',
-      path: path.join(ctx.userHomeDir, '.agents', 'skills', 'nighthawk-webbridge'),
+      path: path.join(ctx.userHomeDir, '.agents', 'skills', 'kimi-webbridge'),
     },
   ];
   const standaloneSkillBackupDir = path.join(
     ctx.nighthawkHomeDir,
     'backups',
-    'nighthawk-webbridge-skills',
+    'kimi-webbridge-skills',
   );
   const supported = binaryAssetName(ctx.platform, ctx.arch) !== undefined;
   let standaloneSkillBackupPath: string | undefined;
@@ -193,13 +193,13 @@ export function createNightHawkWebbridgeEntry(ctx: CapabilityEntryContext): Capa
         setTimeout(resolve, START_POLL_INTERVAL_MS);
       });
     }
-    throw new Error(`WebBridge daemon did not come up on ${baseUrl} — check ~/.nighthawk-webbridge/logs`);
+    throw new Error(`WebBridge daemon did not come up on ${baseUrl} — check ~/.kimi-webbridge/logs`);
   }
 
   async function install(report: CapabilityInstallReporter): Promise<string | undefined> {
     const asset = binaryAssetName(ctx.platform, ctx.arch);
     if (asset === undefined) {
-      throw new Error(`nighthawk-webbridge is not supported on ${ctx.platform}/${ctx.arch}`);
+      throw new Error(`kimi-webbridge is not supported on ${ctx.platform}/${ctx.arch}`);
     }
 
     const defaultCatalog = await ctx.marketplace.isDefaultMarketplace().catch(() => false);
@@ -245,7 +245,7 @@ export function createNightHawkWebbridgeEntry(ctx: CapabilityEntryContext): Capa
         timeout: START_TIMEOUT_MS,
       });
       if (started.code !== 0) {
-        throw new Error(`nighthawk-webbridge start failed: ${started.stderr || started.stdout}`);
+        throw new Error(`kimi-webbridge start failed: ${started.stderr || started.stdout}`);
       }
       await waitForDaemon();
     }
@@ -272,7 +272,7 @@ export function createNightHawkWebbridgeEntry(ctx: CapabilityEntryContext): Capa
         standaloneSkillMigrationError = undefined;
       } catch (error) {
         standaloneSkillMigrationError =
-          `Could not back up the standalone nighthawk-webbridge skill: ${error instanceof Error ? error.message : String(error)}`;
+          `Could not back up the standalone kimi-webbridge skill: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
     return standaloneSkillMigrationPending && standaloneSkillMigrationError === undefined
@@ -288,7 +288,7 @@ export function createNightHawkWebbridgeEntry(ctx: CapabilityEntryContext): Capa
     const url = nighthawkCdnContentUrl(`${BINARY_CDN_PATH}/${asset}`);
     const staging = path.join(
       tmpdir(),
-      `nighthawk-webbridge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ctx.platform === 'win32' ? '.exe' : ''}`,
+      `kimi-webbridge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ctx.platform === 'win32' ? '.exe' : ''}`,
     );
     try {
       await downloadToFile(
@@ -311,7 +311,7 @@ export function createNightHawkWebbridgeEntry(ctx: CapabilityEntryContext): Capa
   }
 
   return {
-    id: 'nighthawk-webbridge',
+    id: 'kimi-webbridge',
     pluginId: PLUGIN_ID,
     displayName: 'NightHawk Browser Extension',
     description:

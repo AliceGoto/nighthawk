@@ -83,9 +83,9 @@ Marketplace 条目还可以通过 `clients`（`desktop`、`cli` 或两者）和 
 
 官方插件是 NightHawk 官方维护的 plugin 和内置产品能力，目前有以下三种：
 
-- **[NightHawk Datasource](#nighthawk-datasource)**：用自然语言查询金融行情、财经资讯、宏观经济、企业工商、学术文献、法律法规和国际组织官方数据
-- **[NightHawk Browser Extension](#nighthawk-browser-extension)**：让 AI 直接操控你自己的浏览器，完成各类网页操作
-- **[NightHawk Computer Use](#nighthawk-computer-use)**：让 AI 操作你的桌面应用（macOS 和 Windows）
+- **[NightHawk Datasource](#kimi-datasource)**：用自然语言查询金融行情、财经资讯、宏观经济、企业工商、学术文献、法律法规和国际组织官方数据
+- **[NightHawk Browser Extension](#kimi-browser-extension)**：让 AI 直接操控你自己的浏览器，完成各类网页操作
+- **[NightHawk Computer Use](#kimi-computer-use)**：让 AI 操作你的桌面应用（macOS 和 Windows）
 
 ### 安装与升级
 
@@ -112,7 +112,7 @@ NightHawk Datasource 是 NightHawk 官方数据插件。用自然语言直接查
 #### 使用方式
 
 1. 直接用自然语言描述需求，NightHawk 会自动调用数据能力
-2. 通过 `/skill:nighthawk-datasource:nighthawk-datasource` 明确触发数据查询 Skill
+2. 通过 `/skill:kimi-datasource:kimi-datasource` 明确触发数据查询 Skill
 
 #### 能做什么
 
@@ -168,11 +168,11 @@ NightHawk Datasource 是 NightHawk 官方数据插件。用自然语言直接查
 - 技术指标（MACD、KDJ 等）及实时行情仅在交易时段内可用
 - AI 输出内容仅供参考，不构成任何投资或商业决策建议
 
-<a id="nighthawk-webbridge"></a>
+<a id="kimi-webbridge"></a>
 
 ### NightHawk Browser Extension <Badge type="tip" text="v2.0.11" />
 
-NightHawk Browser Extension 让 AI 直接操控你的浏览器，带着你的登录状态和 Cookie 打开网页、阅读内容、点击按钮、填写表单、截图保存，把重复的网页操作交给它完成。产品介绍见 [NightHawk Browser Extension 官网](https://www.kimi.com/products/nighthawk-browser-extension)。
+NightHawk Browser Extension 让 AI 直接操控你的浏览器，带着你的登录状态和 Cookie 打开网页、阅读内容、点击按钮、填写表单、截图保存，把重复的网页操作交给它完成。产品介绍见 [NightHawk Browser Extension 官网](https://www.kimi.com/products/kimi-browser-extension)。
 
 <a id="install-the-browser-extension"></a>
 
@@ -182,18 +182,18 @@ NightHawk Browser Extension 让 AI 直接操控你的浏览器，带着你的登
 
 **方式一：应用商店安装（推荐）**
 
-打开 [Chrome 应用商店](https://chromewebstore.google.com/detail/nighthawk-webbridge/fldmhceldgbpfpkbgopacenieobmligc) 或 [Edge 应用商店](https://microsoftedge.microsoft.com/addons/detail/nighthawk-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg)，点击添加即可。
+打开 [Chrome 应用商店](https://chromewebstore.google.com/detail/kimi-webbridge/fldmhceldgbpfpkbgopacenieobmligc) 或 [Edge 应用商店](https://microsoftedge.microsoft.com/addons/detail/kimi-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg)，点击添加即可。
 
 **方式二：手动安装**
 
 无法访问应用商店时使用这种方式，按以下步骤操作：
 
-1. [下载扩展安装包](https://nighthawk-web-img.moonshot.cn/webbridge/latest/extension/nighthawk-webbridge-extension.zip) 并解压
+1. [下载扩展安装包](https://nighthawk-web-img.moonshot.cn/webbridge/latest/extension/kimi-webbridge-extension.zip) 并解压
 2. 在浏览器地址栏输入 `chrome://extensions/` 打开扩展管理页，开启右上角的**开发者模式**
 
    ![开启开发者模式](../../media/webbridge-dev-mode.jpeg)
 
-3. 点击左上角的**加载未打包的扩展程序**，选择解压后的 `nighthawk-webbridge-extension` 文件夹
+3. 点击左上角的**加载未打包的扩展程序**，选择解压后的 `kimi-webbridge-extension` 文件夹
 
    ![加载未打包的扩展程序](../../media/webbridge-load-unpacked.jpeg)
 
@@ -231,7 +231,7 @@ NightHawk Computer Use 让 AI 直接操作你的桌面应用，可以完成点�
 - **会短暂占用键鼠**：Windows 版无法像 macOS 版那样稳定地全程后台输入，执行操作时可能短暂激活目标窗口并使用你的鼠标键盘
 - **系统要求**：Windows 10 version 1903（Build 18362）或更新版本 / Windows 11，x64；需要真实交互式桌面会话，Windows Server 需要 Desktop Experience
 - **无需额外授权**：Windows 不需要 macOS 那样的**辅助功能**和**屏幕录制**权限
-- **权限对等**：目标应用以管理员权限运行时，NightHawkCU 也需要以同等权限运行
+- **权限对等**：目标应用以管理员权限运行时，KimiCU 也需要以同等权限运行
 
 #### 能做什么
 

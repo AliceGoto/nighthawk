@@ -22,16 +22,16 @@ Fetch pages with **FetchURL** before answering. All page links below are relativ
 | Question topic | Page (relative to the base URL) |
 | --- | --- |
 | What NightHawk is; Base URL / API Key; standard vs high-speed model; platform comparison | `./` (home overview) |
-| Membership plans, quota and rate limits, fuel packs | `nighthawk/membership.html` |
-| Install / login / usage FAQ | `nighthawk/faq.html` |
-| Error codes and their meaning (e.g. 401 for high-speed model access) | `nighthawk/error-reference.html` |
-| Product news and recent changes | `nighthawk/whats-new.html` |
-| Community guidelines; contact and feedback | `nighthawk/community-guidelines.html`, `nighthawk/contact-and-feedback.html` |
-| `config.toml` fields, providers/models, environment variables, data locations, config overrides | `nighthawk-cli/configuration/` — `config-files.html`, `providers.html`, `env-vars.html`, `data-locations.html`, `overrides.html` |
-| Skills, MCP, hooks, plugins, themes, agents/sub-agents, NightHawk Datasource | `nighthawk-cli/customization/` — `skills.html`, `mcp.html`, `hooks.html`, `plugins.html`, `themes.html`, `agents.html`; NightHawk Datasource lives at `plugins.html#nighthawk-datasource` |
-| Getting started, sessions and context, goals, interaction and input, IDEs, migration, use cases | `nighthawk-cli/guides/` — `getting-started.html`, `sessions.html`, `goals.html`, `interaction.html`, `ides.html`, `migration.html`, `use-cases.html` |
-| Slash commands, keyboard shortcuts, builtin tools, `nighthawk` command flags, ACP | `nighthawk-cli/reference/` — `slash-commands.html`, `keyboard.html`, `tools.html`, `kimi-command.html`, `kimi-acp.html` |
-| CLI changelog | `nighthawk-cli/release-notes/changelog.html` |
+| Membership plans, quota and rate limits, fuel packs | `kimi-code/membership.html` |
+| Install / login / usage FAQ | `kimi-code/faq.html` |
+| Error codes and their meaning (e.g. 401 for high-speed model access) | `kimi-code/error-reference.html` |
+| Product news and recent changes | `kimi-code/whats-new.html` |
+| Community guidelines; contact and feedback | `kimi-code/community-guidelines.html`, `kimi-code/contact-and-feedback.html` |
+| `config.toml` fields, providers/models, environment variables, data locations, config overrides | `kimi-code-cli/configuration/` — `config-files.html`, `providers.html`, `env-vars.html`, `data-locations.html`, `overrides.html` |
+| Skills, MCP, hooks, plugins, themes, agents/sub-agents, NightHawk Datasource | `kimi-code-cli/customization/` — `skills.html`, `mcp.html`, `hooks.html`, `plugins.html`, `themes.html`, `agents.html`; NightHawk Datasource lives at `plugins.html#kimi-datasource` |
+| Getting started, sessions and context, goals, interaction and input, IDEs, migration, use cases | `kimi-code-cli/guides/` — `getting-started.html`, `sessions.html`, `goals.html`, `interaction.html`, `ides.html`, `migration.html`, `use-cases.html` |
+| Slash commands, keyboard shortcuts, builtin tools, `nighthawk` command flags, ACP | `kimi-code-cli/reference/` — `slash-commands.html`, `keyboard.html`, `tools.html`, `kimi-command.html`, `kimi-acp.html` |
+| CLI changelog | `kimi-code-cli/release-notes/changelog.html` |
 | Using NightHawk in Claude Code and other third-party agents | `third-party-tools/other-coding-agents.html` |
 
 If no row fits the question, fetch the docs home page and follow its navigation links.

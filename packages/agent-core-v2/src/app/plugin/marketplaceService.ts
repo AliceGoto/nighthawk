@@ -96,11 +96,11 @@ export class PluginMarketplaceService implements IPluginMarketplaceService {
     expectedSha256?: string,
     marketplaceSource?: string,
   ): Promise<MarketplacePluginInstall> {
-    if (marketplaceId === 'nighthawk-webbridge') {
+    if (marketplaceId === 'kimi-webbridge') {
       throw new Error2(
         ErrorCodes.VALIDATION_FAILED,
-        'Marketplace plugin "nighthawk-webbridge" is legacy; install "nighthawk-browser-extension" instead',
-        { details: { marketplaceId, replacementId: 'nighthawk-browser-extension' } },
+        'Marketplace plugin "kimi-webbridge" is legacy; install "kimi-browser-extension" instead',
+        { details: { marketplaceId, replacementId: 'kimi-browser-extension' } },
       );
     }
     const { marketplace, context } = await this.load(marketplaceSource);

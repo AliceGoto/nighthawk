@@ -120,7 +120,7 @@
                                             ← 空行
  Installed plugins (2)                      ← 分区标题（textStrong / 加粗）
   ❯ NightHawk Datasource  enabled                ← 选中行（❯ + primary+bold 名称）+ 状态标签（success）
-    id nighthawk-datasource · 1 skill · MCP 1/1 · via code.kimi.com · official   ← 次要信息行（textMuted，` · ` 分隔）
+    id kimi-datasource · 1 skill · MCP 1/1 · via code.kimi.com · official   ← 次要信息行（textMuted，` · ` 分隔）
     Superpowers  disabled                   ← 未选中行（text 名称）+ 关态标签（textDim）
     id superpowers · 14 skills · via code.kimi.com · curated
 ```

@@ -63,7 +63,7 @@ function fakeHostProcess(script?: Array<{ match: string; code: number; stdout?: 
 
 function fakeMarketplace(
   entries: readonly { id: string; version?: string; sha256sum?: string }[] = [
-    { id: 'nighthawk-browser-extension', version: '1.11.3', sha256sum: '0'.repeat(64) },
+    { id: 'kimi-browser-extension', version: '1.11.3', sha256sum: '0'.repeat(64) },
   ],
 ): IPluginMarketplaceService {
   return {
@@ -206,11 +206,11 @@ function fakeFetch(opts: {
   return { fetchImpl };
 }
 
-describe('nighthawk-webbridge entry', () => {
+describe('kimi-webbridge entry', () => {
   let root: string;
 
   beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), 'nighthawk-webbridge-entry-'));
+    root = await mkdtemp(path.join(tmpdir(), 'kimi-webbridge-entry-'));
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
@@ -231,19 +231,19 @@ describe('nighthawk-webbridge entry', () => {
 
   it('maps platforms to CDN asset names', () => {
     const { binaryAssetName } = __kimiWebbridgeInternals;
-    expect(binaryAssetName('darwin', 'arm64')).toBe('nighthawk-webbridge-darwin-arm64');
-    expect(binaryAssetName('darwin', 'x64')).toBe('nighthawk-webbridge-darwin-amd64');
-    expect(binaryAssetName('linux', 'arm64')).toBe('nighthawk-webbridge-linux-arm64');
-    expect(binaryAssetName('linux', 'x64')).toBe('nighthawk-webbridge-linux-amd64');
-    expect(binaryAssetName('win32', 'x64')).toBe('nighthawk-webbridge-windows-amd64.exe');
+    expect(binaryAssetName('darwin', 'arm64')).toBe('kimi-webbridge-darwin-arm64');
+    expect(binaryAssetName('darwin', 'x64')).toBe('kimi-webbridge-darwin-amd64');
+    expect(binaryAssetName('linux', 'arm64')).toBe('kimi-webbridge-linux-arm64');
+    expect(binaryAssetName('linux', 'x64')).toBe('kimi-webbridge-linux-amd64');
+    expect(binaryAssetName('win32', 'x64')).toBe('kimi-webbridge-windows-amd64.exe');
     expect(binaryAssetName('win32', 'arm64')).toBeUndefined();
     expect(binaryAssetName('freebsd', 'x64')).toBeUndefined();
   });
 
   it('EXDEV fallback replaces the destination without opening it for write', async () => {
     const { renameAcrossDevicesFallback } = __kimiWebbridgeInternals;
-    const from = path.join(root, 'staging', 'nighthawk-webbridge');
-    const to = path.join(root, 'bin', 'nighthawk-webbridge');
+    const from = path.join(root, 'staging', 'kimi-webbridge');
+    const to = path.join(root, 'bin', 'kimi-webbridge');
     await mkdir(path.dirname(from), { recursive: true });
     await mkdir(path.dirname(to), { recursive: true });
     await writeFile(from, 'new');
@@ -264,11 +264,11 @@ describe('nighthawk-webbridge entry', () => {
 
   it('detects a fully installed daemon with extension as soft gate', async () => {
     const userHome = path.join(root, 'user-home');
-    await mkdir(path.join(userHome, '.nighthawk-webbridge', 'bin'), { recursive: true });
-    const binPath = path.join(userHome, '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge');
+    await mkdir(path.join(userHome, '.kimi-webbridge', 'bin'), { recursive: true });
+    const binPath = path.join(userHome, '.kimi-webbridge', 'bin', 'kimi-webbridge');
     await writeFile(binPath, 'bin');
     await chmod(binPath, 0o755);
-    const plugins = fakePlugins([{ id: 'nighthawk-browser-extension', enabled: true, state: 'ok', version: '1.11.3' }]);
+    const plugins = fakePlugins([{ id: 'kimi-browser-extension', enabled: true, state: 'ok', version: '1.11.3' }]);
     const { fetchImpl } = fakeFetch({
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: false }],
     });
@@ -287,11 +287,11 @@ describe('nighthawk-webbridge entry', () => {
   it('backs up standalone skills after refreshing the managed plugin', async () => {
     const nighthawkHome = path.join(root, 'nighthawk-home');
     const userHome = path.join(root, 'user-home');
-    await mkdir(path.join(nighthawkHome, 'skills', 'nighthawk-webbridge'), { recursive: true });
-    await writeFile(path.join(nighthawkHome, 'skills', 'nighthawk-webbridge', 'SKILL.md'), 'old');
-    await mkdir(path.join(userHome, '.agents', 'skills', 'nighthawk-webbridge'), { recursive: true });
-    await writeFile(path.join(userHome, '.agents', 'skills', 'nighthawk-webbridge', 'SKILL.md'), 'old');
-    const plugins = fakePlugins([{ id: 'nighthawk-browser-extension', enabled: true, state: 'ok' }]);
+    await mkdir(path.join(nighthawkHome, 'skills', 'kimi-webbridge'), { recursive: true });
+    await writeFile(path.join(nighthawkHome, 'skills', 'kimi-webbridge', 'SKILL.md'), 'old');
+    await mkdir(path.join(userHome, '.agents', 'skills', 'kimi-webbridge'), { recursive: true });
+    await writeFile(path.join(userHome, '.agents', 'skills', 'kimi-webbridge', 'SKILL.md'), 'old');
+    const plugins = fakePlugins([{ id: 'kimi-browser-extension', enabled: true, state: 'ok' }]);
     const { fetchImpl } = fakeFetch({
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: true }],
     });
@@ -302,7 +302,7 @@ describe('nighthawk-webbridge entry', () => {
     expect(detected.steps.find((step) => step.id === 'standalone-skill-migration')).toEqual({
       id: 'standalone-skill-migration',
       state: 'missing',
-      detail: `${path.join(nighthawkHome, 'skills', 'nighthawk-webbridge')}, ${path.join(userHome, '.agents', 'skills', 'nighthawk-webbridge')}`,
+      detail: `${path.join(nighthawkHome, 'skills', 'kimi-webbridge')}, ${path.join(userHome, '.agents', 'skills', 'kimi-webbridge')}`,
       optional: true,
     });
     const reports: string[] = [];
@@ -310,17 +310,17 @@ describe('nighthawk-webbridge entry', () => {
 
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '1.11.3',
         migrateFrom: undefined,
       },
     ]);
     expect(note).toBe('user-skill-migrated');
     expect(reports).toContain('standalone-skill-migration');
-    await expect(access(path.join(nighthawkHome, 'skills', 'nighthawk-webbridge'))).rejects.toThrow();
-    await expect(access(path.join(userHome, '.agents', 'skills', 'nighthawk-webbridge'))).rejects.toThrow();
+    await expect(access(path.join(nighthawkHome, 'skills', 'kimi-webbridge'))).rejects.toThrow();
+    await expect(access(path.join(userHome, '.agents', 'skills', 'kimi-webbridge'))).rejects.toThrow();
 
-    const backupDir = path.join(nighthawkHome, 'backups', 'nighthawk-webbridge-skills');
+    const backupDir = path.join(nighthawkHome, 'backups', 'kimi-webbridge-skills');
     const backups = await readdir(backupDir);
     expect(backups).toHaveLength(1);
     await expect(
@@ -348,12 +348,12 @@ describe('nighthawk-webbridge entry', () => {
 
     await entry.install((step, percent) => reports.push([step, percent]));
 
-    const binPath = path.join(root, 'user-home', '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge');
+    const binPath = path.join(root, 'user-home', '.kimi-webbridge', 'bin', 'kimi-webbridge');
     await access(binPath);
     expect(host.calls.map((c) => `${c.command} ${c.args.join(' ')}`)).toEqual([`${binPath} start`]);
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '1.11.3',
         migrateFrom: undefined,
       },
@@ -372,7 +372,7 @@ describe('nighthawk-webbridge entry', () => {
     const entry = createNightHawkWebbridgeEntry(
       makeCtx({
         plugins: plugins.service,
-        marketplace: fakeMarketplace([{ id: 'nighthawk-browser-extension', version: '9.8.7' }]),
+        marketplace: fakeMarketplace([{ id: 'kimi-browser-extension', version: '9.8.7' }]),
         hostProcess: host.service,
         fetchImpl,
       }),
@@ -382,7 +382,7 @@ describe('nighthawk-webbridge entry', () => {
 
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '9.8.7',
         migrateFrom: undefined,
       },
@@ -412,9 +412,9 @@ describe('nighthawk-webbridge entry', () => {
 
     expect(plugins.installOptions).toHaveLength(1);
     expect(plugins.installOptions[0]?.resolved).toMatchObject({
-      source: expect.stringContaining('plugins/official/nighthawk-webbridge.zip'),
+      source: expect.stringContaining('plugins/official/kimi-webbridge.zip'),
       sha256sum: undefined,
-      expectedPluginId: 'nighthawk-browser-extension',
+      expectedPluginId: 'kimi-browser-extension',
     });
   });
 
@@ -441,8 +441,8 @@ describe('nighthawk-webbridge entry', () => {
     await entry.install(() => {});
 
     expect(plugins.installOptions[0]?.resolved).toMatchObject({
-      source: expect.stringContaining('plugins/official/nighthawk-webbridge.zip'),
-      expectedPluginId: 'nighthawk-browser-extension',
+      source: expect.stringContaining('plugins/official/kimi-webbridge.zip'),
+      expectedPluginId: 'kimi-browser-extension',
     });
   });
 
@@ -463,11 +463,11 @@ describe('nighthawk-webbridge entry', () => {
 
   it('reinstalls the latest binary and plugin for a ready capability', async () => {
     const userHome = path.join(root, 'user-home');
-    await mkdir(path.join(userHome, '.nighthawk-webbridge', 'bin'), { recursive: true });
-    const binPath = path.join(userHome, '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge');
+    await mkdir(path.join(userHome, '.kimi-webbridge', 'bin'), { recursive: true });
+    const binPath = path.join(userHome, '.kimi-webbridge', 'bin', 'kimi-webbridge');
     await writeFile(binPath, 'old-bin');
     await chmod(binPath, 0o755);
-    const plugins = fakePlugins([{ id: 'nighthawk-browser-extension', enabled: true, state: 'ok', version: '1.11.3' }]);
+    const plugins = fakePlugins([{ id: 'kimi-browser-extension', enabled: true, state: 'ok', version: '1.11.3' }]);
     const host = fakeHostProcess();
     const { fetchImpl } = fakeFetch({
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: true }],
@@ -485,7 +485,7 @@ describe('nighthawk-webbridge entry', () => {
     expect(host.calls).toEqual([]);
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '1.11.3',
         migrateFrom: undefined,
       },
@@ -495,8 +495,8 @@ describe('nighthawk-webbridge entry', () => {
 
   it('resumes partial setup without repeating completed runtime layers', async () => {
     const userHome = path.join(root, 'user-home');
-    await mkdir(path.join(userHome, '.nighthawk-webbridge', 'bin'), { recursive: true });
-    const binPath = path.join(userHome, '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge');
+    await mkdir(path.join(userHome, '.kimi-webbridge', 'bin'), { recursive: true });
+    const binPath = path.join(userHome, '.kimi-webbridge', 'bin', 'kimi-webbridge');
     await writeFile(binPath, 'bin');
     await chmod(binPath, 0o755);
     const plugins = fakePlugins([]);
@@ -518,12 +518,12 @@ describe('nighthawk-webbridge entry', () => {
 
   it('refreshes the wiring plugin when daemon recovery is the only missing layer', async () => {
     const userHome = path.join(root, 'user-home');
-    await mkdir(path.join(userHome, '.nighthawk-webbridge', 'bin'), { recursive: true });
-    const binPath = path.join(userHome, '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge');
+    await mkdir(path.join(userHome, '.kimi-webbridge', 'bin'), { recursive: true });
+    const binPath = path.join(userHome, '.kimi-webbridge', 'bin', 'kimi-webbridge');
     await writeFile(binPath, 'bin');
     await chmod(binPath, 0o755);
     const plugins = fakePlugins([
-      { id: 'nighthawk-browser-extension', enabled: true, state: 'ok', version: '1.11.3' },
+      { id: 'kimi-browser-extension', enabled: true, state: 'ok', version: '1.11.3' },
     ]);
     const host = fakeHostProcess();
     const { fetchImpl } = fakeFetch({
@@ -541,7 +541,7 @@ describe('nighthawk-webbridge entry', () => {
 
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '1.11.3',
         migrateFrom: undefined,
       },
@@ -561,8 +561,8 @@ describe('nighthawk-webbridge entry', () => {
   });
   it('treats a non-executable leftover binary as missing and re-downloads it', async () => {
     const userHome = path.join(root, 'user-home');
-    await mkdir(path.join(userHome, '.nighthawk-webbridge', 'bin'), { recursive: true });
-    const binPath = path.join(userHome, '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge');
+    await mkdir(path.join(userHome, '.kimi-webbridge', 'bin'), { recursive: true });
+    const binPath = path.join(userHome, '.kimi-webbridge', 'bin', 'kimi-webbridge');
     await writeFile(binPath, 'stale');
     await chmod(binPath, 0o644);
     const plugins = fakePlugins([]);
@@ -587,7 +587,7 @@ describe('nighthawk-webbridge entry', () => {
 
   it('re-enables a previously disabled wiring plugin during setup', async () => {
     const plugins = fakePlugins([
-      { id: 'nighthawk-browser-extension', enabled: false, state: 'ok', version: '1.11.3' },
+      { id: 'kimi-browser-extension', enabled: false, state: 'ok', version: '1.11.3' },
     ]);
     const { fetchImpl } = fakeFetch({
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: true }],
@@ -595,13 +595,13 @@ describe('nighthawk-webbridge entry', () => {
     const entry = createNightHawkWebbridgeEntry(makeCtx({ plugins: plugins.service, fetchImpl }));
 
     await entry.install(() => {});
-    expect(plugins.enabledCalls).toEqual([{ id: 'nighthawk-browser-extension', enabled: true }]);
+    expect(plugins.enabledCalls).toEqual([{ id: 'kimi-browser-extension', enabled: true }]);
   });
 
   it('keeps the capability id while using the canonical wiring plugin id', () => {
     const entry = createNightHawkWebbridgeEntry(makeCtx());
-    expect(entry.id).toBe('nighthawk-webbridge');
-    expect(entry.pluginId).toBe('nighthawk-browser-extension');
+    expect(entry.id).toBe('kimi-webbridge');
+    expect(entry.pluginId).toBe('kimi-browser-extension');
   });
 
   it('detects legacy wiring and prefers the canonical plugin when both exist', async () => {
@@ -609,7 +609,7 @@ describe('nighthawk-webbridge entry', () => {
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: true }],
     });
     const legacyPlugins = fakePlugins([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
     ]);
     const legacyEntry = createNightHawkWebbridgeEntry(
       makeCtx({ plugins: legacyPlugins.service, fetchImpl }),
@@ -623,8 +623,8 @@ describe('nighthawk-webbridge entry', () => {
     });
 
     const bothPlugins = fakePlugins([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
-      { id: 'nighthawk-browser-extension', enabled: true, state: 'ok', version: '1.11.3' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-browser-extension', enabled: true, state: 'ok', version: '1.11.3' },
     ]);
     const bothEntry = createNightHawkWebbridgeEntry(
       makeCtx({ plugins: bothPlugins.service, fetchImpl }),
@@ -640,7 +640,7 @@ describe('nighthawk-webbridge entry', () => {
 
   it('migrates the legacy plugin through marketplace installation', async () => {
     const plugins = fakePlugins([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
     ]);
     const { fetchImpl } = fakeFetch({
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: true }],
@@ -651,28 +651,28 @@ describe('nighthawk-webbridge entry', () => {
 
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '1.11.3',
-        migrateFrom: 'nighthawk-webbridge',
+        migrateFrom: 'kimi-webbridge',
       },
     ]);
     expect(plugins.installOptions[0]).toMatchObject({
-      requiredSkill: 'nighthawk-webbridge',
+      requiredSkill: 'kimi-webbridge',
       resolved: {
         version: '1.11.3',
-        catalogId: 'nighthawk-browser-extension',
-        expectedPluginId: 'nighthawk-browser-extension',
+        catalogId: 'kimi-browser-extension',
+        expectedPluginId: 'kimi-browser-extension',
       },
     });
     const installed = await plugins.service.listPlugins();
-    expect(installed.map((plugin) => plugin.id)).toEqual(['nighthawk-browser-extension']);
+    expect(installed.map((plugin) => plugin.id)).toEqual(['kimi-browser-extension']);
     expect(installed[0]).toMatchObject({ enabled: true, version: '1.11.3' });
   });
 
   it('leaves only the canonical plugin when legacy and canonical records both exist', async () => {
     const plugins = fakePlugins([
-      { id: 'nighthawk-webbridge', enabled: false, state: 'ok', version: '1.0.0' },
-      { id: 'nighthawk-browser-extension', enabled: true, state: 'ok', version: '1.11.2' },
+      { id: 'kimi-webbridge', enabled: false, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-browser-extension', enabled: true, state: 'ok', version: '1.11.2' },
     ]);
     const { fetchImpl } = fakeFetch({
       statusSequence: [{ running: true, version: 'v1.11.3', extension_connected: true }],
@@ -683,19 +683,19 @@ describe('nighthawk-webbridge entry', () => {
 
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-browser-extension',
+        marketplaceId: 'kimi-browser-extension',
         expectedVersion: '1.11.3',
-        migrateFrom: 'nighthawk-webbridge',
+        migrateFrom: 'kimi-webbridge',
       },
     ]);
     const installed = await plugins.service.listPlugins();
-    expect(installed.map((plugin) => plugin.id)).toEqual(['nighthawk-browser-extension']);
+    expect(installed.map((plugin) => plugin.id)).toEqual(['kimi-browser-extension']);
     expect(installed[0]).toMatchObject({ enabled: true, version: '1.11.3' });
   });
 
   it('keeps the legacy plugin and runtime untouched when the canonical marketplace entry is missing', async () => {
     const plugins = fakePlugins([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
     ]);
     const host = fakeHostProcess();
     const { fetchImpl } = fakeFetch({
@@ -711,15 +711,15 @@ describe('nighthawk-webbridge entry', () => {
     );
 
     await expect(entry.install(() => {})).rejects.toThrow(
-      'Marketplace plugin "nighthawk-browser-extension" was not found in the current catalog',
+      'Marketplace plugin "kimi-browser-extension" was not found in the current catalog',
     );
     expect(plugins.installs).toEqual([]);
     expect(host.calls).toEqual([]);
     await expect(
-      access(path.join(root, 'user-home', '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge')),
+      access(path.join(root, 'user-home', '.kimi-webbridge', 'bin', 'kimi-webbridge')),
     ).rejects.toThrow();
     await expect(plugins.service.listPlugins()).resolves.toMatchObject([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
     ]);
   });
 
@@ -732,25 +732,25 @@ describe('nighthawk-webbridge entry', () => {
     const entry = createNightHawkWebbridgeEntry(
       makeCtx({
         plugins: plugins.service,
-        marketplace: fakeMarketplace([{ id: 'nighthawk-browser-extension' }]),
+        marketplace: fakeMarketplace([{ id: 'kimi-browser-extension' }]),
         hostProcess: host.service,
         fetchImpl,
       }),
     );
 
     await expect(entry.install(() => {})).rejects.toThrow(
-      'Marketplace plugin "nighthawk-browser-extension" has no version in the current catalog',
+      'Marketplace plugin "kimi-browser-extension" has no version in the current catalog',
     );
     expect(plugins.installs).toEqual([]);
     expect(host.calls).toEqual([]);
     await expect(
-      access(path.join(root, 'user-home', '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge')),
+      access(path.join(root, 'user-home', '.kimi-webbridge', 'bin', 'kimi-webbridge')),
     ).rejects.toThrow();
   });
 
   it('fails without binary or daemon side effects when marketplace resolution fails', async () => {
     const plugins = fakePlugins([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
     ]);
     const host = fakeHostProcess();
     const marketplace = fakeMarketplace();
@@ -773,10 +773,10 @@ describe('nighthawk-webbridge entry', () => {
     expect(plugins.installs).toEqual([]);
     expect(host.calls).toEqual([]);
     await expect(
-      access(path.join(root, 'user-home', '.nighthawk-webbridge', 'bin', 'nighthawk-webbridge')),
+      access(path.join(root, 'user-home', '.kimi-webbridge', 'bin', 'kimi-webbridge')),
     ).rejects.toThrow();
     await expect(plugins.service.listPlugins()).resolves.toMatchObject([
-      { id: 'nighthawk-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
+      { id: 'kimi-webbridge', enabled: true, state: 'ok', version: '1.0.0' },
     ]);
   });
 });

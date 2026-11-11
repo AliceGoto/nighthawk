@@ -8,12 +8,12 @@ export function windowsCuProcessScript(stop: boolean): string {
   return `
 $ErrorActionPreference = 'Stop'
 $candidates = @($env:NIGHTHAWK_CU_WINDOWS_EXE)
-if ($env:NIGHTHAWK_CU_WINDOWS_HOME) { $candidates += (Join-Path $env:NIGHTHAWK_CU_WINDOWS_HOME 'nighthawk-cu.exe') }
-if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'NightHawkCU\\nighthawk-cu.exe') }
-if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'NightHawkCU\\nighthawk-cu.exe') }
+if ($env:NIGHTHAWK_CU_WINDOWS_HOME) { $candidates += (Join-Path $env:NIGHTHAWK_CU_WINDOWS_HOME 'kimi-cu.exe') }
+if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'KimiCU\\kimi-cu.exe') }
+if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'KimiCU\\kimi-cu.exe') }
 $paths = @($candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { [IO.Path]::GetFullPath($_) })
 $sessionId = (Get-Process -Id $PID).SessionId
-$matched = @(Get-CimInstance Win32_Process -Filter "Name = 'nighthawk-cu.exe' AND SessionId = $sessionId" | Where-Object {
+$matched = @(Get-CimInstance Win32_Process -Filter "Name = 'kimi-cu.exe' AND SessionId = $sessionId" | Where-Object {
   $exe = $_.ExecutablePath
   if (-not $exe -or $paths -notcontains $exe) { return $false }
   $escaped = [regex]::Escape($exe)

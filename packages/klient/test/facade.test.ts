@@ -122,7 +122,7 @@ describe('facade routing', () => {
     const channel = new FakeChannel();
     const klient = createKlientFromChannel(channel);
     const status = {
-      id: 'nighthawk-cu',
+      id: 'kimi-cu',
       displayName: 'NightHawk Computer Use',
       description: 'Background GUI automation',
       supported: true,
@@ -135,25 +135,25 @@ describe('facade routing', () => {
 
     await expect(klient.global.capabilities.list()).resolves.toEqual([status]);
     channel.result = status;
-    await expect(klient.global.capabilities.get('nighthawk-cu')).resolves.toEqual(status);
-    await expect(klient.global.capabilities.install('nighthawk-cu')).resolves.toEqual(status);
+    await expect(klient.global.capabilities.get('kimi-cu')).resolves.toEqual(status);
+    await expect(klient.global.capabilities.install('kimi-cu')).resolves.toEqual(status);
     const confirmation = {
       ...status,
       install: { running: false, confirmationRequired: 'stop-processes' },
     };
     channel.result = confirmation;
-    await expect(klient.global.capabilities.install('nighthawk-cu', { stopRunningProcesses: true }))
+    await expect(klient.global.capabilities.install('kimi-cu', { stopRunningProcesses: true }))
       .resolves.toEqual(confirmation);
 
     expect(channel.calls).toEqual([
       { scope: {}, service: 'capabilityService', method: 'listCapabilities', args: [] },
-      { scope: {}, service: 'capabilityService', method: 'getCapability', args: ['nighthawk-cu'] },
-      { scope: {}, service: 'capabilityService', method: 'installCapability', args: ['nighthawk-cu', undefined] },
+      { scope: {}, service: 'capabilityService', method: 'getCapability', args: ['kimi-cu'] },
+      { scope: {}, service: 'capabilityService', method: 'installCapability', args: ['kimi-cu', undefined] },
       {
         scope: {},
         service: 'capabilityService',
         method: 'installCapability',
-        args: ['nighthawk-cu', { stopRunningProcesses: true }],
+        args: ['kimi-cu', { stopRunningProcesses: true }],
       },
     ]);
   });

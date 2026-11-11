@@ -25,11 +25,11 @@ NightHawk CLI 为全交互式 TUI 应用，推荐在支持真彩色与连字的�
 ::: code-group
 
 ```sh [macOS / Linux]
-curl -fsSL https://code.kimi.com/nighthawk/install.sh | bash
+curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
 ```
 
 ```powershell [Windows (PowerShell)]
-irm https://code.kimi.com/nighthawk/install.ps1 | iex
+irm https://code.kimi.com/kimi-code/install.ps1 | iex
 ```
 
 :::

@@ -400,7 +400,7 @@ describe('ConfigState thinking clamp for always-thinking models', () => {
         },
         'nighthawk/custom': {
           provider: 'nighthawk',
-          model: 'nighthawk-custom-coder',
+          model: 'kimi-custom-coder',
           maxContextSize: 128_000,
           capabilities: ['thinking'],
           supportEfforts: ['low', 'medium', 'max'],

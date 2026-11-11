@@ -302,7 +302,7 @@ function toProviderEntry(value: unknown): CustomRegistryProviderEntry | undefine
  * the top-level provider key in the document (which may differ from
  * `entry.id`); callers should iterate `Object.values` to apply each entry.
  *
- * `userAgent` identifies the host product (e.g. `nighthawk-cli/1.2.3`); when
+ * `userAgent` identifies the host product (e.g. `kimi-code-cli/1.2.3`); when
  * omitted the request falls back to the runtime default (`User-Agent: node`).
  */
 export async function fetchCustomRegistry(

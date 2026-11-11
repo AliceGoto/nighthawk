@@ -176,7 +176,7 @@ async function findSessionDir(homeDir: string, sessionId: string): Promise<strin
 describe('SDKRpcClientV2 (agent-core-v2 wiring)', () => {
   it('forwards process-stop authorization through harness and session capability installs', async () => {
     const status = {
-      id: 'nighthawk-cu' as const,
+      id: 'kimi-cu' as const,
       displayName: 'NightHawk Computer Use',
       description: 'Computer operations on Windows',
       supported: true,
@@ -190,12 +190,12 @@ describe('SDKRpcClientV2 (agent-core-v2 wiring)', () => {
     const session = new Session({ id: 'capability-test', workDir: homeDir, rpc: client });
     try {
       for (const api of [harness, session]) {
-        expect(await api.installCapability('nighthawk-cu')).toMatchObject({
+        expect(await api.installCapability('kimi-cu')).toMatchObject({
           install: { confirmationRequired: 'stop-processes' },
         });
-        expect(install).toHaveBeenLastCalledWith('nighthawk-cu', undefined);
-        await api.installCapability('nighthawk-cu', { stopRunningProcesses: true });
-        expect(install).toHaveBeenLastCalledWith('nighthawk-cu', { stopRunningProcesses: true });
+        expect(install).toHaveBeenLastCalledWith('kimi-cu', undefined);
+        await api.installCapability('kimi-cu', { stopRunningProcesses: true });
+        expect(install).toHaveBeenLastCalledWith('kimi-cu', { stopRunningProcesses: true });
       }
     } finally {
       install.mockRestore();
@@ -1080,7 +1080,7 @@ describe('SDKRpcClientV2 (agent-core-v2 wiring)', () => {
       // Without this seed the managed vendors go out with the SDK's default
       // User-Agent and no X-Msh-* — the interactive-v2 path's identity bug.
       const headers = client.engineAccessor.get(IHostRequestHeaders).headers;
-      expect(headers['User-Agent']).toBe(`nighthawk-cli/${TEST_IDENTITY.version}`);
+      expect(headers['User-Agent']).toBe(`kimi-code-cli/${TEST_IDENTITY.version}`);
       expect(headers['X-Msh-Platform']).toBe('nighthawk_cli');
       expect(headers['X-Msh-Version']).toBe(TEST_IDENTITY.version);
       expect(headers['X-Msh-Device-Id']).toBeTruthy();

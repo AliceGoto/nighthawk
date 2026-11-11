@@ -51,7 +51,7 @@ export function pluginTrustLabel(plugin: PluginSourceSummary): PluginTrustLabel 
     if (
       url.protocol === 'https:' &&
       CODE_CDN_HOSTS.has(url.hostname) &&
-      url.pathname.startsWith('/nighthawk/plugins/curated/')
+      url.pathname.startsWith('/kimi-code/plugins/curated/')
     ) {
       return 'curated';
     }
@@ -95,10 +95,10 @@ function isOfficialPluginUrl(url: URL): boolean {
   if (url.protocol !== 'https:') return false;
   return (
     (CODE_CDN_HOSTS.has(url.hostname) &&
-      url.pathname.startsWith('/nighthawk/plugins/official/')) ||
+      url.pathname.startsWith('/kimi-code/plugins/official/')) ||
     (CONTENT_CDN_HOSTS.has(url.hostname) &&
-      (url.pathname.startsWith('/nighthawk-computer-use/') ||
-        url.pathname.startsWith('/nighthawk-computer-use-windows/')))
+      (url.pathname.startsWith('/kimi-computer-use/') ||
+        url.pathname.startsWith('/kimi-computer-use-windows/')))
   );
 }
 

@@ -1089,8 +1089,8 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   }
 
   /**
-   * Capability surface (v2-only): built-in product capabilities (nighthawk-cu,
-   * nighthawk-webbridge) with layered readiness and idempotent installs. v1 has
+   * Capability surface (v2-only): built-in product capabilities (kimi-cu,
+   * kimi-webbridge) with layered readiness and idempotent installs. v1 has
    * no capability domain, so these stay off the shared base — callers
    * feature-detect via `in` before use.
    */

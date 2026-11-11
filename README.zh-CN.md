@@ -19,13 +19,13 @@ NightHawk CLI 是一个运行在终端里的 AI 编程 agent，可以帮你读�
 - **macOS / Linux**：
 
 ```sh
-curl -fsSL https://code.kimi.com/nighthawk/install.sh | bash
+curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
 ```
 
 - **Windows（PowerShell）**：
 
 ```powershell
-irm https://code.kimi.com/nighthawk/install.ps1 | iex
+irm https://code.kimi.com/kimi-code/install.ps1 | iex
 ```
 
 > Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，NightHawk CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `NIGHTHAWK_SHELL_PATH` 设为 `bash.exe` 的绝对路径。

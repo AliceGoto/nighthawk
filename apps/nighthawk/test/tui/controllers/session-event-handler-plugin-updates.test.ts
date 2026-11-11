@@ -4,7 +4,7 @@ import type { PluginUpdateNotifier } from '#/tui/controllers/plugin-update-notif
 import { SessionEventHandler } from '#/tui/controllers/session-event-handler';
 import { getBuiltInPalette } from '#/tui/theme';
 
-const DATASOURCE_TOOL = 'mcp__plugin-nighthawk-datasource_data__call_data_source_tool';
+const DATASOURCE_TOOL = 'mcp__plugin-kimi-datasource_data__call_data_source_tool';
 
 function makeHost() {
   const streamingUI = {
@@ -116,7 +116,7 @@ function pluginCommandTurnStarted() {
     origin: {
       kind: 'plugin_command',
       activationId: 'a1',
-      pluginId: 'nighthawk-datasource',
+      pluginId: 'kimi-datasource',
       commandName: 'setup',
       trigger: 'user-slash',
     },
@@ -178,7 +178,7 @@ describe('SessionEventHandler plugin update notices', () => {
     handler.handleEvent(pluginCommandTurnStarted(), sendQueued);
     handler.handleEvent(turnEnded('completed', 2), sendQueued);
     expect(notifier.handlePluginCommandCompleted).toHaveBeenCalledTimes(1);
-    expect(notifier.handlePluginCommandCompleted).toHaveBeenCalledWith('nighthawk-datasource');
+    expect(notifier.handlePluginCommandCompleted).toHaveBeenCalledWith('kimi-datasource');
   });
 
   it('skips a cancelled plugin command turn', () => {

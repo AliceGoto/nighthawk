@@ -17,7 +17,7 @@ export function createNightHawkHostIdentity(version = getVersion()): NightHawkHo
 }
 
 /**
- * Product User-Agent (`nighthawk-cli/<version>`) for ad-hoc outbound fetches
+ * Product User-Agent (`kimi-code-cli/<version>`) for ad-hoc outbound fetches
  * that don't go through the provider pipeline (registry / catalog imports).
  */
 export function createNightHawkUserAgent(version = getVersion()): string {

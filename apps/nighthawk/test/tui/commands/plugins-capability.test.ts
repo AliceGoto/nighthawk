@@ -65,7 +65,7 @@ function fakeHost(overrides: {
       hasErrors: false,
       source: marketplace ? 'zip-url' : 'local-path',
       originalSource: marketplace
-        ? 'https://code.kimi.com/nighthawk/plugins/official/demo.zip'
+        ? 'https://code.kimi.com/kimi-code/plugins/official/demo.zip'
         : undefined,
       origin: marketplace ? 'marketplace' : 'custom',
       installedAt: '2026-01-01T00:00:00.000Z',
@@ -197,12 +197,12 @@ describe('plugins command capability surface', () => {
   });
 
   it('maps only known default-catalog entries to capabilities', () => {
-    expect(capabilityIdForMarketplaceEntry('nighthawk-browser-extension', true)).toBe('nighthawk-webbridge');
-    expect(capabilityIdForMarketplaceEntry('nighthawk-webbridge', true)).toBeUndefined();
-    expect(capabilityIdForMarketplaceEntry('nighthawk-cu', true)).toBe('nighthawk-cu');
-    expect(capabilityIdForMarketplaceEntry('nighthawk-cu-win', true)).toBe('nighthawk-cu');
-    expect(capabilityIdForMarketplaceEntry('nighthawk-browser-extension', false)).toBeUndefined();
-    expect(capabilityIdForMarketplaceEntry('nighthawk-cu', false)).toBeUndefined();
+    expect(capabilityIdForMarketplaceEntry('kimi-browser-extension', true)).toBe('kimi-webbridge');
+    expect(capabilityIdForMarketplaceEntry('kimi-webbridge', true)).toBeUndefined();
+    expect(capabilityIdForMarketplaceEntry('kimi-cu', true)).toBe('kimi-cu');
+    expect(capabilityIdForMarketplaceEntry('kimi-cu-win', true)).toBe('kimi-cu');
+    expect(capabilityIdForMarketplaceEntry('kimi-browser-extension', false)).toBeUndefined();
+    expect(capabilityIdForMarketplaceEntry('kimi-cu', false)).toBeUndefined();
     expect(capabilityIdForMarketplaceEntry('superpowers', true)).toBeUndefined();
   });
 
@@ -265,7 +265,7 @@ describe('plugins command capability surface', () => {
         displayName: 'Demo',
         version: '2.0.0',
         sha256sum: 'a'.repeat(64),
-        source: 'https://code.kimi.com/nighthawk/plugins/official/demo.zip',
+        source: 'https://code.kimi.com/kimi-code/plugins/official/demo.zip',
       } as never,
       true,
     );
@@ -288,7 +288,7 @@ describe('plugins command capability surface', () => {
       {
         id: 'demo',
         displayName: 'Demo',
-        source: 'https://code.kimi.com/nighthawk/plugins/official/demo.zip',
+        source: 'https://code.kimi.com/kimi-code/plugins/official/demo.zip',
       } as never,
       false,
     );
@@ -313,7 +313,7 @@ describe('plugins command capability surface', () => {
         id: 'demo',
         displayName: 'Demo',
         version: '7.0.0',
-        source: 'https://code.kimi.com/nighthawk/plugins/official/demo.zip',
+        source: 'https://code.kimi.com/kimi-code/plugins/official/demo.zip',
       } as never,
       false,
     );
@@ -336,8 +336,8 @@ describe('plugins command capability surface', () => {
   });
 
   it.each([
-    ['nighthawk-browser-extension', 'nighthawk-webbridge'],
-    ['nighthawk-cu-win', 'nighthawk-cu'],
+    ['kimi-browser-extension', 'kimi-webbridge'],
+    ['kimi-cu-win', 'kimi-cu'],
   ] as const)('dispatches %s to the %s capability', async (entryId, capabilityId) => {
     const { host, installCapability, installPlugin } = fakeHost({});
     await installMarketplaceEntryFromPanel(
@@ -363,7 +363,7 @@ describe('plugins command capability surface', () => {
         host,
         fakePanel().panel,
         {
-          id: 'nighthawk-webbridge',
+          id: 'kimi-webbridge',
           displayName: 'Legacy WebBridge',
           version: '1.0.0',
           source: 'https://example.test/legacy.zip',
@@ -371,7 +371,7 @@ describe('plugins command capability surface', () => {
         false,
         '/tmp/legacy.json',
       ),
-    ).rejects.toThrow('install "nighthawk-browser-extension" instead');
+    ).rejects.toThrow('install "kimi-browser-extension" instead');
 
     expect(installCapability).not.toHaveBeenCalled();
     expect(installPlugin).not.toHaveBeenCalled();
@@ -380,19 +380,19 @@ describe('plugins command capability surface', () => {
   it('keeps the selected catalog for a same-id/version artifact and migrates legacy ids', async () => {
     const { host, installCapability, installPlugin } = fakeHost({
       installed: [
-        installedPlugin('nighthawk-webbridge'),
-        installedPlugin('nighthawk-browser-extension', '2.0.0'),
+        installedPlugin('kimi-webbridge'),
+        installedPlugin('kimi-browser-extension', '2.0.0'),
       ],
     });
     await installMarketplaceEntryFromPanel(
       host,
       fakePanel().panel,
       {
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         displayName: 'NightHawk Browser Extension',
         version: '3.0.0',
         sha256sum: 'b'.repeat(64),
-        source: 'https://code.kimi.com/nighthawk/plugins/official/alternate/nighthawk-browser-extension.zip',
+        source: 'https://code.kimi.com/kimi-code/plugins/official/alternate/kimi-browser-extension.zip',
         builtIn: true,
       } as never,
       false,
@@ -401,10 +401,10 @@ describe('plugins command capability surface', () => {
 
     expect(installCapability).not.toHaveBeenCalled();
     expect(installPlugin).toHaveBeenCalledWith({
-      marketplaceId: 'nighthawk-browser-extension',
+      marketplaceId: 'kimi-browser-extension',
       expectedVersion: '3.0.0',
       expectedSha256: 'b'.repeat(64),
-      migrateFrom: 'nighthawk-webbridge',
+      migrateFrom: 'kimi-webbridge',
       marketplaceSource: '/tmp/alternate-marketplace.json',
     });
   });
@@ -420,11 +420,11 @@ describe('plugins command capability surface', () => {
         return Promise.resolve({ install: { running: false } });
       },
     });
-    const result = await pollCapabilityInstall(host, 'nighthawk-cu');
+    const result = await pollCapabilityInstall(host, 'kimi-cu');
 
     expect(result?.install.running).toBe(false);
     expect(log.info).toHaveBeenCalledWith('capability install progress', {
-      capabilityId: 'nighthawk-cu',
+      capabilityId: 'kimi-cu',
       step: 'download',
       percent: 40,
     });
@@ -432,8 +432,8 @@ describe('plugins command capability surface', () => {
 
   it('removePlugin notes that capability environments are left untouched', async () => {
     const { host, statuses } = fakeHost({});
-    await removePlugin(host, 'nighthawk-cu');
-    expect(statuses.some((s) => s.includes('Removed nighthawk-cu'))).toBe(true);
+    await removePlugin(host, 'kimi-cu');
+    expect(statuses.some((s) => s.includes('Removed kimi-cu'))).toBe(true);
     expect(statuses.some((s) => s.includes('runtime binaries were left untouched'))).toBe(true);
     expect(statuses.some((s) => s.includes('plugin wiring is disabled for new sessions'))).toBe(true);
     expect(statuses.some((s) => s.includes('Restart NightHawk before reinstalling'))).toBe(true);
@@ -442,15 +442,15 @@ describe('plugins command capability surface', () => {
 
   it('keeps the runtime note for the Windows backing plugin id', async () => {
     const { host, statuses } = fakeHost({});
-    await removePlugin(host, 'nighthawk-cu-win');
-    expect(statuses.some((s) => s.includes('Removed nighthawk-cu-win'))).toBe(true);
+    await removePlugin(host, 'kimi-cu-win');
+    expect(statuses.some((s) => s.includes('Removed kimi-cu-win'))).toBe(true);
     expect(statuses.some((s) => s.includes('runtime binaries were left untouched'))).toBe(true);
   });
 
   it('keeps the runtime note for the canonical WebBridge plugin id', async () => {
     const { host, statuses } = fakeHost({});
-    await removePlugin(host, 'nighthawk-browser-extension');
-    expect(statuses.some((s) => s.includes('Removed nighthawk-browser-extension'))).toBe(true);
+    await removePlugin(host, 'kimi-browser-extension');
+    expect(statuses.some((s) => s.includes('Removed kimi-browser-extension'))).toBe(true);
     expect(statuses.some((s) => s.includes('runtime binaries were left untouched'))).toBe(true);
   });
 
@@ -486,10 +486,10 @@ describe('plugins command capability surface', () => {
     await installCapabilityFromPanel(
       idle.host,
       fakePanel().panel,
-      { id: 'nighthawk-cu', displayName: 'NightHawk Computer Use', source: 'capability:nighthawk-cu' } as never,
-      'nighthawk-cu',
+      { id: 'kimi-cu', displayName: 'NightHawk Computer Use', source: 'capability:kimi-cu' } as never,
+      'kimi-cu',
     );
-    expect(idle.installCapability).toHaveBeenCalledWith('nighthawk-cu');
+    expect(idle.installCapability).toHaveBeenCalledWith('kimi-cu');
   });
 
   it.each(['cancel', 'escape', 'confirm', 'retry-error', 'still-blocked'] as const)(
@@ -511,14 +511,14 @@ describe('plugins command capability surface', () => {
       const installing = installCapabilityFromPanel(
         pending.host,
         panel.panel,
-        { id: 'nighthawk-cu-win', displayName: 'NightHawk Computer Use', source: 'capability:nighthawk-cu' } as never,
-        'nighthawk-cu',
+        { id: 'kimi-cu-win', displayName: 'NightHawk Computer Use', source: 'capability:kimi-cu' } as never,
+        'kimi-cu',
       );
       await vi.waitFor(() => {
         expect(pending.mountEditorReplacement).toHaveBeenCalled();
       }, { timeout: 2000 });
       expect(pending.installCapability).toHaveBeenCalledTimes(1);
-      expect(pending.installCapability).toHaveBeenCalledWith('nighthawk-cu');
+      expect(pending.installCapability).toHaveBeenCalledWith('kimi-cu');
       const dialog = pending.mountEditorReplacement.mock.calls[0]![0] as PluginStopProcessesConfirmComponent;
       expect(dialog).toBeInstanceOf(PluginStopProcessesConfirmComponent);
       if (action === 'escape') {
@@ -535,7 +535,7 @@ describe('plugins command capability surface', () => {
         expect(pending.statuses).toContain('Install cancelled: NightHawk Computer Use.');
       } else {
         expect(pending.installCapability).toHaveBeenCalledTimes(2);
-        expect(pending.installCapability).toHaveBeenLastCalledWith('nighthawk-cu', { stopRunningProcesses: true });
+        expect(pending.installCapability).toHaveBeenLastCalledWith('kimi-cu', { stopRunningProcesses: true });
         expect(pending.mountEditorReplacement).toHaveBeenLastCalledWith(panel.panel);
         if (action === 'retry-error') {
           expect(pending.statuses).toContain('Failed to install NightHawk Computer Use: Access denied');
@@ -566,8 +566,8 @@ describe('plugins command capability surface', () => {
     await installCapabilityFromPanel(
       host,
       fakePanel().panel,
-      { id: 'nighthawk-cu', displayName: 'NightHawk Computer Use', source: 'capability:nighthawk-cu' } as never,
-      'nighthawk-cu',
+      { id: 'kimi-cu', displayName: 'NightHawk Computer Use', source: 'capability:kimi-cu' } as never,
+      'kimi-cu',
     );
 
     // The service rejects duplicate starts (40922) — a healthy in-progress
@@ -585,18 +585,18 @@ describe('plugins command capability surface', () => {
       host,
       fakePanel().panel,
       {
-        id: 'nighthawk-browser-extension',
+        id: 'kimi-browser-extension',
         displayName: 'NightHawk Browser Extension',
-        source: 'https://example.test/nighthawk-browser-extension.zip',
+        source: 'https://example.test/kimi-browser-extension.zip',
       } as never,
-      'nighthawk-webbridge',
+      'kimi-webbridge',
     );
 
     expect(notices).toContainEqual({ title: 'NightHawk Browser Extension is installed.', detail: undefined });
     expect(statuses).not.toContain('Run /new or /reload to apply plugin changes.');
     const rendered = transcriptEntries.flatMap((entry) => entry.render(100)).join('\n');
     expect(rendered).toContain(
-      '\u001B]8;;https://chromewebstore.google.com/detail/nighthawk-webbridge/fldmhceldgbpfpkbgopacenieobmligc\u001B\\',
+      '\u001B]8;;https://chromewebstore.google.com/detail/kimi-webbridge/fldmhceldgbpfpkbgopacenieobmligc\u001B\\',
     );
     expect(rendered).toContain('Chrome Web Store');
     expect(rendered).toContain('Edge Add-ons');
@@ -613,17 +613,17 @@ describe('plugins command capability surface', () => {
       host,
       fakePanel().panel,
       {
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         displayName: 'NightHawk Browser Extension',
-        source: 'capability:nighthawk-webbridge',
+        source: 'capability:kimi-webbridge',
       } as never,
-      'nighthawk-webbridge',
+      'kimi-webbridge',
     );
 
     const rendered = transcriptEntries.flatMap((entry) => entry.render(100)).join('\n');
     expect(rendered).not.toContain('\u001B]8;;');
     expect(unwrappedVisibleText(transcriptEntries)).toContain(
-      'https://chromewebstore.google.com/detail/nighthawk-webbridge/fldmhceldgbpfpkbgopacenieobmligc',
+      'https://chromewebstore.google.com/detail/kimi-webbridge/fldmhceldgbpfpkbgopacenieobmligc',
     );
   });
 
@@ -635,11 +635,11 @@ describe('plugins command capability surface', () => {
       host,
       fakePanel().panel,
       {
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         displayName: 'NightHawk Browser Extension',
-        source: 'capability:nighthawk-webbridge',
+        source: 'capability:kimi-webbridge',
       } as never,
-      'nighthawk-webbridge',
+      'kimi-webbridge',
     );
 
     const lines = visibleLines(transcriptEntries, 180);
@@ -673,8 +673,8 @@ describe('plugins command capability surface', () => {
     await installCapabilityFromPanel(
       host,
       fakePanel().panel,
-      { id: 'nighthawk-cu', displayName: 'NightHawk Computer Use', source: 'capability:nighthawk-cu' } as never,
-      'nighthawk-cu',
+      { id: 'kimi-cu', displayName: 'NightHawk Computer Use', source: 'capability:kimi-cu' } as never,
+      'kimi-cu',
     );
 
     expect(statuses).toContain(
@@ -686,7 +686,7 @@ describe('plugins command capability surface', () => {
   it('shows required permissions once after installation instead of exposing step details', async () => {
     const { host, statuses } = fakeHost({
       capabilityStatus: () => Promise.resolve({
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         state: 'partial',
         steps: [
           { id: 'permissions.accessibility', state: 'ok' },
@@ -700,11 +700,11 @@ describe('plugins command capability surface', () => {
       host,
       fakePanel().panel,
       {
-        id: 'nighthawk-cu-win',
+        id: 'kimi-cu-win',
         displayName: 'NightHawk Computer Use for Windows',
-        source: 'https://example.test/nighthawk-cu-win.zip',
+        source: 'https://example.test/kimi-cu-win.zip',
       } as never,
-      'nighthawk-cu',
+      'kimi-cu',
     );
 
     expect(statuses.some((s) => s.includes('Grant Accessibility and Screen Recording'))).toBe(true);
@@ -712,7 +712,7 @@ describe('plugins command capability surface', () => {
     expect(log.warn).toHaveBeenCalledWith(
       'capability needs attention',
       expect.objectContaining({
-        capabilityId: 'nighthawk-cu',
+        capabilityId: 'kimi-cu',
         steps: [
           { id: 'permissions.accessibility', state: 'ok' },
           { id: 'permissions.screenRecording', state: 'missing' },

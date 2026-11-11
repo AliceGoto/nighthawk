@@ -188,9 +188,9 @@ describe('loadPluginMarketplace', () => {
       JSON.stringify({
         plugins: [
           catalogEntry({
-            id: 'nighthawk-datasource',
+            id: 'kimi-datasource',
             displayName: 'NightHawk Datasource',
-            source: './nighthawk-datasource.zip',
+            source: './kimi-datasource.zip',
             distribution: { category: 'official', weight: 1 },
           }),
           catalogEntry({
@@ -214,7 +214,7 @@ describe('loadPluginMarketplace', () => {
 
     expect(marketplace.source).toBe(file);
     expect(marketplace.plugins.map((entry) => [entry.id, entry.source])).toEqual([
-      ['nighthawk-datasource', join(file, '..', 'nighthawk-datasource.zip')],
+      ['kimi-datasource', join(file, '..', 'kimi-datasource.zip')],
       ['superpowers', join(file, '..', 'curated/superpowers.zip')],
       ['absolute', join(file, '..', 'absolute.zip')],
       ['file-url', join(file, '..', 'file-url.zip')],

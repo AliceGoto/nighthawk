@@ -17,7 +17,7 @@ export const TUI_HOST_UI_CAPABILITIES: readonly HostUiCapability[] = ['update_pa
 // as the CLI (CLI_USER_AGENT_PRODUCT); the surface is distinguished by ui_mode.
 export const WEB_UI_MODE = 'web';
 // User-Agent suffix for the `nighthawk web` host: its requests go out as
-// `nighthawk-cli/<version> (web)` so upstream can tell web-UI traffic
+// `kimi-code-cli/<version> (web)` so upstream can tell web-UI traffic
 // apart from direct CLI runs without changing the product token or platform.
 export const WEB_USER_AGENT_SUFFIX = 'web';
 
@@ -133,7 +133,7 @@ export const MARKETPLACE_VERSION_LOOKUP_TIMEOUT_MS = 5000;
 export const INTERACTIVE_UPDATE_CHECK_TIMEOUT_MS = 10_000;
 // Official plugins whose usage bills against the user's plan quota. Installing
 // one of these shows a quota note after the install result.
-export const QUOTA_CONSUMING_PLUGIN_IDS: readonly string[] = ['nighthawk-datasource'];
+export const QUOTA_CONSUMING_PLUGIN_IDS: readonly string[] = ['kimi-datasource'];
 export function nighthawkCodeInstallShUrl(): string {
   return `${nighthawkCodeCdnBase()}/install.sh`;
 }

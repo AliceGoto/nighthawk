@@ -19,7 +19,7 @@ beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'nighthawk-region-test-'));
   process.env['NIGHTHAWK_HOME'] = home;
   delete process.env['NIGHTHAWK_OAUTH_HOST'];
-  delete process.env['NIGHTHAWK_OAUTH_HOST'];
+  delete process.env['KIMI_OAUTH_HOST'];
   delete process.env['NIGHTHAWK_REGION_MARKER'];
   resetNightHawkRegionCache();
 });

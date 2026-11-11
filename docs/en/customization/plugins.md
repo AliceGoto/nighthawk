@@ -83,9 +83,9 @@ Installations remain shared under `$NIGHTHAWK_HOME`. An entry hidden on one host
 
 Official plugins are plugins and built-in product capabilities maintained by NightHawk. There are currently three:
 
-- **[NightHawk Datasource](#nighthawk-datasource)**: Query financial market data, financial news, macroeconomic indicators, corporate registration records, academic literature, Chinese laws and regulations, and official data from intergovernmental organizations in natural language
-- **[NightHawk Browser Extension](#nighthawk-browser-extension)**: Let AI drive your own browser to get web tasks done
-- **[NightHawk Computer Use](#nighthawk-computer-use)**: Let AI operate your desktop apps (macOS and Windows)
+- **[NightHawk Datasource](#kimi-datasource)**: Query financial market data, financial news, macroeconomic indicators, corporate registration records, academic literature, Chinese laws and regulations, and official data from intergovernmental organizations in natural language
+- **[NightHawk Browser Extension](#kimi-browser-extension)**: Let AI drive your own browser to get web tasks done
+- **[NightHawk Computer Use](#kimi-computer-use)**: Let AI operate your desktop apps (macOS and Windows)
 
 ### Installation and Upgrade
 
@@ -112,7 +112,7 @@ You must first complete OAuth login with a NightHawk account via `/login`; data 
 #### How to use
 
 1. Describe your need in natural language, and NightHawk will automatically invoke the data capabilities
-2. Explicitly trigger the data query skill with `/skill:nighthawk-datasource:nighthawk-datasource`
+2. Explicitly trigger the data query skill with `/skill:kimi-datasource:kimi-datasource`
 
 #### What you can do
 
@@ -168,11 +168,11 @@ Look up national (GB), industry, local, and association standards by number or t
 - Technical indicators and real-time prices are only available during active trading hours
 - AI-generated output is for reference only and does not constitute investment or business advice
 
-<a id="nighthawk-webbridge"></a>
+<a id="kimi-webbridge"></a>
 
 ### NightHawk Browser Extension <Badge type="tip" text="v2.0.11" />
 
-NightHawk Browser Extension lets AI drive your browser directly: not an emulator, not a crawler, but the browser you use every day, with your login sessions and cookies. AI can open pages, read content, click buttons, fill in forms, and take screenshots just like you do, taking repetitive web operations off your hands. See the [NightHawk Browser Extension site](https://www.kimi.com/en/products/nighthawk-browser-extension) for a product overview.
+NightHawk Browser Extension lets AI drive your browser directly: not an emulator, not a crawler, but the browser you use every day, with your login sessions and cookies. AI can open pages, read content, click buttons, fill in forms, and take screenshots just like you do, taking repetitive web operations off your hands. See the [NightHawk Browser Extension site](https://www.kimi.com/en/products/kimi-browser-extension) for a product overview.
 
 #### Install the browser extension
 
@@ -180,18 +180,18 @@ After installing via `/plugins`, you also need the NightHawk Browser Extension i
 
 **Option 1: Install from a store (recommended)**
 
-Open the [Chrome Web Store](https://chromewebstore.google.com/detail/nighthawk-webbridge/fldmhceldgbpfpkbgopacenieobmligc) or [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/nighthawk-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg) page and click Add.
+Open the [Chrome Web Store](https://chromewebstore.google.com/detail/kimi-webbridge/fldmhceldgbpfpkbgopacenieobmligc) or [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/kimi-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg) page and click Add.
 
 **Option 2: Install manually**
 
 Use this when you can't reach the stores:
 
-1. [Download the extension package](https://nighthawk-web-img.moonshot.cn/webbridge/latest/extension/nighthawk-webbridge-extension.zip) and unzip it
+1. [Download the extension package](https://nighthawk-web-img.moonshot.cn/webbridge/latest/extension/kimi-webbridge-extension.zip) and unzip it
 2. Type `chrome://extensions/` in the address bar to open the extensions page, then turn on **Developer mode** in the top-right corner
 
    ![Turn on Developer mode](../../media/webbridge-dev-mode.jpeg)
 
-3. Click **Load unpacked** in the top-left corner and select the unzipped `nighthawk-webbridge-extension` folder
+3. Click **Load unpacked** in the top-left corner and select the unzipped `kimi-webbridge-extension` folder
 
    ![Load the unpacked extension](../../media/webbridge-load-unpacked.jpeg)
 
@@ -226,12 +226,12 @@ The first time you use NightHawk Computer Use after installation, it shows an au
 
 #### Notes for the Windows version
 
-The Windows version (WinCU) installs differently from the macOS one: run `/plugins install https://cdn.kimi.com/nighthawk-computer-use-windows/latest/nighthawk-cu-win-plugin.zip` in NightHawk, then restart after installation. A few things to know before using it:
+The Windows version (WinCU) installs differently from the macOS one: run `/plugins install https://cdn.kimi.com/kimi-computer-use-windows/latest/kimi-cu-win-plugin.zip` in NightHawk, then restart after installation. A few things to know before using it:
 
 - **It may briefly take over your mouse and keyboard**: Unlike the macOS version, the Windows version cannot reliably inject input in the background; it may briefly activate the target window and use your real mouse and keyboard while performing actions
 - **System requirements**: Windows 10 version 1903 (Build 18362) or later, or Windows 11, x64; a real interactive desktop session is required, and Windows Server needs Desktop Experience
 - **No extra permissions needed**: Windows does not require the Accessibility and Screen Recording grants that macOS does
-- **Matching privilege level**: If the target app runs as administrator, NightHawkCU must run at the same privilege level
+- **Matching privilege level**: If the target app runs as administrator, KimiCU must run at the same privilege level
 
 #### What you can do
 

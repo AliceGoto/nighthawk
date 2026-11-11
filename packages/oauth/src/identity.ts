@@ -107,7 +107,7 @@ export function createNightHawkUserAgent(options: {
 /**
  * Swap the product token of a User-Agent produced by
  * {@link createNightHawkUserAgent}, keeping the version and optional suffix intact
- * (`nighthawk-cli/1.2.3 (web)` → `acme/1.2.3 (web)`).
+ * (`kimi-code-cli/1.2.3 (web)` → `acme/1.2.3 (web)`).
  *
  * Lives next to the builder on purpose: the format knowledge — product token,
  * `/`, version, parenthesized suffix — must exist in exactly one place, so a

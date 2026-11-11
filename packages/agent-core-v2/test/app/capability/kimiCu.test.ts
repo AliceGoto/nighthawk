@@ -85,8 +85,8 @@ interface FakePlugin {
 
 function fakeMarketplace(
   entries: readonly { id: string; version?: string; sha256sum?: string }[] = [
-    { id: 'nighthawk-cu', version: '0.5.4' },
-    { id: 'nighthawk-cu-win', version: '0.2.14' },
+    { id: 'kimi-cu', version: '0.5.4' },
+    { id: 'kimi-cu-win', version: '0.2.14' },
   ],
 ): IPluginMarketplaceService {
   return {
@@ -147,8 +147,8 @@ function fakePlugins(
       return Promise.resolve({
         mcpServers: [
           {
-            name: input.id === 'nighthawk-cu-win' ? 'win' : 'mac',
-            runtimeName: input.id === 'nighthawk-cu-win' ? 'win' : 'mac',
+            name: input.id === 'kimi-cu-win' ? 'win' : 'mac',
+            runtimeName: input.id === 'kimi-cu-win' ? 'win' : 'mac',
             enabled: (existing?.enabledMcp ?? 1) === 1,
             transport: 'stdio',
           },
@@ -164,7 +164,7 @@ function fakePlugins(
       await onInstall?.();
       const id = options?.resolved.expectedPluginId ?? ('marketplaceId' in input
         ? input.marketplaceId
-        : input.source.includes('nighthawk-cu-win') ? 'nighthawk-cu-win' : 'nighthawk-cu');
+        : input.source.includes('kimi-cu-win') ? 'kimi-cu-win' : 'kimi-cu');
       const version = options?.resolved.version ??
         ('marketplaceId' in input ? input.expectedVersion : undefined);
       const origin = options?.resolved.origin ??
@@ -256,18 +256,18 @@ describe('windowsPowerShellPath', () => {
 
 describe('elevatedDittoScript', () => {
   it('shell-quotes both paths so spaces and metacharacters stay literal', () => {
-    expect(elevatedDittoScript('/tmp/nighthawk cu/app', '/Applications/NightHawkCU.app')).toBe(
-      "/usr/bin/ditto '/tmp/nighthawk cu/app' '/Applications/NightHawkCU.app'",
+    expect(elevatedDittoScript('/tmp/nighthawk cu/app', '/Applications/KimiCU.app')).toBe(
+      "/usr/bin/ditto '/tmp/nighthawk cu/app' '/Applications/KimiCU.app'",
     );
-    const script = elevatedDittoScript("$(touch /tmp/pwned); echo '", '/Applications/NightHawkCU.app');
-    expect(script).toBe("/usr/bin/ditto '$(touch /tmp/pwned); echo '\\''' '/Applications/NightHawkCU.app'");
+    const script = elevatedDittoScript("$(touch /tmp/pwned); echo '", '/Applications/KimiCU.app');
+    expect(script).toBe("/usr/bin/ditto '$(touch /tmp/pwned); echo '\\''' '/Applications/KimiCU.app'");
   });
 });
 
 describe('readAppBundleVersion', () => {
   let root: string;
   beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), 'nighthawk-cu-version-'));
+    root = await mkdtemp(path.join(tmpdir(), 'kimi-cu-version-'));
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
@@ -290,11 +290,11 @@ describe('readAppBundleVersion', () => {
   });
 });
 
-describe('nighthawk-cu entry', () => {
+describe('kimi-cu entry', () => {
   let root: string;
 
   beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), 'nighthawk-cu-entry-'));
+    root = await mkdtemp(path.join(tmpdir(), 'kimi-cu-entry-'));
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
@@ -302,13 +302,13 @@ describe('nighthawk-cu entry', () => {
 
   async function fakeAppBundle(): Promise<string> {
     const applicationsDir = path.join(root, 'Applications');
-    const macosDir = path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'MacOS');
+    const macosDir = path.join(applicationsDir, 'KimiCU.app', 'Contents', 'MacOS');
     await mkdir(macosDir, { recursive: true });
-    const appBin = path.join(macosDir, 'nighthawk-cu');
+    const appBin = path.join(macosDir, 'kimi-cu');
     await writeFile(appBin, '#!/bin/sh\n');
     await chmod(appBin, 0o755);
     await writeFile(
-      path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'Info.plist'),
+      path.join(applicationsDir, 'KimiCU.app', 'Contents', 'Info.plist'),
       '<key>CFBundleShortVersionString</key>\n<string>0.5.4</string>',
     );
     return applicationsDir;
@@ -331,8 +331,8 @@ describe('nighthawk-cu entry', () => {
     expect(createNightHawkCuEntry(makeCtx()).supported).toBe(true);
     expect(createNightHawkCuEntry(makeCtx({ platform: 'linux' })).supported).toBe(false);
     expect(createNightHawkCuEntry(makeCtx({ platform: 'win32', arch: 'x64' }))).toMatchObject({
-      id: 'nighthawk-cu',
-      pluginId: 'nighthawk-cu-win',
+      id: 'kimi-cu',
+      pluginId: 'kimi-cu-win',
       supported: true,
     });
     expect(createNightHawkCuEntry(makeCtx({ platform: 'win32', arch: 'arm64' })).supported).toBe(
@@ -348,7 +348,7 @@ describe('nighthawk-cu entry', () => {
 
   it('detects the Windows plugin and signed runtime through doctor', async () => {
     const plugins = fakePlugins([
-      { id: 'nighthawk-cu-win', enabled: true, state: 'ok', version: '0.2.14' },
+      { id: 'kimi-cu-win', enabled: true, state: 'ok', version: '0.2.14' },
     ]);
     const host = fakeHostProcess([
       {
@@ -441,10 +441,10 @@ describe('nighthawk-cu entry', () => {
     await entry.install((step, percent) => reports.push([step, percent]));
 
     expect(plugins.installs).toEqual([
-      { marketplaceId: 'nighthawk-cu-win', expectedVersion: '0.2.14' },
+      { marketplaceId: 'kimi-cu-win', expectedVersion: '0.2.14' },
     ]);
     expect(downloads).toEqual([
-      'https://cdn.kimi.com/nighthawk-computer-use-windows/latest/setup_windows.ps1',
+      'https://cdn.kimi.com/kimi-computer-use-windows/latest/setup_windows.ps1',
     ]);
     expect(reports).toContainEqual(['plugin', undefined]);
     expect(reports).toContainEqual(['download', 0]);
@@ -518,7 +518,7 @@ describe('nighthawk-cu entry', () => {
       ),
     ).toBe(true);
     expect(plugins.installs).toEqual([
-      { marketplaceId: 'nighthawk-cu-win', expectedVersion: '0.2.14' },
+      { marketplaceId: 'kimi-cu-win', expectedVersion: '0.2.14' },
     ]);
   });
 
@@ -652,7 +652,7 @@ describe('nighthawk-cu entry', () => {
 
     await entry.install(() => undefined);
 
-    expect(plugins.installs).toEqual([{ marketplaceId: 'nighthawk-cu-win', expectedVersion: '0.2.14' }]);
+    expect(plugins.installs).toEqual([{ marketplaceId: 'kimi-cu-win', expectedVersion: '0.2.14' }]);
     expect(downloads).toBe(0);
     expect(calls.some((call) => call.includes('Get-FileHash') || call.includes('setup_windows.ps1'))).toBe(false);
     expect(calls.findLast((call) => call.includes('$matched ='))?.startsWith(
@@ -676,7 +676,7 @@ describe('nighthawk-cu entry', () => {
   });
 
   it('repairs a missing Windows runtime without replacing a healthy plugin', async () => {
-    const plugins = fakePlugins([{ id: 'nighthawk-cu-win', enabled: true, state: 'ok' }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu-win', enabled: true, state: 'ok' }]);
     const doctorResults = [
       { code: 3, stdout: '', stderr: '' },
       {
@@ -723,7 +723,7 @@ describe('nighthawk-cu entry', () => {
   });
 
   it('refreshes the Windows plugin when installation starts fully ready', async () => {
-    const plugins = fakePlugins([{ id: 'nighthawk-cu-win', enabled: true, state: 'ok' }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu-win', enabled: true, state: 'ok' }]);
     const doctorResults = [
       {
         code: 0,
@@ -770,7 +770,7 @@ describe('nighthawk-cu entry', () => {
     await entry.install(() => undefined);
 
     expect(plugins.installs).toEqual([
-      { marketplaceId: 'nighthawk-cu-win', expectedVersion: '0.2.14' },
+      { marketplaceId: 'kimi-cu-win', expectedVersion: '0.2.14' },
     ]);
     expect(doctorResults).toEqual([]);
   });
@@ -878,7 +878,7 @@ describe('nighthawk-cu entry', () => {
 
   it('detects all four layers with details', async () => {
     const applicationsDir = await fakeAppBundle();
-    const plugins = fakePlugins([{ id: 'nighthawk-cu', enabled: true, state: 'ok', version: '0.5.4' }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu', enabled: true, state: 'ok', version: '0.5.4' }]);
     const host = fakeHostProcess([
       { match: 'service-status', code: 0, stdout: 'SMAppService status=1 (1=enabled); fallback plist exists=false' },
       { match: 'xpc-ping', code: 0, stdout: 'permissionStatus: accessibility=true screenRecording=false' },
@@ -927,12 +927,12 @@ describe('nighthawk-cu entry', () => {
     const entry = createNightHawkCuEntry(
       makeCtx({
         plugins: plugins.service,
-        marketplace: fakeMarketplace([{ id: 'nighthawk-cu-win', version: '0.2.14' }]),
+        marketplace: fakeMarketplace([{ id: 'kimi-cu-win', version: '0.2.14' }]),
       }),
     );
 
     await expect(entry.install(() => {})).rejects.toThrow(
-      'Marketplace plugin "nighthawk-cu" was not found in the current catalog',
+      'Marketplace plugin "kimi-cu" was not found in the current catalog',
     );
     expect(plugins.installs).toEqual([]);
   });
@@ -942,12 +942,12 @@ describe('nighthawk-cu entry', () => {
     const entry = createNightHawkCuEntry(
       makeCtx({
         plugins: plugins.service,
-        marketplace: fakeMarketplace([{ id: 'nighthawk-cu' }]),
+        marketplace: fakeMarketplace([{ id: 'kimi-cu' }]),
       }),
     );
 
     await expect(entry.install(() => {})).rejects.toThrow(
-      'Marketplace plugin "nighthawk-cu" has no version in the current catalog',
+      'Marketplace plugin "kimi-cu" has no version in the current catalog',
     );
     expect(plugins.installs).toEqual([]);
   });
@@ -964,7 +964,7 @@ describe('nighthawk-cu entry', () => {
         applicationsDir,
         plugins: plugins.service,
         marketplace: fakeMarketplace([
-          { id: 'nighthawk-cu', version: '9.8.7', sha256sum: 'a'.repeat(64) },
+          { id: 'kimi-cu', version: '9.8.7', sha256sum: 'a'.repeat(64) },
         ]),
         hostProcess: host.service,
         fetchImpl: (() => Promise.reject(new Error('download should be skipped'))) as never,
@@ -976,13 +976,13 @@ describe('nighthawk-cu entry', () => {
 
     expect(plugins.installs).toEqual([
       {
-        marketplaceId: 'nighthawk-cu',
+        marketplaceId: 'kimi-cu',
         expectedVersion: '9.8.7',
         expectedSha256: 'a'.repeat(64),
       },
     ]);
     await expect(plugins.service.listPlugins()).resolves.toMatchObject([
-      { id: 'nighthawk-cu', version: '9.8.7', origin: 'marketplace', catalogId: 'nighthawk-cu' },
+      { id: 'kimi-cu', version: '9.8.7', origin: 'marketplace', catalogId: 'kimi-cu' },
     ]);
     expect(reports).toEqual(['plugin']);
     expect(host.calls.every((call) => call.includes('service-status') || call.includes('xpc-ping'))).toBe(true);
@@ -1009,15 +1009,15 @@ describe('nighthawk-cu entry', () => {
 
     await entry.install(() => {});
 
-    expect(plugins.installs).toEqual([{ marketplaceId: 'nighthawk-cu' }]);
+    expect(plugins.installs).toEqual([{ marketplaceId: 'kimi-cu' }]);
     expect(plugins.resolvedInstalls).toMatchObject([{
-      source: expect.stringContaining('nighthawk-computer-use/latest/nighthawk-cu-plugin.zip'),
+      source: expect.stringContaining('kimi-computer-use/latest/kimi-cu-plugin.zip'),
       origin: 'marketplace',
-      catalogId: 'nighthawk-cu',
-      expectedPluginId: 'nighthawk-cu',
+      catalogId: 'kimi-cu',
+      expectedPluginId: 'kimi-cu',
     }]);
     await expect(plugins.service.listPlugins()).resolves.toMatchObject([
-      { origin: 'marketplace', catalogId: 'nighthawk-cu' },
+      { origin: 'marketplace', catalogId: 'kimi-cu' },
     ]);
   });
 
@@ -1043,28 +1043,28 @@ describe('nighthawk-cu entry', () => {
 
     await entry.install(() => {});
 
-    expect(plugins.installs).toEqual([{ marketplaceId: 'nighthawk-cu' }]);
+    expect(plugins.installs).toEqual([{ marketplaceId: 'kimi-cu' }]);
     expect(plugins.resolvedInstalls).toMatchObject([{
-      source: expect.stringContaining('nighthawk-computer-use/latest/nighthawk-cu-plugin.zip'),
+      source: expect.stringContaining('kimi-computer-use/latest/kimi-cu-plugin.zip'),
       origin: 'marketplace',
-      catalogId: 'nighthawk-cu',
-      expectedPluginId: 'nighthawk-cu',
+      catalogId: 'kimi-cu',
+      expectedPluginId: 'kimi-cu',
     }]);
     await expect(plugins.service.listPlugins()).resolves.toMatchObject([
-      { origin: 'marketplace', catalogId: 'nighthawk-cu' },
+      { origin: 'marketplace', catalogId: 'kimi-cu' },
     ]);
   });
 
   it('migrates the exact legacy standalone MCP registration after installing the plugin', async () => {
     const applicationsDir = await fakeAppBundle();
-    const appBin = path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'MacOS', 'nighthawk-cu');
+    const appBin = path.join(applicationsDir, 'KimiCU.app', 'Contents', 'MacOS', 'kimi-cu');
     const nighthawkHomeDir = path.join(root, 'nighthawk-home');
     await mkdir(nighthawkHomeDir, { recursive: true });
     await writeFile(
       path.join(nighthawkHomeDir, 'mcp.json'),
       `${JSON.stringify({
         mcpServers: {
-          'nighthawk-cu': { command: appBin, args: ['mcp', '-s', 'user'] },
+          'kimi-cu': { command: appBin, args: ['mcp', '-s', 'user'] },
           custom: { command: 'custom-mcp', args: [] },
         },
       })}\n`,
@@ -1086,7 +1086,7 @@ describe('nighthawk-cu entry', () => {
     expect((await entry.detect()).steps).toContainEqual({
       id: 'legacy-mcp',
       state: 'missing',
-      detail: 'duplicate standalone nighthawk-cu MCP registration',
+      detail: 'duplicate standalone kimi-cu MCP registration',
       optional: true,
     });
     const reports: string[] = [];
@@ -1095,22 +1095,22 @@ describe('nighthawk-cu entry', () => {
     const migrated = JSON.parse(await readFile(path.join(nighthawkHomeDir, 'mcp.json'), 'utf8')) as {
       mcpServers: Record<string, unknown>;
     };
-    expect(migrated.mcpServers['nighthawk-cu']).toBeUndefined();
+    expect(migrated.mcpServers['kimi-cu']).toBeUndefined();
     expect(migrated.mcpServers['custom']).toEqual({ command: 'custom-mcp', args: [] });
     expect(reports).toEqual(['plugin', 'mcp-config']);
   });
 
   it('leaves the legacy MCP config untouched when it changes during setup', async () => {
     const applicationsDir = await fakeAppBundle();
-    const appBin = path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'MacOS', 'nighthawk-cu');
+    const appBin = path.join(applicationsDir, 'KimiCU.app', 'Contents', 'MacOS', 'kimi-cu');
     const nighthawkHomeDir = path.join(root, 'nighthawk-home');
     await mkdir(nighthawkHomeDir, { recursive: true });
     const configPath = path.join(nighthawkHomeDir, 'mcp.json');
     const legacy = { command: appBin, args: ['mcp', '-s', 'user'] };
-    await writeFile(configPath, `${JSON.stringify({ mcpServers: { 'nighthawk-cu': legacy } })}\n`);
+    await writeFile(configPath, `${JSON.stringify({ mcpServers: { 'kimi-cu': legacy } })}\n`);
     const concurrentConfig = {
       mcpServers: {
-        'nighthawk-cu': legacy,
+        'kimi-cu': legacy,
         addedDuringSetup: { command: 'another-mcp', args: [] },
       },
     };
@@ -1139,13 +1139,13 @@ describe('nighthawk-cu entry', () => {
 
   it('does not migrate a customized standalone MCP registration', async () => {
     const applicationsDir = await fakeAppBundle();
-    const appBin = path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'MacOS', 'nighthawk-cu');
+    const appBin = path.join(applicationsDir, 'KimiCU.app', 'Contents', 'MacOS', 'kimi-cu');
     const nighthawkHomeDir = path.join(root, 'nighthawk-home');
     await mkdir(nighthawkHomeDir, { recursive: true });
     const configPath = path.join(nighthawkHomeDir, 'mcp.json');
     const custom = {
       mcpServers: {
-        'nighthawk-cu': { command: appBin, args: ['mcp', '-s', 'user'], env: { CUSTOM: '1' } },
+        'kimi-cu': { command: appBin, args: ['mcp', '-s', 'user'], env: { CUSTOM: '1' } },
       },
     };
     await writeFile(configPath, `${JSON.stringify(custom)}\n`);
@@ -1209,7 +1209,7 @@ describe('nighthawk-cu entry', () => {
 
   it('re-enables a previously disabled wiring plugin during setup', async () => {
     const applicationsDir = await fakeAppBundle();
-    const plugins = fakePlugins([{ id: 'nighthawk-cu', enabled: false, state: 'ok', version: '0.5.4' }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu', enabled: false, state: 'ok', version: '0.5.4' }]);
     const host = fakeHostProcess([
       { match: 'service-status', code: 0, stdout: 'SMAppService status=1' },
       { match: 'xpc-ping', code: 0, stdout: 'permissionStatus: accessibility=true screenRecording=true' },
@@ -1219,13 +1219,13 @@ describe('nighthawk-cu entry', () => {
     );
 
     await entry.install(() => {});
-    expect(plugins.enabledCalls).toEqual([{ id: 'nighthawk-cu', enabled: true }]);
+    expect(plugins.enabledCalls).toEqual([{ id: 'kimi-cu', enabled: true }]);
   });
 
   it('refreshes the wiring plugin when permissions are the only missing layer', async () => {
     const applicationsDir = await fakeAppBundle();
     const plugins = fakePlugins([
-      { id: 'nighthawk-cu', enabled: true, state: 'ok', version: '0.5.4' },
+      { id: 'kimi-cu', enabled: true, state: 'ok', version: '0.5.4' },
     ]);
     const host = fakeHostProcess([
       { match: 'service-status', code: 0, stdout: 'SMAppService status=1' },
@@ -1242,13 +1242,13 @@ describe('nighthawk-cu entry', () => {
     await entry.install(() => {});
 
     expect(plugins.installs).toEqual([
-      { marketplaceId: 'nighthawk-cu', expectedVersion: '0.5.4' },
+      { marketplaceId: 'kimi-cu', expectedVersion: '0.5.4' },
     ]);
   });
 
   it('continues the replacement when the old-binary cleanup hangs', async () => {
     const applicationsDir = await fakeAppBundle();
-    const plugins = fakePlugins([{ id: 'nighthawk-cu', enabled: true, state: 'ok', version: '0.5.4' }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu', enabled: true, state: 'ok', version: '0.5.4' }]);
     const host = fakeHostProcess([
       { match: 'uninstall', code: 0, hang: true },
       { match: 'service-status', code: 0, stdout: 'SMAppService status=1' },
@@ -1261,11 +1261,11 @@ describe('nighthawk-cu entry', () => {
           headers: { 'content-length': '3' },
         }),
       )) as never;
-    const appBin = path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'MacOS', 'nighthawk-cu');
+    const appBin = path.join(applicationsDir, 'KimiCU.app', 'Contents', 'MacOS', 'kimi-cu');
     const hostProcess = {
       spawn: async (command: string, args: readonly string[] = []) => {
         const proc = await host.service.spawn(command, args);
-        if (command === 'ditto' && String(args.at(-1)).includes('NightHawkCU.app')) {
+        if (command === 'ditto' && String(args.at(-1)).includes('KimiCU.app')) {
           await mkdir(path.dirname(appBin), { recursive: true });
           await writeFile(appBin, '#!/bin/sh\n');
           await chmod(appBin, 0o755);
@@ -1290,7 +1290,7 @@ describe('nighthawk-cu entry', () => {
   });
 
   it('reports the plugin layer missing when its MCP server is disabled', async () => {
-    const plugins = fakePlugins([{ id: 'nighthawk-cu', enabled: true, state: 'ok', version: '0.5.4', enabledMcp: 0 }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu', enabled: true, state: 'ok', version: '0.5.4', enabledMcp: 0 }]);
     const entry = createNightHawkCuEntry(makeCtx({ plugins: plugins.service }));
 
     const detected = await entry.detect();
@@ -1303,7 +1303,7 @@ describe('nighthawk-cu entry', () => {
 
   it('re-enables disabled MCP servers during setup', async () => {
     const applicationsDir = await fakeAppBundle();
-    const plugins = fakePlugins([{ id: 'nighthawk-cu', enabled: true, state: 'ok', version: '0.5.4', enabledMcp: 0 }]);
+    const plugins = fakePlugins([{ id: 'kimi-cu', enabled: true, state: 'ok', version: '0.5.4', enabledMcp: 0 }]);
     const host = fakeHostProcess([
       { match: 'service-status', code: 0, stdout: 'SMAppService status=1' },
       { match: 'xpc-ping', code: 0, stdout: 'permissionStatus: accessibility=true screenRecording=true' },
@@ -1313,7 +1313,7 @@ describe('nighthawk-cu entry', () => {
     );
 
     await entry.install(() => {});
-    expect(plugins.mcpEnabledCalls).toEqual([{ id: 'nighthawk-cu', server: 'mac', enabled: true }]);
+    expect(plugins.mcpEnabledCalls).toEqual([{ id: 'kimi-cu', server: 'mac', enabled: true }]);
   });
 
   it('never stops the old service when the downloaded archive is corrupt', async () => {
@@ -1341,7 +1341,7 @@ describe('nighthawk-cu entry', () => {
     );
 
     await expect(entry.install(() => {})).rejects.toThrow(/Failed to unzip/);
-    expect(downloads).toEqual(['https://cdn.kimi.com/nighthawk-computer-use/latest/NightHawkCU.app.zip']);
+    expect(downloads).toEqual(['https://cdn.kimi.com/kimi-computer-use/latest/KimiCU.app.zip']);
     expect(host.calls.some((call) => call.includes('uninstall'))).toBe(false);
     expect(host.calls.some((call) => call.includes('bootout'))).toBe(false);
     expect(host.calls.some((call) => call.includes('pkill'))).toBe(false);
@@ -1349,7 +1349,7 @@ describe('nighthawk-cu entry', () => {
 
   it('reads a bundle missing its Info.plist as a broken install', async () => {
     const applicationsDir = await fakeAppBundle();
-    await rm(path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'Info.plist'));
+    await rm(path.join(applicationsDir, 'KimiCU.app', 'Contents', 'Info.plist'));
     const entry = createNightHawkCuEntry(makeCtx({ applicationsDir }));
 
     const detected = await entry.detect();
@@ -1358,7 +1358,7 @@ describe('nighthawk-cu entry', () => {
 
   it.skipIf(process.platform === 'win32')('reads a non-executable leftover app binary as a broken install', async () => {
     const applicationsDir = await fakeAppBundle();
-    await chmod(path.join(applicationsDir, 'NightHawkCU.app', 'Contents', 'MacOS', 'nighthawk-cu'), 0o644);
+    await chmod(path.join(applicationsDir, 'KimiCU.app', 'Contents', 'MacOS', 'kimi-cu'), 0o644);
     const entry = createNightHawkCuEntry(makeCtx({ applicationsDir }));
 
     const detected = await entry.detect();

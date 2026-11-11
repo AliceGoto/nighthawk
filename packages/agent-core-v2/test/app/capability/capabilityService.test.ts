@@ -13,7 +13,7 @@ import type {
 import { stubLog } from '../../_base/log/stubs';
 
 function fakeEntry(overrides: {
-  id: 'nighthawk-cu' | 'nighthawk-webbridge';
+  id: 'kimi-cu' | 'kimi-webbridge';
   pluginId?: string;
   supported?: boolean;
   detect?: CapabilityDetectResult;
@@ -55,7 +55,7 @@ function expectErrorCode(error: unknown, code: string): void {
 
 describe('CapabilityService', () => {
   it('publishes confirmation without an install error and forwards explicit consent on retry', async () => {
-    const entry = fakeEntry({ id: 'nighthawk-cu' });
+    const entry = fakeEntry({ id: 'kimi-cu' });
     let installed = false;
     entry.install = async (_report, options) => {
       if (!options?.stopRunningProcesses) {
@@ -65,25 +65,25 @@ describe('CapabilityService', () => {
       return undefined;
     };
     const service = fakeService([entry]);
-    await service.installCapability('nighthawk-cu');
-    expect((await service.getCapability('nighthawk-cu')).install).toEqual({
+    await service.installCapability('kimi-cu');
+    expect((await service.getCapability('kimi-cu')).install).toEqual({
       running: false, confirmationRequired: 'stop-processes',
     });
     expect(installed).toBe(false);
-    await service.installCapability('nighthawk-cu', { stopRunningProcesses: true });
+    await service.installCapability('kimi-cu', { stopRunningProcesses: true });
     expect(installed).toBe(true);
-    expect((await service.getCapability('nighthawk-cu')).install.confirmationRequired).toBeUndefined();
+    expect((await service.getCapability('kimi-cu')).install.confirmationRequired).toBeUndefined();
   });
 
   it('lists entries with readiness computed from required steps', async () => {
     const service = fakeService([
       fakeEntry({
-        id: 'nighthawk-cu',
-        pluginId: 'nighthawk-cu-win',
+        id: 'kimi-cu',
+        pluginId: 'kimi-cu-win',
         detect: { steps: [{ id: 'plugin', state: 'ok' }] },
       }),
       fakeEntry({
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         detect: {
           steps: [
             { id: 'daemon', state: 'ok' },
@@ -95,16 +95,16 @@ describe('CapabilityService', () => {
     ]);
     const list = await service.listCapabilities();
     expect(list.map((c) => [c.id, c.state])).toEqual([
-      ['nighthawk-cu', 'ready'],
-      ['nighthawk-webbridge', 'partial'],
+      ['kimi-cu', 'ready'],
+      ['kimi-webbridge', 'partial'],
     ]);
-    expect(list[0]?.pluginId).toBe('nighthawk-cu-win');
+    expect(list[0]?.pluginId).toBe('kimi-cu-win');
   });
 
   it('isolates a failing detector to its own entry', async () => {
     const broken: CapabilityEntry = {
-      id: 'nighthawk-cu',
-      displayName: 'nighthawk-cu',
+      id: 'kimi-cu',
+      displayName: 'kimi-cu',
       description: 'fake',
       supported: true,
       detect: () => Promise.reject(new Error('probe timed out')),
@@ -112,12 +112,12 @@ describe('CapabilityService', () => {
     };
     const service = fakeService([
       broken,
-      fakeEntry({ id: 'nighthawk-webbridge', detect: { steps: [{ id: 'daemon', state: 'ok' }] } }),
+      fakeEntry({ id: 'kimi-webbridge', detect: { steps: [{ id: 'daemon', state: 'ok' }] } }),
     ]);
 
     const list = await service.listCapabilities();
-    expect(list.find((c) => c.id === 'nighthawk-webbridge')?.state).toBe('ready');
-    const cu = list.find((c) => c.id === 'nighthawk-cu');
+    expect(list.find((c) => c.id === 'kimi-webbridge')?.state).toBe('ready');
+    const cu = list.find((c) => c.id === 'kimi-cu');
     expect(cu?.state).toBe('partial');
     expect(cu?.steps).toEqual([{ id: 'detect', state: 'failed', detail: 'probe timed out' }]);
   });
@@ -125,7 +125,7 @@ describe('CapabilityService', () => {
   it('marks optional steps as non-blocking for ready', async () => {
     const service = fakeService([
       fakeEntry({
-        id: 'nighthawk-webbridge',
+        id: 'kimi-webbridge',
         detect: {
           version: 'v1.11.3',
           steps: [
@@ -135,19 +135,19 @@ describe('CapabilityService', () => {
         },
       }),
     ]);
-    const status = await service.getCapability('nighthawk-webbridge');
+    const status = await service.getCapability('kimi-webbridge');
     expect(status.state).toBe('ready');
     expect(status.version).toBe('v1.11.3');
   });
 
   it('reports not_installed when no step is ok, and unsupported as-is', async () => {
     const service = fakeService([
-      fakeEntry({ id: 'nighthawk-cu', detect: { steps: [{ id: 'plugin', state: 'missing' }] } }),
-      fakeEntry({ id: 'nighthawk-webbridge', supported: false }),
+      fakeEntry({ id: 'kimi-cu', detect: { steps: [{ id: 'plugin', state: 'missing' }] } }),
+      fakeEntry({ id: 'kimi-webbridge', supported: false }),
     ]);
     const list = await service.listCapabilities();
-    expect(list.find((c) => c.id === 'nighthawk-cu')?.state).toBe('not_installed');
-    const unsupported = list.find((c) => c.id === 'nighthawk-webbridge');
+    expect(list.find((c) => c.id === 'kimi-cu')?.state).toBe('not_installed');
+    const unsupported = list.find((c) => c.id === 'kimi-webbridge');
     expect(unsupported?.state).toBe('unsupported');
     expect(unsupported?.supported).toBe(false);
   });
@@ -173,8 +173,8 @@ describe('CapabilityService', () => {
   });
 
   it('rejects install on an unsupported entry', async () => {
-    const service = fakeService([fakeEntry({ id: 'nighthawk-cu', supported: false })]);
-    await service.installCapability('nighthawk-cu').then(
+    const service = fakeService([fakeEntry({ id: 'kimi-cu', supported: false })]);
+    await service.installCapability('kimi-cu').then(
       () => {
         expect.unreachable();
       },
@@ -188,7 +188,7 @@ describe('CapabilityService', () => {
     let release: (() => void) | undefined;
     const service = fakeService([
       fakeEntry({
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         install: (report) => {
           report('download', 42);
           return new Promise<string | undefined>((resolve) => {
@@ -200,10 +200,10 @@ describe('CapabilityService', () => {
       }),
     ]);
 
-    const started = await service.installCapability('nighthawk-cu');
+    const started = await service.installCapability('kimi-cu');
     expect(started.install.running).toBe(true);
 
-    await service.installCapability('nighthawk-cu').then(
+    await service.installCapability('kimi-cu').then(
       () => {
         expect.unreachable();
       },
@@ -212,12 +212,12 @@ describe('CapabilityService', () => {
       },
     );
 
-    const during = await service.getCapability('nighthawk-cu');
+    const during = await service.getCapability('kimi-cu');
     expect(during.install).toEqual({ running: true, step: 'download', percent: 42 });
 
     release?.();
     for (let i = 0; i < 50; i += 1) {
-      const status = await service.getCapability('nighthawk-cu');
+      const status = await service.getCapability('kimi-cu');
       if (!status.install.running) {
         expect(status.install.error).toBeUndefined();
         return;
@@ -229,18 +229,18 @@ describe('CapabilityService', () => {
 
   it('describes the registry without running detectors', async () => {
     const service = fakeService([
-      fakeEntry({ id: 'nighthawk-cu', supported: true }),
-      fakeEntry({ id: 'nighthawk-webbridge', supported: false }),
+      fakeEntry({ id: 'kimi-cu', supported: true }),
+      fakeEntry({ id: 'kimi-webbridge', supported: false }),
     ]);
     const descriptors = service.describeCapabilities();
-    expect(descriptors.map((d) => d.id)).toEqual(['nighthawk-cu', 'nighthawk-webbridge']);
-    expect(descriptors.find((d) => d.id === 'nighthawk-webbridge')?.supported).toBe(false);
+    expect(descriptors.map((d) => d.id)).toEqual(['kimi-cu', 'kimi-webbridge']);
+    expect(descriptors.find((d) => d.id === 'kimi-webbridge')?.supported).toBe(false);
   });
 
   it('emits onDidChangeInstall on every progress transition', async () => {
     const service = fakeService([
       fakeEntry({
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         install: (report) => {
           report('download', 42);
           return Promise.resolve(undefined);
@@ -252,39 +252,39 @@ describe('CapabilityService', () => {
       seen.push({ id: change.id, install: change.install });
     });
 
-    await service.installCapability('nighthawk-cu');
+    await service.installCapability('kimi-cu');
     for (let i = 0; i < 50; i += 1) {
-      const status = await service.getCapability('nighthawk-cu');
+      const status = await service.getCapability('kimi-cu');
       if (!status.install.running) break;
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
-    expect(seen[0]).toEqual({ id: 'nighthawk-cu', install: { running: true } });
-    expect(seen).toContainEqual({ id: 'nighthawk-cu', install: { running: true, step: 'download', percent: 42 } });
-    expect(seen.at(-1)).toEqual({ id: 'nighthawk-cu', install: { running: false } });
+    expect(seen[0]).toEqual({ id: 'kimi-cu', install: { running: true } });
+    expect(seen).toContainEqual({ id: 'kimi-cu', install: { running: true, step: 'download', percent: 42 } });
+    expect(seen.at(-1)).toEqual({ id: 'kimi-cu', install: { running: false } });
   });
 
   it('surfaces an install note from the entry through progress', async () => {
     const service = fakeService([
       fakeEntry({
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         install: () => Promise.resolve('user-skill-migrated'),
       }),
     ]);
-    await service.installCapability('nighthawk-cu');
+    await service.installCapability('kimi-cu');
     for (let i = 0; i < 50; i += 1) {
-      const status = await service.getCapability('nighthawk-cu');
+      const status = await service.getCapability('kimi-cu');
       if (!status.install.running) break;
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    expect((await service.getCapability('nighthawk-cu')).install.note).toBe('user-skill-migrated');
+    expect((await service.getCapability('kimi-cu')).install.note).toBe('user-skill-migrated');
   });
 
   it('surfaces install errors through progress until the next attempt', async () => {
     let attempts = 0;
     const service = fakeService([
       fakeEntry({
-        id: 'nighthawk-cu',
+        id: 'kimi-cu',
         install: () => {
           attempts += 1;
           return attempts === 1
@@ -293,22 +293,22 @@ describe('CapabilityService', () => {
         },
       }),
     ]);
-    await service.installCapability('nighthawk-cu');
+    await service.installCapability('kimi-cu');
     for (let i = 0; i < 50; i += 1) {
-      const status = await service.getCapability('nighthawk-cu');
+      const status = await service.getCapability('kimi-cu');
       if (!status.install.running) break;
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    const failed = await service.getCapability('nighthawk-cu');
+    const failed = await service.getCapability('kimi-cu');
     expect(failed.install).toEqual({ running: false, error: 'boom' });
 
-    await service.installCapability('nighthawk-cu');
+    await service.installCapability('kimi-cu');
     for (let i = 0; i < 50; i += 1) {
-      const status = await service.getCapability('nighthawk-cu');
+      const status = await service.getCapability('kimi-cu');
       if (!status.install.running) break;
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    const retried = await service.getCapability('nighthawk-cu');
+    const retried = await service.getCapability('kimi-cu');
     expect(retried.install.error).toBeUndefined();
     expect(attempts).toBe(2);
   });
@@ -330,7 +330,7 @@ describe('CapabilityService', () => {
     const service = fakeService(
       [
         fakeEntry({
-          id: 'nighthawk-cu',
+          id: 'kimi-cu',
           install: async (report) => {
             report('runtime');
             throw error;
@@ -340,13 +340,13 @@ describe('CapabilityService', () => {
       log,
     );
 
-    await service.installCapability('nighthawk-cu');
+    await service.installCapability('kimi-cu');
     await logged;
 
     expect(warnings).toEqual([
       {
         message: 'capability install failed',
-        payload: { capabilityId: 'nighthawk-cu', step: 'runtime', error },
+        payload: { capabilityId: 'kimi-cu', step: 'runtime', error },
       },
     ]);
   });

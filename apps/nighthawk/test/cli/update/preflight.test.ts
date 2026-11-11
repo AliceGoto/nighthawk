@@ -586,7 +586,7 @@ describe('runUpdatePreflight', () => {
       // Native updates self-spawn the staged downloader silently, so the
       // region surface there is the manual install command text.
       expect(installCommandFor('native', '0.5.0', 'win32')).toBe(
-        'irm https://code.kimi.ai/nighthawk/install.ps1 | iex',
+        'irm https://code.kimi.ai/kimi-code/install.ps1 | iex',
       );
 
       mocks.detectInstallSource.mockResolvedValue('homebrew');

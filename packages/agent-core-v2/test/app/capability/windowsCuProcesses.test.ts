@@ -18,8 +18,8 @@ it.skipIf(process.platform !== 'win32')('releases a locked plugin directory with
     const other = path.join(root, 'other');
     await mkdir(locked);
     await mkdir(other);
-    const executable = path.join(root, 'nighthawk-cu.exe');
-    const unrelatedExecutable = path.join(other, 'nighthawk-cu.exe');
+    const executable = path.join(root, 'kimi-cu.exe');
+    const unrelatedExecutable = path.join(other, 'kimi-cu.exe');
     await copyFile(process.execPath, executable);
     await copyFile(process.execPath, unrelatedExecutable);
     const body = "process.stdout.write('ready'); setInterval(() => {}, 1000);";

@@ -25,11 +25,11 @@ NightHawk CLI is a fully interactive TUI application. For the best visual experi
 ::: code-group
 
 ```sh [macOS / Linux]
-curl -fsSL https://code.kimi.com/nighthawk/install.sh | bash
+curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
 ```
 
 ```powershell [Windows (PowerShell)]
-irm https://code.kimi.com/nighthawk/install.ps1 | iex
+irm https://code.kimi.com/kimi-code/install.ps1 | iex
 ```
 
 :::

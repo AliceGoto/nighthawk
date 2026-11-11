@@ -20,9 +20,9 @@ import type {
 import type { CapabilityEntryContext } from './context';
 import { findWindowsCuProcesses, manageWindowsCuProcesses } from './windowsCuProcesses';
 
-const MAC_PLUGIN_ID = 'nighthawk-cu';
-const WINDOWS_PLUGIN_ID = 'nighthawk-cu-win';
-const APP_BUNDLE = 'NightHawkCU.app';
+const MAC_PLUGIN_ID = 'kimi-cu';
+const WINDOWS_PLUGIN_ID = 'kimi-cu-win';
+const APP_BUNDLE = 'KimiCU.app';
 const LAUNCHD_LABEL = 'ai.nighthawk.cu.service';
 const COMMAND_TIMEOUT_MS = 30_000;
 const PERMISSIONS_TIMEOUT_MS = 15_000;
@@ -41,9 +41,9 @@ const WINDOWS_INSTALLER_PROBE_SCRIPT =
   "[Console]::Out.Write(('PowerShell ' + $PSVersionTable.PSVersion));";
 const WINDOWS_DOCTOR_SCRIPT =
   '$candidates = @($env:NIGHTHAWK_CU_WINDOWS_EXE); ' +
-  "if ($env:NIGHTHAWK_CU_WINDOWS_HOME) { $candidates += (Join-Path $env:NIGHTHAWK_CU_WINDOWS_HOME 'nighthawk-cu.exe') }; " +
-  "if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'NightHawkCU\\nighthawk-cu.exe') }; " +
-  "if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'NightHawkCU\\nighthawk-cu.exe') }; " +
+  "if ($env:NIGHTHAWK_CU_WINDOWS_HOME) { $candidates += (Join-Path $env:NIGHTHAWK_CU_WINDOWS_HOME 'kimi-cu.exe') }; " +
+  "if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'KimiCU\\kimi-cu.exe') }; " +
+  "if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'KimiCU\\kimi-cu.exe') }; " +
   "$exe = $candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and (Test-Path -LiteralPath $_ -PathType Leaf) } | Select-Object -First 1; " +
   'if (-not $exe) { exit 3 }; & $exe doctor; exit $LASTEXITCODE';
 
@@ -55,14 +55,14 @@ interface PluginLayerConfig {
 function macPlugin(): PluginLayerConfig {
   return {
     id: MAC_PLUGIN_ID,
-    zipUrl: nighthawkCdnContentUrl('nighthawk-computer-use/latest/nighthawk-cu-plugin.zip'),
+    zipUrl: nighthawkCdnContentUrl('kimi-computer-use/latest/kimi-cu-plugin.zip'),
   };
 }
 
 function windowsPlugin(): PluginLayerConfig {
   return {
     id: WINDOWS_PLUGIN_ID,
-    zipUrl: nighthawkCdnContentUrl('nighthawk-computer-use-windows/latest/nighthawk-cu-win-plugin.zip'),
+    zipUrl: nighthawkCdnContentUrl('kimi-computer-use-windows/latest/kimi-cu-win-plugin.zip'),
   };
 }
 
@@ -243,7 +243,7 @@ function parseLegacyMcpFile(raw: string, appBin: string): LegacyMcpFile | undefi
   }
   const root = objectRecord(value);
   const servers = objectRecord(root?.['mcpServers']);
-  const legacy = objectRecord(servers?.['nighthawk-cu']);
+  const legacy = objectRecord(servers?.['kimi-cu']);
   if (root === undefined || servers === undefined || legacy === undefined) return undefined;
   if (legacy['command'] !== appBin) return undefined;
   if (legacy['enabled'] === false) return undefined;
@@ -269,7 +269,7 @@ export function elevatedDittoScript(from: string, to: string): string {
 function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry {
   const applicationsDir = ctx.applicationsDir ?? '/Applications';
   const appPath = path.join(applicationsDir, APP_BUNDLE);
-  const appBin = path.join(appPath, 'Contents', 'MacOS', 'nighthawk-cu');
+  const appBin = path.join(appPath, 'Contents', 'MacOS', 'kimi-cu');
   const infoPlist = path.join(appPath, 'Contents', 'Info.plist');
   const probeTimeoutMs = ctx.detectProbeTimeoutMs ?? DETECT_PROBE_TIMEOUT_MS;
   const commandTimeoutMs = ctx.commandTimeoutMs ?? COMMAND_TIMEOUT_MS;
@@ -320,10 +320,10 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
     if (legacy === undefined) return false;
 
     const nextServers = { ...legacy.servers };
-    delete nextServers['nighthawk-cu'];
+    delete nextServers['kimi-cu'];
     const next = { ...legacy.value, mcpServers: nextServers };
     const mode = (await stat(userMcpConfigPath)).mode & 0o777;
-    const tempPath = `${userMcpConfigPath}.nighthawk-cu-migration-${process.pid}-${Date.now()}`;
+    const tempPath = `${userMcpConfigPath}.kimi-cu-migration-${process.pid}-${Date.now()}`;
     try {
       await writeFile(tempPath, `${JSON.stringify(next, null, 2)}\n`, {
         encoding: 'utf8',
@@ -348,7 +348,7 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
       steps.push({
         id: 'legacy-mcp',
         state: 'missing',
-        detail: 'duplicate standalone nighthawk-cu MCP registration',
+        detail: 'duplicate standalone kimi-cu MCP registration',
         optional: true,
       });
     }
@@ -429,7 +429,7 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
     }
     await bestEffort('launchctl', ['bootout', `gui/${uid}/${LAUNCHD_LABEL}`]);
     for (const mode of ['service', 'overlay']) {
-      await bestEffort('pkill', ['-f', `${APP_BUNDLE}/Contents/MacOS/nighthawk-cu[[:space:]]+${mode}`]);
+      await bestEffort('pkill', ['-f', `${APP_BUNDLE}/Contents/MacOS/kimi-cu[[:space:]]+${mode}`]);
     }
     await new Promise((resolve) => {
       setTimeout(resolve, 1_000);
@@ -459,7 +459,7 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
 
   async function install(report: CapabilityInstallReporter): Promise<string | undefined> {
     if (!supported) {
-      throw new Error(`nighthawk-cu is only supported on macOS (current: ${ctx.platform})`);
+      throw new Error(`kimi-cu is only supported on macOS (current: ${ctx.platform})`);
     }
 
     const before = await detect();
@@ -478,12 +478,12 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
 
     const installApp = stepStates.get('app') !== 'ok' || readyBefore;
     if (installApp) {
-      const workDir = await mkdtemp(path.join(tmpdir(), 'nighthawk-cu-install-'));
+      const workDir = await mkdtemp(path.join(tmpdir(), 'kimi-cu-install-'));
       try {
         report('download', 0);
-        const zipPath = path.join(workDir, 'NightHawkCU.app.zip');
+        const zipPath = path.join(workDir, 'KimiCU.app.zip');
         await downloadToFile(
-          nighthawkCdnContentUrl('nighthawk-computer-use/latest/NightHawkCU.app.zip'),
+          nighthawkCdnContentUrl('kimi-computer-use/latest/KimiCU.app.zip'),
           zipPath,
           (percent) => {
             report('download', percent);
@@ -497,7 +497,7 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
           timeout: 120_000,
         });
         if (unzipped.code !== 0) {
-          throw new Error(`Failed to unzip NightHawkCU.app: ${unzipped.stderr || unzipped.stdout}`);
+          throw new Error(`Failed to unzip KimiCU.app: ${unzipped.stderr || unzipped.stdout}`);
         }
         await stopOldProcesses();
         await moveAppIntoPlace(path.join(unzipDir, APP_BUNDLE));
@@ -515,14 +515,14 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
         timeout: commandTimeoutMs,
       });
       if (registered.code !== 0) {
-        throw new Error(`nighthawk-cu install failed: ${registered.stderr || registered.stdout}`);
+        throw new Error(`kimi-cu install failed: ${registered.stderr || registered.stdout}`);
       }
       await new Promise((resolve) => {
         setTimeout(resolve, 1_000);
       });
       const running = await serviceRunning().catch(() => false);
       if (!running) {
-        throw new Error('nighthawk-cu background service is not running after install');
+        throw new Error('kimi-cu background service is not running after install');
       }
     }
 
@@ -542,7 +542,7 @@ function createMacNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityEntry
   }
 
   return {
-    id: 'nighthawk-cu',
+    id: 'kimi-cu',
     pluginId: MAC_PLUGIN_ID,
     displayName: 'NightHawk Computer Use',
     description:
@@ -658,7 +658,7 @@ function createWindowsNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityE
   async function install(report: CapabilityInstallReporter): Promise<string | undefined> {
     if (!supported) {
       throw new Error(
-        `nighthawk-cu is only supported on macOS or Windows x64 (current: ${ctx.platform}/${ctx.arch})`,
+        `kimi-cu is only supported on macOS or Windows x64 (current: ${ctx.platform}/${ctx.arch})`,
       );
     }
 
@@ -690,12 +690,12 @@ function createWindowsNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityE
     }
 
     if (installPowerShell !== undefined) {
-      const workDir = await mkdtemp(path.join(tmpdir(), 'nighthawk-cu-windows-install-'));
+      const workDir = await mkdtemp(path.join(tmpdir(), 'kimi-cu-windows-install-'));
       try {
         const setupPath = path.join(workDir, 'setup_windows.ps1');
         report('download', 0);
         await downloadToFile(
-          nighthawkCdnContentUrl('nighthawk-computer-use-windows/latest/setup_windows.ps1'),
+          nighthawkCdnContentUrl('kimi-computer-use-windows/latest/setup_windows.ps1'),
           setupPath,
           (percent) => {
             report('download', percent);
@@ -719,7 +719,7 @@ function createWindowsNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityE
         );
         if (installed.code !== 0) {
           throw new Error(
-            `nighthawk-cu Windows runtime install failed: ${
+            `kimi-cu Windows runtime install failed: ${
               installed.stderr.trim() || installed.stdout.trim() || `exit code ${installed.code}`
             }`,
           );
@@ -731,7 +731,7 @@ function createWindowsNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityE
       const runtime = await runtimeStep(installPowerShell);
       if (runtime.step.state !== 'ok') {
         throw new Error(
-          `nighthawk-cu Windows runtime is not ready after install: ${runtime.step.detail ?? runtime.step.state}`,
+          `kimi-cu Windows runtime is not ready after install: ${runtime.step.detail ?? runtime.step.state}`,
         );
       }
     }
@@ -739,7 +739,7 @@ function createWindowsNightHawkCuEntry(ctx: CapabilityEntryContext): CapabilityE
   }
 
   return {
-    id: 'nighthawk-cu',
+    id: 'kimi-cu',
     pluginId: WINDOWS_PLUGIN_ID,
     displayName: 'NightHawk Computer Use for Windows',
     description:

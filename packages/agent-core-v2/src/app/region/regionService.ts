@@ -16,10 +16,10 @@ import { IRegionService } from './region';
 export function nighthawkRegionEnv(bootstrap: IBootstrapService): NodeJS.ProcessEnv {
   const env = { ...process.env };
   const oauthHost = bootstrap.getEnv('NIGHTHAWK_OAUTH_HOST');
-  const legacyOAuthHost = bootstrap.getEnv('NIGHTHAWK_OAUTH_HOST');
+  const legacyOAuthHost = bootstrap.getEnv('KIMI_OAUTH_HOST');
   const baseUrl = bootstrap.getEnv('NIGHTHAWK_BASE_URL');
   if (oauthHost !== undefined) env['NIGHTHAWK_OAUTH_HOST'] = oauthHost;
-  if (legacyOAuthHost !== undefined) env['NIGHTHAWK_OAUTH_HOST'] = legacyOAuthHost;
+  if (legacyOAuthHost !== undefined) env['KIMI_OAUTH_HOST'] = legacyOAuthHost;
   if (oauthHost === undefined && legacyOAuthHost !== undefined) {
     delete env['NIGHTHAWK_OAUTH_HOST'];
   }
