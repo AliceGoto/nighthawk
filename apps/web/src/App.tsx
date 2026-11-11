@@ -702,8 +702,9 @@ export function App(): ReactElement {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <img src="/nighthawk-icon.svg" alt="" width={24} height={24} />
-          <span>NightHawk</span>
+          <img src="/nighthawk-icon.svg" alt="" width={22} height={22} />
+          <span className="brand-name">NightHawk</span>
+          <span className="brand-tag">codex</span>
           <span className={`dot ${status}`} title={status} />
         </div>
         <div className="new-session">
@@ -793,18 +794,27 @@ export function App(): ReactElement {
 
         {current === undefined ? (
           <div className="welcome">
-            <div className="welcome-mark">NIGHTHAWK</div>
-            <p className="welcome-sub">本地运行的编码 agent。模型和密钥都在你自己的 config.toml 里。</p>
-            <div className="welcome-chips">
+            <div className="tome ornate">
+              <span className="corner tl" />
+              <span className="corner tr" />
+              <span className="corner bl" />
+              <span className="corner br" />
+              <div className="tome-label">CODEX · NIGHTHAWK</div>
+              <h1 className="welcome-mark">Nighthawk</h1>
+              <div className="rule" />
+              <p className="welcome-sub">本地运行的编码 agent。模型与密钥，皆藏于你自己的 config.toml。</p>
+              <div className="welcome-chips">
               {QUICK_PROMPTS.map((prompt) => (
-                <button key={prompt} type="button" className="chip" onClick={() => void startWithPrompt(prompt)}>
-                  {prompt}
-                </button>
-              ))}
+                  <button key={prompt} type="button" className="chip" onClick={() => void startWithPrompt(prompt)}>
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
             {composerNode}
           </div>
         ) : (
+          <>
           <div className="transcript">
             {visibleItems.map((item) => (
               <article key={item.id} className={`message ${item.role}`}>
@@ -839,6 +849,8 @@ export function App(): ReactElement {
               </article>
             ))}
           </div>
+          {composerNode}
+          </>
         )}
 
 
