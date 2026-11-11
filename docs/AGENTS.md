@@ -9,7 +9,7 @@ This repository uses VitePress for the documentation site. Most user-facing page
   - Guides: getting-started, migration, use-cases, interaction, sessions
   - Customization: mcp, skills, plugins, datasource, agents, hooks
   - Configuration: config-files, providers, overrides, env-vars, data-locations
-  - Reference: kimi-command, tools, slash-commands, keyboard
+  - Reference: nighthawk-command, tools, slash-commands, keyboard
   - Release notes: changelog
 - Navigation and sidebar are defined in `docs/.vitepress/config.ts`. Any new or renamed page must be wired there for both locales.
 

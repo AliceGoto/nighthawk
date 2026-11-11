@@ -85,7 +85,7 @@ NightHawk CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)�
 }
 ```
 
-随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://alicegoto.github.io/nighthawk/zh/guides/ides)，完整能力矩阵见 [`nighthawk acp` 参考](https://alicegoto.github.io/nighthawk/zh/reference/kimi-acp)。
+随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://alicegoto.github.io/nighthawk/zh/guides/ides)，完整能力矩阵见 [`nighthawk acp` 参考](https://alicegoto.github.io/nighthawk/zh/reference/nighthawk-acp)。
 
 ## 文档
 
@@ -94,7 +94,7 @@ NightHawk CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)�
 - [会话](https://alicegoto.github.io/nighthawk/zh/guides/sessions)
 - [在 IDE 中使用（ACP）](https://alicegoto.github.io/nighthawk/zh/guides/ides)
 - [配置](https://alicegoto.github.io/nighthawk/zh/configuration/config-files)
-- [命令参考](https://alicegoto.github.io/nighthawk/zh/reference/kimi-command)
+- [命令参考](https://alicegoto.github.io/nighthawk/zh/reference/nighthawk-command)
 
 ## 本地开发
 

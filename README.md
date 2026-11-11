@@ -81,7 +81,7 @@ For Zed, add this to `~/.config/zed/settings.json`:
 }
 ```
 
-Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://alicegoto.github.io/nighthawk/en/guides/ides) for JetBrains setup and troubleshooting, and the [`nighthawk acp` reference](https://alicegoto.github.io/nighthawk/en/reference/kimi-acp) for the full capability matrix.
+Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://alicegoto.github.io/nighthawk/en/guides/ides) for JetBrains setup and troubleshooting, and the [`nighthawk acp` reference](https://alicegoto.github.io/nighthawk/en/reference/nighthawk-acp) for the full capability matrix.
 
 ## Docs
 
@@ -90,7 +90,7 @@ Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://a
 - [Sessions](https://alicegoto.github.io/nighthawk/en/guides/sessions)
 - [Using in IDEs (ACP)](https://alicegoto.github.io/nighthawk/en/guides/ides)
 - [Configuration](https://alicegoto.github.io/nighthawk/en/configuration/config-files)
-- [Command reference](https://alicegoto.github.io/nighthawk/en/reference/kimi-command)
+- [Command reference](https://alicegoto.github.io/nighthawk/en/reference/nighthawk-command)
 
 ## Develop
 
