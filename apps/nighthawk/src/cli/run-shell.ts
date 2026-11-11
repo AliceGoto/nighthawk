@@ -1,0 +1,303 @@
+import { execFileSync, spawnSync } from 'node:child_process';
+import { homedir } from 'node:os';
+
+import {
+  createNightHawkHarness,
+  flushDiagnosticLogsSync,
+  log,
+  type NightHawkHarness,
+  type NightHawkHarnessOptions,
+  type TelemetryClient,
+} from '@nighthawk/nighthawk-sdk';
+import {
+  setCrashPhase,
+  setTelemetryContext,
+  shutdownTelemetry,
+  track,
+  withTelemetryContext,
+} from '@nighthawk/nighthawk-telemetry';
+
+import { CLI_SHUTDOWN_TIMEOUT_MS, CLI_UI_MODE, TUI_HOST_UI_CAPABILITIES } from '#/constant/app';
+import { detectPendingMigration, resolveLegacySourceHome, sameLegacyPath } from '#/migration/index';
+import type { TuiConfig } from '#/tui/config';
+import { loadTuiConfig, TuiConfigParseError } from '#/tui/config';
+import { CHROME_GUTTER } from '#/tui/constant/rendering';
+import { NightHawkTUI } from '#/tui/index';
+import { startupTrace } from '#/utils/startup-trace';
+import { currentTheme, getColorPalette } from '#/tui/theme';
+import { toTerminalHyperlink } from '#/utils/terminal-hyperlink';
+import { restoreTerminalModes } from '#/utils/terminal-restore';
+import { resolveCommandPath } from '#/utils/process/resolve-command';
+
+import type { CLIOptions } from './options';
+import { resolveAgentProfileSelection } from './agent-selection';
+import { createCliTelemetryBootstrap, initializeCliTelemetry } from './telemetry';
+import { detectNativeInstall } from './update/source';
+import { createNightHawkHostIdentity } from './host-identity';
+
+export async function runShell(
+  opts: CLIOptions,
+  version: string,
+  runOptions: { readonly migrateOnly?: boolean } = {},
+): Promise<void> {
+  const startedAt = Date.now();
+  const configStartedAt = startedAt;
+  let tuiConfig: TuiConfig;
+  let configWarning: string | undefined;
+  try {
+    tuiConfig = await loadTuiConfig();
+  } catch (error) {
+    if (!(error instanceof TuiConfigParseError)) throw error;
+    tuiConfig = error.fallback;
+    configWarning = error.message;
+  }
+
+  // Initialise the global Theme singleton before pi-tui grabs stdin.
+  const palette = await getColorPalette(tuiConfig.theme);
+  currentTheme.setPalette(palette);
+
+  const workDir = process.cwd();
+  const telemetryBootstrap = createCliTelemetryBootstrap();
+  const telemetryClient: TelemetryClient = {
+    track,
+    withContext: withTelemetryContext,
+    setContext: setTelemetryContext,
+  };
+  let tui!: NightHawkTUI;
+  const harnessOptions: NightHawkHarnessOptions = {
+    homeDir: telemetryBootstrap.homeDir,
+    identity: createNightHawkHostIdentity(version),
+    skillDirs: opts.skillsDirs,
+    // The TUI renders the mid-turn update panel; declaring it here is what
+    // makes the engine offer NotifyUser to this process and to no other host.
+    uiCapabilities: TUI_HOST_UI_CAPABILITIES,
+    telemetry: telemetryClient,
+    onOAuthRefresh: (outcome) => {
+      if (outcome.success) {
+        track('oauth_refresh', { outcome: 'success' });
+        return;
+      }
+      track('oauth_refresh', {
+        outcome: 'error',
+        reason: outcome.reason,
+      });
+    },
+    sshPassword: {
+      prompt: (environmentId) => tui.promptSshPassword(environmentId),
+      // ssh runs this as SSH_ASKPASS; `src/main.ts` recognises the askpass
+      // environment before argv, so re-entering this binary (SEA) or this
+      // script under the same node flags (npm / tsx dev) lands in the helper.
+      askpassCommand: detectNativeInstall()
+        ? [process.execPath]
+        : [process.execPath, ...process.execArgv, process.argv[1]!],
+    },
+    sessionStartedProperties: { yolo: opts.yolo, auto: opts.auto, plan: opts.plan, afk: false },
+  };
+  const harness = createNightHawkHarness(harnessOptions);
+  startupTrace('harness:created');
+  log.info('nighthawk starting', {
+    version,
+    uiMode: CLI_UI_MODE,
+    nodeVersion: process.version,
+    platform: `${process.platform}/${process.arch}`,
+    workDir,
+  });
+
+  await harness.ensureConfigFile();
+  const legacySource = resolveLegacySourceHome(process.env, homedir(), process.cwd());
+  const sourceIsTarget = sameLegacyPath(legacySource.sourceHome, harness.homeDir);
+  if (sourceIsTarget) {
+    process.stderr.write(
+      `  NIGHTHAWK_SHARE_DIR (${legacySource.sourceHome}) points at the NightHawk home; legacy migration is disabled. Unset it or point it at the kimi-cli data directory to migrate.\n`,
+    );
+  }
+  const migrationPlan = sourceIsTarget
+    ? null
+    : await detectPendingMigration({
+        sourceHome: legacySource.sourceHome,
+        skillsSourceHome: legacySource.skillsSourceHome,
+        targetHome: harness.homeDir,
+        ignoreMarker: runOptions.migrateOnly,
+      });
+  if (runOptions.migrateOnly === true && migrationPlan === null) {
+    if (!sourceIsTarget) {
+      process.stdout.write(`  Nothing to migrate from ${legacySource.sourceHome}.\n`);
+    }
+    await harness.close();
+    return;
+  }
+  const config = await harness.getConfig();
+  startupTrace('config:loaded');
+  // Config diagnostics (deprecated keys, invalid sections, ...) are surfaced
+  // by the TUI itself at `finishStartup` via `showConfigWarningsIfAny` —
+  // folded into the dim startup notice they were too easy to miss.
+  const configMs = Date.now() - configStartedAt;
+  // Resolve --agent/--agent-file once for the startup session; validateOptions
+  // has already rejected them alongside --session/--continue.
+  const agentProfile = await resolveAgentProfileSelection(opts, workDir);
+  tui = new NightHawkTUI(harness, {
+    cliOptions: opts,
+    agentProfile,
+    additionalDirs: opts.addDirs?.length ? opts.addDirs : undefined,
+    tuiConfig,
+    version,
+    workDir,
+    startupNotice: configWarning,
+    migrationPlan,
+    migrateOnly: runOptions.migrateOnly,
+    telemetryDisabled: config.telemetry === false,
+  });
+
+  initializeCliTelemetry({
+    harness,
+    bootstrap: telemetryBootstrap,
+    config,
+    version,
+    uiMode: CLI_UI_MODE,
+  });
+  setCrashPhase('runtime');
+
+  const trackLifecycleForSession = (
+    sessionId: string,
+    event: string,
+    properties?: Parameters<NightHawkHarness['track']>[1],
+  ) => {
+    if (sessionId.length === 0) {
+      harness.track(event, properties);
+      return;
+    }
+    withTelemetryContext({ sessionId }).track(event, properties);
+  };
+  const trackLifecycle = (event: string, properties?: Parameters<NightHawkHarness['track']>[1]) => {
+    trackLifecycleForSession(tui.getCurrentSessionId(), event, properties);
+  };
+
+  let savedStty: string | undefined;
+  // stty runs before tui.start() reaches the workspace trust gate, so it must
+  // never be resolved by name through PATH: a `.` or empty PATH segment would
+  // let an untrusted checkout plant an `stty` executable and run it pre-trust.
+  // resolveCommandPath returns an absolute path and refuses hits inside the
+  // cwd; when it cannot resolve stty, skip the save/restore entirely — it is
+  // best-effort terminal hygiene, not required for startup.
+  // stty is also POSIX-only, so skip it on Windows instead of relying on the
+  // catch below.
+  const sttyPath = process.platform === 'win32' ? undefined : resolveCommandPath('stty');
+  if (sttyPath !== undefined) {
+    try {
+      // stty operates on the terminal behind stdin, so stdin must be the TTY —
+      // piping /dev/null (ignore) makes stty fail with "not a tty".
+      const saved = execFileSync(sttyPath, ['-g'], {
+        encoding: 'utf8',
+        stdio: ['inherit', 'pipe', 'ignore'],
+      });
+      savedStty = saved.trim();
+      execFileSync(sttyPath, ['-ixon'], { stdio: ['inherit', 'ignore', 'ignore'] });
+    } catch {
+      /* ignore */
+    }
+  }
+  const restoreStty = (): void => {
+    if (sttyPath === undefined || savedStty === undefined) return;
+    const args = savedStty.split(/\s+/).filter((arg) => arg.length > 0);
+    if (args.length === 0) return;
+    spawnSync(sttyPath, args, { stdio: ['inherit', 'ignore', 'ignore'] });
+  };
+
+  // If we crash without going through NightHawkTUI.stop(), the terminal is left in
+  // raw mode with a hidden cursor and XON/XOFF flow control disabled. Restore
+  // both before exiting so the user's shell is usable afterwards.
+  const emergencyExit = (exitCode: number): void => {
+    // The crash log above is only enqueued into the async sink; flush it
+    // synchronously or the `process.exit()` below would drop the one line that
+    // explains why we crashed. Best-effort: an exit path must never throw.
+    try {
+      flushDiagnosticLogsSync();
+    } catch {
+      /* ignore */
+    }
+    restoreTerminalModes();
+    restoreStty();
+    process.exit(exitCode);
+  };
+  const onUncaughtException = (error: unknown): void => {
+    try {
+      log.error('uncaughtException, restoring terminal and exiting', { error: String(error) });
+    } catch {
+      /* ignore */
+    }
+    emergencyExit(1);
+  };
+  const onUnhandledRejection = (reason: unknown): void => {
+    try {
+      log.error('unhandledRejection, restoring terminal and exiting', { reason: String(reason) });
+    } catch {
+      /* ignore */
+    }
+    emergencyExit(1);
+  };
+  process.on('uncaughtException', onUncaughtException);
+  process.on('unhandledRejection', onUnhandledRejection);
+  // Remove the crash handlers once the TUI exits cleanly so repeated runShell()
+  // calls in the same process (e.g. tests) don't accumulate process listeners.
+  const removeCrashHandlers = (): void => {
+    process.off('uncaughtException', onUncaughtException);
+    process.off('unhandledRejection', onUnhandledRejection);
+  };
+
+  tui.onExit = async (exitCode = 0) => {
+    const sessionId = tui.getCurrentSessionId();
+    const hasContent = tui.hasSessionContent();
+    setCrashPhase('shutdown');
+    trackLifecycle('exit', { duration_ms: Date.now() - startedAt, tui_mode: tui.state.ui.mode });
+    try {
+      await shutdownTelemetry({ timeoutMs: CLI_SHUTDOWN_TIMEOUT_MS });
+    } catch {}
+    const gutter = ' '.repeat(CHROME_GUTTER);
+    process.stdout.write(`${gutter}Bye!\n`);
+    const hints: string[] = [];
+    if (sessionId !== '' && hasContent) {
+      hints.push(`${gutter}To resume this session: nighthawk -r ${sessionId}`);
+    }
+    if (tui.exitOpenUrl !== undefined) {
+      hints.push(`${gutter}open ${toTerminalHyperlink(tui.exitOpenUrl, tui.exitOpenUrl)}`);
+    }
+    if (hints.length > 0) {
+      process.stderr.write(`\n${hints.join('\n')}\n`);
+    }
+    removeCrashHandlers();
+    restoreStty();
+    if (tui.exitForegroundTask !== undefined) {
+      // `/web` starting a new server: the TUI has shut down cleanly; hand the
+      // terminal to the foreground server instead of exiting. The task runs
+      // until the server stops (Ctrl+C), then this process exits.
+      await tui.exitForegroundTask(exitCode);
+      return;
+    }
+    process.exit(exitCode);
+  };
+  try {
+    const initStartedAt = Date.now();
+    startupTrace('tui.start:begin');
+    await tui.start();
+    startupTrace('tui.start:end');
+    const initMs = Date.now() - initStartedAt;
+    const startupSessionId = tui.getCurrentSessionId();
+    const mcpMs = await tui.getStartupMcpMs();
+    trackLifecycleForSession(startupSessionId, 'startup_perf', {
+      duration_ms: Date.now() - startedAt,
+      config_ms: configMs,
+      init_ms: initMs,
+      mcp_ms: mcpMs,
+      tui_mode: tui.state.ui.mode,
+    });
+  } catch (error) {
+    removeCrashHandlers();
+    setCrashPhase('shutdown');
+    trackLifecycle('exit', { duration_ms: Date.now() - startedAt, tui_mode: tui.state.ui.mode });
+    try {
+      await shutdownTelemetry({ timeoutMs: CLI_SHUTDOWN_TIMEOUT_MS });
+    } catch {}
+    await harness.close();
+    throw error;
+  }
+}

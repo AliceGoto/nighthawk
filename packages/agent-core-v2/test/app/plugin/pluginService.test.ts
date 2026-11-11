@@ -1,0 +1,1194 @@
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+import { NIGHTHAWK_PROVIDER_NAME } from '@nighthawk/nighthawk-oauth';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  ScopeActivation,
+  _clearScopedRegistryForTests,
+  registerScopedService,
+} from '#/_base/di/scope';
+import { createScopedTestHost, stubPair, type ScopedTestHost } from '#/_base/di/test';
+import { ILogService } from '#/_base/log/log';
+import { IBootstrapService } from '#/app/bootstrap/bootstrap';
+import { IMcpOAuthService } from '#/app/mcpConfig/oauthService';
+import type { MarketplacePluginInstall } from '#/app/plugin/marketplaceService';
+import { IPluginService } from '#/app/plugin/plugin';
+import {
+  installResolvedMarketplacePlugin,
+  PluginService,
+} from '#/app/plugin/pluginService';
+import * as pluginStore from '#/app/plugin/store';
+import type { InstalledFile, InstalledRecord } from '#/app/plugin/store';
+import type { PluginMutationSummary, ReloadSummary } from '#/app/plugin/types';
+import { IRegionService } from '#/app/region/region';
+import { LifecycleScope } from '#/app/scopes';
+import {
+  ITelemetryService,
+  noopTelemetryService,
+  type TelemetryAppenderRecord,
+} from '#/app/telemetry/telemetry';
+import { TelemetryService } from '#/app/telemetry/telemetryService';
+import { ISkillDiscovery } from '#/features/skill/catalog/skillDiscovery';
+import { IProviderService, type ProviderConfig } from '#/llm-adapter/provider/provider';
+import type { McpOAuthService } from '#/mcpCore/oauth/service';
+
+import { stubLog } from '../../_base/log/stubs';
+import { stubBootstrap } from '../bootstrap/stubs';
+import { stubProviderService } from '../provider/stubs';
+
+vi.mock('#/app/plugin/store', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#/app/plugin/store')>();
+  return {
+    ...actual,
+    readInstalled: vi.fn(actual.readInstalled),
+    writeInstalled: vi.fn(actual.writeInstalled),
+  };
+});
+
+const readInstalled = vi.mocked(pluginStore.readInstalled);
+const writeInstalled = vi.mocked(pluginStore.writeInstalled);
+const cancelAuthorization = vi.fn(async () => undefined);
+const invalidateFromConfiguration = vi.fn(async () => undefined);
+
+function makeHost(
+  homeDir: string,
+  providers = stubProviderService(),
+  env: NodeJS.ProcessEnv = {},
+  telemetry: ITelemetryService = noopTelemetryService,
+): ScopedTestHost {
+  return createScopedTestHost([
+    stubPair(IBootstrapService, stubBootstrap(homeDir, env)),
+    stubPair(IProviderService, providers),
+    stubPair(IRegionService, {
+      _serviceBrand: undefined,
+      current: () => ({ region: 'mainland-cn', source: 'default' }),
+      getRegionAsync: async () => 'mainland-cn',
+    } satisfies IRegionService),
+    stubPair(ISkillDiscovery, {
+      _serviceBrand: undefined,
+      discover: async () => ({
+        skills: [],
+        skipped: [],
+        scannedRoots: [],
+        scannedDirectories: [],
+      }),
+    } satisfies ISkillDiscovery),
+    stubPair(ITelemetryService, telemetry),
+    stubPair(IMcpOAuthService, {
+      cancelAuthorizationFromConfiguration: cancelAuthorization,
+      invalidateFromConfiguration,
+    } as unknown as McpOAuthService),
+    stubPair(ILogService, stubLog()),
+  ]);
+}
+
+async function writeInstalledFile(homeDir: string, contents: string): Promise<void> {
+  await mkdir(path.join(homeDir, 'plugins'), { recursive: true });
+  await writeFile(path.join(homeDir, 'plugins', 'installed.json'), contents, 'utf8');
+}
+
+async function writeValidInstalledFile(homeDir: string): Promise<void> {
+  await writeInstalledFile(homeDir, JSON.stringify({ version: 1, plugins: [] }));
+}
+
+function installedFile(id: string, root: string, enabled = true): InstalledFile {
+  return {
+    version: 1,
+    plugins: [
+      {
+        id,
+        root,
+        source: 'local-path',
+        enabled,
+        installedAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        originalSource: root,
+      },
+    ],
+  };
+}
+
+function githubInstalledFile(id: string, root: string): InstalledFile {
+  const local = installedFile(id, root).plugins[0]!;
+  return {
+    version: 1,
+    plugins: [
+      {
+        ...local,
+        source: 'github',
+        originalSource: `https://github.com/example/${id}`,
+        github: {
+          owner: 'example',
+          repo: id,
+          ref: { kind: 'tag', value: 'v1.0.0' },
+        },
+      },
+    ],
+  };
+}
+
+async function persistedPluginIds(homeDir: string): Promise<readonly string[]> {
+  const contents = await readFile(path.join(homeDir, 'plugins', 'installed.json'), 'utf8');
+  return (JSON.parse(contents) as InstalledFile).plugins.map((plugin) => plugin.id);
+}
+
+function deferred<T>(): {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T | PromiseLike<T>) => void;
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+async function makePluginDir(name: string, manifest: Record<string, unknown>): Promise<string> {
+  const root = await mkdtemp(path.join(tmpdir(), `plugin-${name}-`));
+  await writeFile(
+    path.join(root, 'nighthawk.plugin.json'),
+    JSON.stringify({ name, ...manifest }),
+    'utf8',
+  );
+  return realpath(root);
+}
+
+describe('PluginService (plugin boundary)', () => {
+  const createdDirs: string[] = [];
+
+  async function makeHome(): Promise<string> {
+    const home = await mkdtemp(path.join(tmpdir(), 'nighthawk-home-'));
+    createdDirs.push(home);
+    return home;
+  }
+
+  beforeEach(() => {
+    _clearScopedRegistryForTests();
+    registerScopedService(
+      LifecycleScope.App,
+      IPluginService,
+      PluginService,
+      ScopeActivation.OnDemand,
+      'plugin',
+    );
+    readInstalled.mockClear();
+    writeInstalled.mockClear();
+    cancelAuthorization.mockClear();
+    invalidateFromConfiguration.mockClear();
+  });
+
+  afterEach(async () => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    while (createdDirs.length > 0) {
+      const dir = createdDirs.pop();
+      if (dir !== undefined) await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('suspends only the target plugin MCP servers across reloads and restores them on failure', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const root = await makePluginDir('cu-test', { mcpServers: { win: { command: 'example.exe', args: [] } } });
+    const other = await makePluginDir('other-test', { mcpServers: { win: { command: 'other.exe', args: [] } } });
+    createdDirs.push(root, other);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.installPlugin({ source: root });
+      await svc.installPlugin({ source: other });
+      const before = await svc.enabledMcpServers();
+      const snapshots: string[][] = [];
+      const listener = svc.onDidReload((event) => {
+        event.waitUntil(svc.enabledMcpServers().then((servers) => { snapshots.push(Object.keys(servers)); }));
+      });
+      await expect(svc.withMcpServersSuspended('cu-test', async () => {
+        expect(Object.keys(await svc.enabledMcpServers())).toEqual(['plugin-other-test:win']);
+        expect((await svc.mcpServerEntries()).find((entry) => entry.pluginId === 'cu-test')?.config.enabled).toBe(false);
+        await svc.reloadPlugins();
+        expect(Object.keys(await svc.enabledMcpServers())).toEqual(['plugin-other-test:win']);
+        throw new Error('install failed');
+      })).rejects.toThrow('install failed');
+      expect(await svc.enabledMcpServers()).toEqual(before);
+      expect(snapshots[0]).toEqual(['plugin-other-test:win']);
+      expect(snapshots.at(-1)).toEqual(Object.keys(before));
+      listener.dispose();
+    } finally { host.dispose(); }
+  });
+
+  it('degrades consumption-plane reads to empty when installed.json is corrupt', async () => {
+    const home = await makeHome();
+    await writeInstalledFile(home, '{ not json');
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.pluginSkillRoots()).resolves.toEqual([]);
+      await expect(svc.enabledSessionStarts()).resolves.toEqual([]);
+      await expect(svc.enabledSystemPrompts()).resolves.toEqual([]);
+      await expect(svc.enabledHooks()).resolves.toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('resolves empty plugin MCP servers instead of failing when installed.json is corrupt', async () => {
+    const home = await makeHome();
+    await writeInstalledFile(home, '{ not json');
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.enabledMcpServers()).resolves.toEqual({});
+      const failure = await svc.mcpServerEntries().catch((error: unknown) => error);
+      expect(failure).toMatchObject({ code: 'plugin.load_failed' });
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('throws plugin.load_failed with a repair hint on management-plane calls when installed.json is corrupt', async () => {
+    const home = await makeHome();
+    await writeInstalledFile(home, '{ not json');
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const failure = await svc.listPlugins().catch((error: unknown) => error);
+      expect(failure).toMatchObject({ code: 'plugin.load_failed' });
+      expect((failure as Error).message).toContain('installed.json');
+      expect((failure as Error).message).toContain('/plugins reload');
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('keeps the first load failure latched after the file is fixed', async () => {
+    const home = await makeHome();
+    await writeInstalledFile(home, '{ not json');
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.pluginSkillRoots()).resolves.toEqual([]);
+
+      const pluginRoot = await makePluginDir('recovery-demo', {});
+      createdDirs.push(pluginRoot);
+      await writeInstalledFile(home, JSON.stringify(installedFile('recovery-demo', pluginRoot)));
+
+      await expect(svc.listPlugins()).rejects.toMatchObject({ code: 'plugin.load_failed' });
+      await expect(svc.pluginSkillRoots()).resolves.toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('recovers the management plane through an explicit reload after the file is fixed', async () => {
+    const home = await makeHome();
+    await writeInstalledFile(home, '{ not json');
+    const telemetry = new TelemetryService();
+    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      expect(svc.enabledPluginIds()).toBeUndefined();
+      await expect(svc.listPlugins()).rejects.toMatchObject({ code: 'plugin.load_failed' });
+      expect(svc.enabledPluginIds()).toBeUndefined();
+
+      const pluginRoot = await makePluginDir('recovery-demo', {});
+      createdDirs.push(pluginRoot);
+      await writeInstalledFile(home, JSON.stringify(installedFile('recovery-demo', pluginRoot)));
+      const reloads: ReloadSummary[] = [];
+      svc.onDidReload(({ added, removed, errors }) => reloads.push({ added, removed, errors }));
+
+      await expect(svc.reloadPlugins()).resolves.toEqual({
+        added: ['recovery-demo'],
+        removed: [],
+        errors: [],
+      });
+      await expect(svc.listPlugins()).resolves.toEqual([
+        expect.objectContaining({ id: 'recovery-demo' }),
+      ]);
+      expect(reloads).toEqual([{ added: ['recovery-demo'], removed: [], errors: [] }]);
+      expect(svc.enabledPluginIds()).toEqual(['recovery-demo']);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('installs a pre-resolved marketplace artifact without resolving the catalog again', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const fixtureDir = await mkdtemp(path.join(tmpdir(), 'resolved-plugin-'));
+    createdDirs.push(fixtureDir);
+    const sourceRoot = path.join(fixtureDir, 'source');
+    await mkdir(sourceRoot);
+    await writeFile(
+      path.join(sourceRoot, 'nighthawk.plugin.json'),
+      JSON.stringify({ name: 'resolved-demo', version: '2.0.0' }),
+      'utf8',
+    );
+    const zipPath = path.join(fixtureDir, 'plugin.zip');
+    execFileSync('zip', ['-qr', zipPath, '.'], { cwd: sourceRoot });
+    const buffer = await readFile(zipPath);
+    const artifactFetch = vi.fn(async () => new Response(buffer)) as unknown as typeof fetch;
+    const catalogFetch = vi.fn();
+    vi.stubGlobal('fetch', catalogFetch);
+    const marketplaceSource = 'https://marketplace.example.test/catalog?token=secret&signature=xyz';
+    const resolved: MarketplacePluginInstall = {
+      source: 'https://marketplace.example.test/resolved-demo.zip',
+      version: '2.0.0',
+      sha256sum: createHash('sha256').update(buffer).digest('hex'),
+      catalogId: 'resolved-demo',
+      marketplaceSource,
+      origin: 'marketplace',
+      expectedPluginId: 'resolved-demo',
+      fetchImpl: artifactFetch,
+    };
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const reloads: ReloadSummary[] = [];
+      svc.onDidReload(({ added, removed, errors }) => reloads.push({ added, removed, errors }));
+
+      const summary = await installResolvedMarketplacePlugin(
+        svc,
+        { marketplaceId: 'resolved-demo', expectedVersion: '2.0.0' },
+        resolved,
+      );
+
+      expect(summary).toMatchObject({
+        id: 'resolved-demo',
+        version: '2.0.0',
+        state: 'ok',
+        origin: 'marketplace',
+      });
+      expect(artifactFetch).toHaveBeenCalledTimes(1);
+      expect(catalogFetch).not.toHaveBeenCalled();
+      expect(reloads).toEqual([{ added: [], removed: [], errors: [] }]);
+      const installed = JSON.parse(
+        await readFile(path.join(home, 'plugins', 'installed.json'), 'utf8'),
+      ) as InstalledFile;
+      expect(installed.plugins[0]?.marketplaceSource).toBe(
+        `sha256:${createHash('sha256').update(marketplaceSource).digest('hex')}`,
+      );
+      expect(installed.plugins[0]?.originalSource).toBe(resolved.source);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('rejects a pre-resolved marketplace artifact unavailable to the current client', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const marketplaceSource = 'https://marketplace.example.test/plugins/marketplace';
+    await writeFile(
+      path.join(home, 'plugins', 'availability.json'),
+      JSON.stringify({
+        version: 1,
+        sources: {
+          [marketplaceSource]: {
+            'resolved-demo': { clients: ['desktop'], checkedAt: '2026-01-01T00:00:00.000Z' },
+          },
+        },
+      }),
+      'utf8',
+    );
+    const artifactFetch = vi.fn() as unknown as typeof fetch;
+    const resolved: MarketplacePluginInstall = {
+      source: 'https://marketplace.example.test/resolved-demo.zip',
+      version: '2.0.0',
+      sha256sum: 'a'.repeat(64),
+      catalogId: 'resolved-demo',
+      marketplaceSource,
+      origin: 'marketplace',
+      expectedPluginId: 'resolved-demo',
+      fetchImpl: artifactFetch,
+    };
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(installResolvedMarketplacePlugin(
+        svc,
+        { marketplaceId: 'resolved-demo', expectedVersion: '2.0.0' },
+        resolved,
+      )).rejects.toThrow('does not support cli');
+      expect(artifactFetch).not.toHaveBeenCalled();
+      await expect(svc.listPlugins()).resolves.toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('delivers availability reloads after releasing the mutation queue', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const listener = vi.fn();
+      svc.onDidReload((event) => {
+        event.waitUntil(
+          Promise.all([svc.enabledMcpServers(), svc.mcpServerEntries()]).then(() => {
+            listener();
+          }),
+        );
+      });
+      await svc.reconcileAvailability({
+        source: 'https://marketplace.example.test/plugins/marketplace',
+        plugins: [{
+          id: 'demo',
+          displayName: 'Demo',
+          source: 'https://cdn.example.test/demo.zip',
+          clients: ['desktop'],
+        }],
+      });
+      expect(listener).toHaveBeenCalledOnce();
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('invalidates removed plugin OAuth credentials without a workspace', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const url = 'https://mcp.example.test/mcp';
+    const pluginRoot = await makePluginDir('oauth-remove-demo', {
+      mcpServers: { docs: { url } },
+    });
+    createdDirs.push(pluginRoot);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.installPlugin({ source: pluginRoot });
+      await svc.removePlugin({ id: 'oauth-remove-demo' });
+
+      expect(cancelAuthorization).toHaveBeenCalledWith(undefined, expect.any(String), url);
+      expect(invalidateFromConfiguration).toHaveBeenCalledOnce();
+      expect(invalidateFromConfiguration).toHaveBeenCalledWith(
+        undefined,
+        expect.any(String),
+        url,
+      );
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('fires onDidReload after install / enable / disable / remove so workspace consumers refresh immediately', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const pluginRoot = await makePluginDir('notify-demo', { description: 'demo plugin' });
+    createdDirs.push(pluginRoot);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const reloads: ReloadSummary[] = [];
+      svc.onDidReload((summary) => reloads.push(summary));
+
+      await svc.installPlugin({ source: pluginRoot });
+      await svc.setPluginEnabled({ id: 'notify-demo', enabled: false });
+      await svc.setPluginEnabled({ id: 'notify-demo', enabled: true });
+      await svc.removePlugin({ id: 'notify-demo' });
+
+      expect(reloads).toHaveLength(4);
+      await expect(svc.listPlugins()).resolves.toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('fires onDidMutate after install / enable / disable / remove but not on an explicit reloadPlugins', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const pluginRoot = await makePluginDir('mutate-demo', { description: 'demo plugin' });
+    createdDirs.push(pluginRoot);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const mutations: PluginMutationSummary[] = [];
+      svc.onDidMutate((summary) => mutations.push(summary));
+
+      await svc.installPlugin({ source: pluginRoot });
+      await svc.setPluginEnabled({ id: 'mutate-demo', enabled: false });
+      await svc.setPluginEnabled({ id: 'mutate-demo', enabled: true });
+      await svc.removePlugin({ id: 'mutate-demo' });
+      expect(mutations).toHaveLength(4);
+      expect(mutations.map((summary) => summary.mutation)).toEqual([
+        { kind: 'install', id: 'mutate-demo' },
+        { kind: 'disable', id: 'mutate-demo' },
+        { kind: 'enable', id: 'mutate-demo' },
+        { kind: 'remove', id: 'mutate-demo' },
+      ]);
+
+      await svc.reloadPlugins();
+      expect(mutations).toHaveLength(4);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('tracks plugin enable and disable toggles', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const pluginRoot = await makePluginDir('toggle-demo', {});
+    createdDirs.push(pluginRoot);
+    const telemetry = new TelemetryService();
+    const events: TelemetryAppenderRecord[] = [];
+    telemetry.addAppender({ track: (record) => events.push(record) });
+    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.installPlugin({ source: pluginRoot });
+      expect(svc.enabledPluginIds()).toEqual(['toggle-demo']);
+      writeInstalled.mockRejectedValueOnce(new Error('persist failed'));
+      await expect(svc.setPluginEnabled({ id: 'toggle-demo', enabled: false })).rejects.toThrow(
+        'persist failed',
+      );
+      expect(svc.enabledPluginIds()).toEqual(['toggle-demo']);
+      expect(events).toEqual([]);
+      await svc.setPluginEnabled({ id: 'toggle-demo', enabled: false });
+      await svc.setPluginEnabled({ id: 'toggle-demo', enabled: true });
+      await svc.removePlugin({ id: 'toggle-demo' });
+
+      expect(events.map((record) => [record.event, record.properties])).toEqual([
+        ['plugin_toggle', { plugin_id: 'toggle-demo', enabled: false, enabled_plugins: '' }],
+        [
+          'plugin_toggle',
+          { plugin_id: 'toggle-demo', enabled: true, enabled_plugins: 'toggle-demo' },
+        ],
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('reports committed plugin state on toggle events with canonical ids', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('alpha', {});
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('alpha', pluginRoot)));
+    const telemetry = new TelemetryService();
+    const events: TelemetryAppenderRecord[] = [];
+    telemetry.addAppender({ track: (record) => events.push(record) });
+    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.listPlugins();
+      await svc.setPluginEnabled({ id: 'ALPHA', enabled: false });
+      await svc.setPluginEnabled({ id: 'alpha', enabled: true });
+      await svc.removePlugin({ id: 'alpha' });
+
+      expect(events.map((record) => [record.event, record.properties])).toEqual([
+        ['plugin_toggle', { plugin_id: 'alpha', enabled: false, enabled_plugins: '' }],
+        ['plugin_toggle', { plugin_id: 'alpha', enabled: true, enabled_plugins: 'alpha' }],
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('emits no toggle and reports committed state when a persisted toggle cannot reload', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('alpha', {});
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('alpha', pluginRoot)));
+    const telemetry = new TelemetryService();
+    const events: TelemetryAppenderRecord[] = [];
+    telemetry.addAppender({ track: (record) => events.push(record) });
+    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.listPlugins();
+      readInstalled.mockRejectedValueOnce(new Error('reload failed'));
+
+      await expect(svc.setPluginEnabled({ id: 'alpha', enabled: false })).rejects.toThrow(
+        'reload failed',
+      );
+      expect(events).toEqual([]);
+      await expect(svc.listPlugins()).resolves.toEqual([
+        expect.objectContaining({ id: 'alpha', enabled: false }),
+      ]);
+      expect(svc.enabledPluginIds()).toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('reports only enabled, healthy plugin ids in sorted order after the initial load', async () => {
+    const home = await makeHome();
+    const installed: InstalledRecord[] = [];
+    for (const id of ['zeta', 'disabled', 'alpha', 'broken']) {
+      const root = await makePluginDir(id, id === 'broken' ? { name: 'invalid name' } : {});
+      createdDirs.push(root);
+      installed.push(...installedFile(id, root, id !== 'disabled').plugins);
+    }
+    await writeInstalledFile(home, JSON.stringify({ version: 1, plugins: installed }));
+    const telemetry = new TelemetryService();
+    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.listPlugins();
+      expect(svc.enabledPluginIds()).toEqual(['alpha', 'zeta']);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('records concurrent toggles in commit order without waiting for reload delivery', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('sequencing-demo', {});
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('sequencing-demo', pluginRoot)));
+    const telemetry = new TelemetryService();
+    const events: TelemetryAppenderRecord[] = [];
+    telemetry.addAppender({ track: (record) => events.push(record) });
+    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.listPlugins()).resolves.toHaveLength(1);
+
+      const listenerCalled = deferred<void>();
+      const gate = deferred<void>();
+      let reloadCount = 0;
+      svc.onDidReload((event) => {
+        reloadCount++;
+        if (reloadCount !== 1) return;
+        listenerCalled.resolve(undefined);
+        event.waitUntil(gate.promise);
+      });
+
+      const mutation = svc.setPluginEnabled({ id: 'sequencing-demo', enabled: false });
+      let mutationSettled = false;
+      void mutation.then(() => {
+        mutationSettled = true;
+      });
+      await listenerCalled.promise;
+      await svc.setPluginEnabled({ id: 'sequencing-demo', enabled: true });
+      expect(mutationSettled).toBe(false);
+      expect(events.map((record) => [
+        record.properties['enabled'],
+        record.properties['enabled_plugins'],
+      ])).toEqual([
+        [false, ''],
+        [true, 'sequencing-demo'],
+      ]);
+      gate.resolve(undefined);
+      await mutation;
+      expect(mutationSettled).toBe(true);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('resolves a mutation only after reload listeners settle their waitUntil work', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('barrier-demo', {});
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('barrier-demo', pluginRoot)));
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.listPlugins()).resolves.toHaveLength(1);
+
+      const listenerCalled = deferred<void>();
+      const reconcileGate = deferred<void>();
+      let reconciled = false;
+      svc.onDidReload((event) => {
+        listenerCalled.resolve(undefined);
+        event.waitUntil(
+          reconcileGate.promise.then(() => {
+            reconciled = true;
+          }),
+        );
+      });
+
+      const mutation = svc.setPluginEnabled({ id: 'barrier-demo', enabled: false });
+      let mutationSettled = false;
+      void mutation.then(() => {
+        mutationSettled = true;
+      });
+      await listenerCalled.promise;
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      expect(mutationSettled).toBe(false);
+
+      reconcileGate.resolve(undefined);
+      await mutation;
+      expect(reconciled).toBe(true);
+      await expect(svc.listPlugins()).resolves.toEqual([
+        expect.objectContaining({ id: 'barrier-demo', enabled: false }),
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('does not reject a mutation when a reload listener waitUntil promise rejects', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('tolerant-demo', {});
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('tolerant-demo', pluginRoot)));
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.listPlugins()).resolves.toHaveLength(1);
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      svc.onDidReload((event) => {
+        event.waitUntil(Promise.reject(new Error('workspace reconcile failed')));
+      });
+
+      await expect(
+        svc.setPluginEnabled({ id: 'tolerant-demo', enabled: false }),
+      ).resolves.toBeUndefined();
+      await expect(svc.listPlugins()).resolves.toEqual([
+        expect.objectContaining({ id: 'tolerant-demo', enabled: false }),
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('serves enabled plugin system-prompt sections on the consumption plane', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('prompt-demo', { systemPrompt: 'Always cite sources.' });
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('prompt-demo', pluginRoot)));
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.enabledSystemPrompts()).resolves.toEqual([
+        { pluginId: 'prompt-demo', content: 'Always cite sources.' },
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('keeps the last valid consumption snapshot after a reload failure', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('stable-demo', { skills: './skills/' });
+    createdDirs.push(pluginRoot);
+    await mkdir(path.join(pluginRoot, 'skills'));
+    await writeInstalledFile(home, JSON.stringify(installedFile('stable-demo', pluginRoot)));
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.pluginSkillRoots()).resolves.toEqual([
+        expect.objectContaining({ plugin: expect.objectContaining({ id: 'stable-demo' }) }),
+      ]);
+
+      await writeInstalledFile(home, '{ not json');
+      await expect(svc.reloadPlugins()).rejects.toMatchObject({ code: 'plugin.load_failed' });
+      await expect(svc.listPlugins()).rejects.toMatchObject({ code: 'plugin.load_failed' });
+      await expect(svc.pluginSkillRoots()).resolves.toEqual([
+        expect.objectContaining({ plugin: expect.objectContaining({ id: 'stable-demo' }) }),
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('uses one initial plugin snapshot for concurrent readers', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const pluginRoot = await makePluginDir('snapshot-demo', { skills: './skills/' });
+    createdDirs.push(pluginRoot);
+    await mkdir(path.join(pluginRoot, 'skills'));
+    readInstalled.mockImplementationOnce(async () => installedFile('snapshot-demo', pluginRoot));
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const [plugins, roots] = await Promise.all([svc.listPlugins(), svc.pluginSkillRoots()]);
+
+      expect(plugins).toEqual([expect.objectContaining({ id: 'snapshot-demo' })]);
+      expect(roots).toEqual([
+        expect.objectContaining({
+          plugin: expect.objectContaining({ id: 'snapshot-demo' }),
+        }),
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('waits for a pending install before reading managed plugin files', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const downloadStarted = deferred<void>();
+    const downloadResponse = deferred<Response>();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        downloadStarted.resolve(undefined);
+        return downloadResponse.promise;
+      }) as typeof fetch,
+    );
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.listPlugins()).resolves.toEqual([]);
+
+      const install = svc.installPlugin({ source: 'https://downloads.example.test/plugin.zip' });
+      await downloadStarted.promise;
+
+      const roots = svc.pluginSkillRoots();
+      let rootsSettled = false;
+      void roots.then(() => {
+        rootsSettled = true;
+      });
+      await Promise.resolve();
+      expect(rootsSettled).toBe(false);
+
+      downloadResponse.resolve(new Response('not a zip archive', { status: 200 }));
+      await expect(install).rejects.toThrow();
+      await expect(roots).resolves.toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('restores the previous managed copy when reinstall persistence fails', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const previousSource = await makePluginDir('demo', { version: '1.0.0' });
+    const nextSource = await makePluginDir('demo', { version: '2.0.0' });
+    createdDirs.push(previousSource, nextSource);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await svc.installPlugin({ source: previousSource });
+      const previous = await svc.getPluginInfo({ id: 'demo' });
+
+      writeInstalled.mockRejectedValueOnce(new Error('persist failed'));
+      await expect(svc.installPlugin({ source: nextSource })).rejects.toThrow('persist failed');
+
+      await expect(svc.getPluginInfo({ id: 'demo' })).resolves.toEqual(
+        expect.objectContaining({ root: previous.root, version: '1.0.0' }),
+      );
+      await expect(
+        readFile(path.join(previous.root, 'nighthawk.plugin.json'), 'utf8'),
+      ).resolves.toContain('"version":"1.0.0"');
+      await expect(readdir(path.join(home, 'plugins', 'managed'))).resolves.toEqual(['demo']);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('does not block consumption reads while an update check is pending', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('github-demo', { skills: './skills/' });
+    createdDirs.push(pluginRoot);
+    await mkdir(path.join(pluginRoot, 'skills'));
+    await writeInstalledFile(home, JSON.stringify(githubInstalledFile('github-demo', pluginRoot)));
+    const lookupStarted = deferred<void>();
+    const lookupResponse = deferred<Response>();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        lookupStarted.resolve(undefined);
+        return lookupResponse.promise;
+      }) as typeof fetch,
+    );
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.listPlugins()).resolves.toEqual([
+        expect.objectContaining({ id: 'github-demo' }),
+      ]);
+
+      const updates = svc.checkUpdates();
+      await lookupStarted.promise;
+
+      await expect(svc.pluginSkillRoots()).resolves.toEqual([
+        expect.objectContaining({ plugin: expect.objectContaining({ id: 'github-demo' }) }),
+      ]);
+
+      lookupResponse.resolve(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location: 'https://github.com/example/github-demo/releases/tag/v2.0.0',
+          },
+        }),
+      );
+      await expect(updates).resolves.toEqual([
+        expect.objectContaining({ id: 'github-demo', updateAvailable: true }),
+      ]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('keeps an explicit reload result when the first load is still in flight', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const pluginRoot = await makePluginDir('old-demo', {});
+    createdDirs.push(pluginRoot);
+    const firstRead = deferred<InstalledFile>();
+    const firstReadStarted = deferred<void>();
+    readInstalled.mockImplementationOnce(async () => {
+      firstReadStarted.resolve(undefined);
+      return firstRead.promise;
+    });
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const reloads: ReloadSummary[] = [];
+      svc.onDidReload(({ added, removed, errors }) => reloads.push({ added, removed, errors }));
+
+      const firstList = svc.listPlugins();
+      await firstReadStarted.promise;
+      const reload = svc.reloadPlugins();
+      firstRead.resolve(installedFile('old-demo', pluginRoot));
+
+      await expect(firstList).resolves.toEqual([expect.objectContaining({ id: 'old-demo' })]);
+      await expect(reload).resolves.toEqual({ added: [], removed: ['old-demo'], errors: [] });
+      await expect(svc.listPlugins()).resolves.toEqual([]);
+      await expect(persistedPluginIds(home)).resolves.toEqual([]);
+      expect(reloads).toEqual([{ added: [], removed: ['old-demo'], errors: [] }]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('keeps a queued removal when reload is already reading the installed file', async () => {
+    const home = await makeHome();
+    const pluginRoot = await makePluginDir('demo', {});
+    createdDirs.push(pluginRoot);
+    await writeInstalledFile(home, JSON.stringify(installedFile('demo', pluginRoot)));
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.listPlugins()).resolves.toEqual([
+        expect.objectContaining({ id: 'demo', enabled: true }),
+      ]);
+      const reloadRead = deferred<InstalledFile>();
+      const reloadReadStarted = deferred<void>();
+      readInstalled.mockImplementationOnce(async () => {
+        reloadReadStarted.resolve(undefined);
+        return reloadRead.promise;
+      });
+
+      const reload = svc.reloadPlugins();
+      await reloadReadStarted.promise;
+      const remove = svc.removePlugin({ id: 'demo' });
+      await Promise.resolve();
+      reloadRead.resolve(installedFile('demo', pluginRoot));
+
+      await expect(reload).resolves.toEqual({ added: [], removed: [], errors: [] });
+      await expect(remove).resolves.toBeUndefined();
+      await expect(svc.listPlugins()).resolves.toEqual([]);
+      await expect(persistedPluginIds(home)).resolves.toEqual([]);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('throws plugin.not_found from getPluginInfo for an unknown plugin', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      await expect(svc.getPluginInfo({ id: 'nope' })).rejects.toMatchObject({
+        code: 'plugin.not_found',
+      });
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('injects the managed NightHawk endpoint env into stdio plugin MCP servers only', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const host = makeHost(
+      home,
+      stubProviderService({
+        [NIGHTHAWK_PROVIDER_NAME]: {
+          baseUrl: 'https://api.example.test/',
+          oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.example.test' },
+        },
+      }),
+    );
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const pluginRoot = await makePluginDir('demo', {
+        mcpServers: {
+          finance: { command: 'finance-mcp', env: { CUSTOM: '1' } },
+          docs: { url: 'https://example.test/mcp' },
+        },
+      });
+      createdDirs.push(pluginRoot);
+      await svc.installPlugin({ source: pluginRoot });
+
+      const servers = await svc.enabledMcpServers();
+      const managedRoot = path.join(home, 'plugins', 'managed', 'demo');
+      expect(servers['plugin-demo:finance']).toEqual(
+        expect.objectContaining({
+          env: expect.objectContaining({
+            NIGHTHAWK_BASE_URL: 'https://api.example.test/',
+            NIGHTHAWK_OAUTH_HOST: 'https://auth.example.test',
+            CUSTOM: '1',
+            NIGHTHAWK_HOME: home,
+            NIGHTHAWK_PLUGIN_ROOT: await realpath(managedRoot),
+          }),
+        }),
+      );
+      expect(JSON.stringify(servers['plugin-demo:docs'])).not.toContain('NIGHTHAWK_BASE_URL');
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('merges the managed NightHawk endpoint env into stdio MCP server entries with provenance', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const host = makeHost(
+      home,
+      stubProviderService({
+        [NIGHTHAWK_PROVIDER_NAME]: {
+          baseUrl: 'https://api.example.test/',
+          oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.example.test' },
+        },
+      }),
+    );
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const pluginRoot = await makePluginDir('demo', {
+        mcpServers: {
+          finance: { command: 'finance-mcp', env: { CUSTOM: '1' } },
+          docs: { url: 'https://example.test/mcp' },
+        },
+      });
+      createdDirs.push(pluginRoot);
+      await svc.installPlugin({ source: pluginRoot });
+      await svc.setPluginMcpServerEnabled({ id: 'demo', server: 'finance', enabled: false });
+
+      const entries = await svc.mcpServerEntries();
+      const managedRoot = await realpath(path.join(home, 'plugins', 'managed', 'demo'));
+      const finance = entries.find((entry) => entry.name === 'plugin-demo:finance');
+      expect(finance).toEqual(expect.objectContaining({ pluginId: 'demo', serverName: 'finance' }));
+      expect(finance?.config).toEqual(
+        expect.objectContaining({
+          enabled: false,
+          env: expect.objectContaining({
+            NIGHTHAWK_BASE_URL: 'https://api.example.test/',
+            NIGHTHAWK_OAUTH_HOST: 'https://auth.example.test',
+            CUSTOM: '1',
+            NIGHTHAWK_HOME: home,
+            NIGHTHAWK_PLUGIN_ROOT: managedRoot,
+          }),
+        }),
+      );
+      const docs = entries.find((entry) => entry.name === 'plugin-demo:docs');
+      expect(docs).toEqual(expect.objectContaining({ pluginId: 'demo', serverName: 'docs' }));
+      expect(docs?.config.enabled).toBe(true);
+      expect(JSON.stringify(docs?.config)).not.toContain('NIGHTHAWK_BASE_URL');
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('waits for provider config before injecting persisted managed endpoints', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const providerConfigs: Record<string, ProviderConfig> = {};
+    const readyAccessed = deferred<void>();
+    const readyGate = deferred<void>();
+    const providers = stubProviderService(providerConfigs, readyGate.promise);
+    Object.defineProperty(providers, 'ready', {
+      get: () => {
+        readyAccessed.resolve(undefined);
+        return readyGate.promise;
+      },
+    });
+    const host = makeHost(home, providers);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const pluginRoot = await makePluginDir('ready-demo', {
+        mcpServers: { finance: { command: 'finance-mcp' } },
+      });
+      createdDirs.push(pluginRoot);
+      await svc.installPlugin({ source: pluginRoot });
+
+      const servers = svc.enabledMcpServers();
+      await readyAccessed.promise;
+      providerConfigs[NIGHTHAWK_PROVIDER_NAME] = {
+        baseUrl: 'https://ready.example.test/',
+        oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.ready.example.test' },
+      };
+      readyGate.resolve(undefined);
+
+      await expect(servers).resolves.toMatchObject({
+        'plugin-ready-demo:finance': {
+          env: {
+            NIGHTHAWK_BASE_URL: 'https://ready.example.test/',
+            NIGHTHAWK_OAUTH_HOST: 'https://auth.ready.example.test',
+          },
+        },
+      });
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('prefers explicit NIGHTHAWK_BASE_URL / NIGHTHAWK_OAUTH_HOST env over the persisted provider', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const host = makeHost(
+      home,
+      stubProviderService({
+        [NIGHTHAWK_PROVIDER_NAME]: {
+          baseUrl: 'https://api.example.test',
+          oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.example.test' },
+        },
+      }),
+      {
+        NIGHTHAWK_BASE_URL: 'https://env.example.test/',
+        NIGHTHAWK_OAUTH_HOST: 'https://legacy.example.test',
+      },
+    );
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const pluginRoot = await makePluginDir('demo', {
+        mcpServers: { finance: { command: 'finance-mcp' } },
+      });
+      createdDirs.push(pluginRoot);
+      await svc.installPlugin({ source: pluginRoot });
+
+      const servers = await svc.enabledMcpServers();
+      expect(servers['plugin-demo:finance']).toEqual(
+        expect.objectContaining({
+          env: expect.objectContaining({
+            NIGHTHAWK_BASE_URL: 'https://env.example.test',
+            NIGHTHAWK_OAUTH_HOST: 'https://legacy.example.test',
+          }),
+        }),
+      );
+    } finally {
+      host.dispose();
+    }
+  });
+
+  it('does not inject managed env when neither env nor the nighthawk provider supplies it', async () => {
+    const home = await makeHome();
+    await writeValidInstalledFile(home);
+    const host = makeHost(home);
+    try {
+      const svc = host.app.accessor.get(IPluginService);
+      const pluginRoot = await makePluginDir('demo', {
+        mcpServers: { finance: { command: 'finance-mcp', env: { CUSTOM: '1' } } },
+      });
+      createdDirs.push(pluginRoot);
+      await svc.installPlugin({ source: pluginRoot });
+
+      const servers = await svc.enabledMcpServers();
+      const env = (servers['plugin-demo:finance'] as { env?: Record<string, string> }).env ?? {};
+      expect(env['CUSTOM']).toBe('1');
+      expect(env).not.toHaveProperty('NIGHTHAWK_BASE_URL');
+      expect(env).not.toHaveProperty('NIGHTHAWK_OAUTH_HOST');
+    } finally {
+      host.dispose();
+    }
+  });
+});

@@ -1,0 +1,146 @@
+import { apiKeyEnvMissingMessage } from '@nighthawk/nighthawk-oauth/provider-credential';
+import type {
+  AuthManagedUsageResult,
+  AuthManagedUserInfoResult,
+  BearerTokenProvider,
+  NightHawkOAuthLoginOptions,
+  NightHawkOAuthLoginResult,
+  NightHawkOAuthLogoutResult,
+  NightHawkOAuthTokenRef,
+  NightHawkRegion,
+} from '@nighthawk/nighthawk-oauth';
+import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiation';
+import { Error2 } from '#/_base/errors/errors';
+
+import { CONFIG_INVALID_ERROR_CODE } from '#/llm-adapter/contract/errors';
+import type { OAuthRef } from '#/llm-adapter/provider/provider';
+
+import { AuthErrors } from './errors';
+import type {
+  OAuthFlowSnapshot,
+  OAuthFlowStart,
+  OAuthLoginCancelResponse,
+  OAuthLogoutResponse,
+  RefreshOAuthProviderModelsResponse,
+} from './oauthProtocol';
+
+export interface AuthStatus {
+  readonly loggedIn: boolean;
+  readonly provider?: string;
+}
+
+export interface OAuthLoginOptions {
+  readonly region?: NightHawkRegion;
+}
+
+export interface IOAuthService {
+  readonly _serviceBrand: undefined;
+
+  startLogin(provider?: string, options?: OAuthLoginOptions): Promise<OAuthFlowStart>;
+  getFlow(provider?: string): OAuthFlowSnapshot | undefined;
+  cancelLogin(provider?: string): Promise<OAuthLoginCancelResponse>;
+  logout(provider?: string): Promise<OAuthLogoutResponse>;
+  status(provider?: string): Promise<AuthStatus>;
+  refreshOAuthProviderModels(): Promise<RefreshOAuthProviderModelsResponse>;
+  getManagedUsage(provider?: string): Promise<AuthManagedUsageResult>;
+  getManagedUserInfo(provider?: string): Promise<AuthManagedUserInfoResult>;
+  resolveTokenProvider(provider: string, oauthRef?: OAuthRef): BearerTokenProvider | undefined;
+  getCachedAccessToken(provider: string, oauthRef?: OAuthRef): Promise<string | undefined>;
+  getRegion(): NightHawkRegion;
+  getRegionAsync(): Promise<NightHawkRegion>;
+}
+
+export const IOAuthService: ServiceIdentifier<IOAuthService> =
+  createDecorator<IOAuthService>('oauthService');
+
+export interface IOAuthToolkit {
+  readonly _serviceBrand: undefined;
+
+  login(providerName?: string, options?: NightHawkOAuthLoginOptions): Promise<NightHawkOAuthLoginResult>;
+  logout(providerName?: string, oauthRef?: NightHawkOAuthTokenRef): Promise<NightHawkOAuthLogoutResult>;
+  getCachedAccessToken(
+    providerName?: string,
+    oauthRef?: NightHawkOAuthTokenRef,
+  ): Promise<string | undefined>;
+  tokenProvider(providerName?: string, oauthRef?: NightHawkOAuthTokenRef): BearerTokenProvider;
+  getManagedUsage(
+    providerName?: string,
+    options?: { readonly oauthRef?: NightHawkOAuthTokenRef; readonly baseUrl?: string },
+  ): Promise<AuthManagedUsageResult>;
+  getManagedUserInfo(
+    providerName?: string,
+    options?: { readonly oauthRef?: NightHawkOAuthTokenRef; readonly baseUrl?: string },
+  ): Promise<AuthManagedUserInfoResult>;
+}
+
+export const IOAuthToolkit: ServiceIdentifier<IOAuthToolkit> =
+  createDecorator<IOAuthToolkit>('oauthToolkit');
+
+export interface IAuthSummaryService {
+  readonly _serviceBrand: undefined;
+
+  summarize(): Promise<readonly AuthStatus[]>;
+  ensureReady(modelOverride?: string): Promise<void>;
+}
+
+export const IAuthSummaryService: ServiceIdentifier<IAuthSummaryService> =
+  createDecorator<IAuthSummaryService>('authSummaryService');
+
+export class AuthProvisioningRequiredError extends Error2 {
+  constructor() {
+    super(
+      AuthErrors.codes.AUTH_PROVISIONING_REQUIRED,
+      'no provider configured; complete onboarding via /login or the providers endpoint',
+      { name: 'AuthProvisioningRequiredError' },
+    );
+  }
+}
+
+export class AuthTokenMissingError extends Error2 {
+  readonly providerId: string;
+
+  constructor(providerId: string) {
+    super(
+      AuthErrors.codes.AUTH_TOKEN_MISSING,
+      `provider ${providerId} has no credential configured`,
+      { details: { provider_id: providerId }, name: 'AuthTokenMissingError' },
+    );
+    this.providerId = providerId;
+  }
+}
+
+export class AuthCredentialEnvMissingError extends Error2 {
+  readonly providerId: string;
+
+  constructor(providerId: string, envName: string) {
+    super(
+      CONFIG_INVALID_ERROR_CODE,
+      apiKeyEnvMissingMessage(providerId, envName),
+      { details: { provider_id: providerId }, name: 'AuthCredentialEnvMissingError' },
+    );
+    this.providerId = providerId;
+  }
+}
+
+export class AuthModelNotResolvedError extends Error2 {
+  readonly modelId: string | undefined;
+  readonly providerId: string | undefined;
+
+  constructor(modelId: string | undefined, providerId?: string) {
+    const details: Record<string, unknown> = {};
+    if (modelId !== undefined) details['model_id'] = modelId;
+    if (providerId !== undefined) details['provider_id'] = providerId;
+    super(
+      AuthErrors.codes.AUTH_MODEL_NOT_RESOLVED,
+      modelId === undefined
+        ? 'no default model configured'
+        : `model ${modelId} does not resolve to a configured provider`,
+      {
+        details: Object.keys(details).length === 0 ? undefined : details,
+        name: 'AuthModelNotResolvedError',
+      },
+    );
+    this.modelId = modelId;
+    this.providerId = providerId;
+  }
+}

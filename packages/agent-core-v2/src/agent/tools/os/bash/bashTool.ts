@@ -1,0 +1,482 @@
+import { IAgentTaskService } from '#/agent/task/task';
+import { resolveAgentTaskConfig } from '#/agent/task/configSection';
+import { IConfigService } from '#/app/config/config';
+import type { IHostProcess, IHostProcessService } from '#/os/interface/hostProcess';
+import { ISessionContext } from '#/session/sessionContext/sessionContext';
+import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
+import { acquireOrWhenReady, pinnedGeneration, IAgentEnvironmentService } from '#/agent/environmentBinding/agentEnvironment';
+import { EnvironmentWorkspaceView } from '#/environment/environmentWorkspaceView';
+import { IAgentToolPolicyService } from '#/agent/toolPolicy/toolPolicy';
+import {
+  DEFAULT_TOOL_RESULT_MAX_CHARS,
+  type ExecutableToolResult,
+  type ToolExecution,
+  type ToolUpdate,
+} from '#/tool/toolContract';
+import {
+  type ToolOutputAccumulatorResult,
+  ToolOutputAccumulator,
+} from '#/tool/output-accumulator';
+import { registerAgentToolService } from '#/agent/toolRegistry/toolContribution';
+import { toInputJsonSchema } from '#/tool/input-schema';
+import { literalRulePattern, matchesGlobRuleSubject } from '#/tool/rule-match';
+import { renderPrompt } from '#/_base/utils/render-prompt';
+import { userCancellationReason } from '#/_base/utils/abort';
+import bashDescriptionTemplate from './bash.md?raw';
+import { ProcessTask } from './process-task';
+import {
+  type BashInput,
+  BashInputSchema,
+  DEFAULT_BACKGROUND_TIMEOUT_S,
+  DEFAULT_TIMEOUT_S,
+  IBashTool,
+  MAX_BACKGROUND_TIMEOUT_S,
+  MAX_TIMEOUT_S,
+} from './bash';
+
+const MS_PER_SECOND = 1000;
+
+const BACKGROUND_GUIDANCE =
+  'For long-running builds, tests, watchers, or servers that the conversation should not wait on, set `run_in_background=true` with a short `description`; the call returns a task ID. Set `disable_timeout=true` only when the task should run without a timeout. You are notified automatically when the task completes, so return control to the user instead of waiting on it. Use `TaskOutput` only for a non-blocking snapshot, and `TaskStop` only to cancel.';
+
+const NO_BACKGROUND_GUIDANCE =
+  'Background execution is disabled for this agent. Do not set `run_in_background=true`.';
+
+const TIMEOUT_MOVES_TO_BACKGROUND =
+  'Set `timeout` for possibly long-running commands. A foreground command that hits its timeout is moved to the background instead of being killed, and you are notified when it completes. The user can also move a running foreground command to the background at any time.';
+
+const TIMEOUT_KILLS_WITH_BACKGROUND =
+  'Set `timeout` for possibly long-running commands. A foreground command that hits its timeout is killed. The user can also move a running foreground command to the background at any time.';
+
+const TIMEOUT_KILLS = 'Set `timeout` for possibly long-running commands. A command that hits its timeout is killed.';
+
+function timeoutCapS(isBackground: boolean): number {
+  return isBackground ? MAX_BACKGROUND_TIMEOUT_S : MAX_TIMEOUT_S;
+}
+
+function normalizeTimeoutMs(timeout: number | undefined, isBackground: boolean): number {
+  const defaultSeconds = isBackground ? DEFAULT_BACKGROUND_TIMEOUT_S : DEFAULT_TIMEOUT_S;
+  const value = timeout ?? defaultSeconds;
+  return Math.min(value, timeoutCapS(isBackground)) * MS_PER_SECOND;
+}
+
+async function disposeProcess(proc: IHostProcess): Promise<void> {
+  try {
+    await proc.dispose();
+  } catch {
+  }
+}
+
+export class BashTool implements IBashTool {
+  declare readonly _serviceBrand: undefined;
+  readonly name = 'Bash' as const;
+  readonly parameters: Record<string, unknown> = toInputJsonSchema(BashInputSchema);
+
+  constructor(
+    @IAgentEnvironmentService private readonly environment: IAgentEnvironmentService,
+    @ISessionContext private readonly ctx: ISessionContext,
+    @ISessionWorkspaceContext private readonly workspaceCtx: ISessionWorkspaceContext,
+    @IAgentTaskService private readonly tasks: IAgentTaskService,
+    @IAgentToolPolicyService private readonly toolPolicy: IAgentToolPolicyService,
+    @IConfigService private readonly config: IConfigService,
+  ) {}
+
+  private allowBackground(): boolean {
+    return (
+      this.toolPolicy.isToolActive('TaskList') &&
+      this.toolPolicy.isToolActive('TaskOutput') &&
+      this.toolPolicy.isToolActive('TaskStop')
+    );
+  }
+
+  private autoBackgroundOnTimeout(): boolean {
+    return resolveAgentTaskConfig(this.config)?.bashAutoBackgroundOnTimeout ?? true;
+  }
+
+  private detachTimeoutMs(): number {
+    const configuredS = resolveAgentTaskConfig(this.config)?.bashTaskTimeoutS;
+    if (configuredS === undefined) return DEFAULT_BACKGROUND_TIMEOUT_S * MS_PER_SECOND;
+    return configuredS * MS_PER_SECOND;
+  }
+
+  get description(): string {
+    const allowBackground = this.allowBackground();
+    return renderPrompt(bashDescriptionTemplate, {
+      SHELL_NAME: this.environment.inspect().host?.shellName ?? 'sh',
+      TIMEOUT_GUIDANCE: !allowBackground
+        ? TIMEOUT_KILLS
+        : this.autoBackgroundOnTimeout()
+          ? TIMEOUT_MOVES_TO_BACKGROUND
+          : TIMEOUT_KILLS_WITH_BACKGROUND,
+      BACKGROUND_GUIDANCE: allowBackground ? BACKGROUND_GUIDANCE : NO_BACKGROUND_GUIDANCE,
+    });
+  }
+
+  resolveExecution(args: BashInput): ToolExecution {
+    const expectedGeneration = this.reviewedGeneration();
+    const preview = args.command.length > 50 ? `${args.command.slice(0, 50)}…` : args.command;
+    return {
+      description: args.run_in_background
+        ? `Starting background: ${preview}`
+        : `Running: ${preview}`,
+      display: {
+        kind: 'command',
+        command: args.command,
+        cwd: this.executionCwd(args),
+        description: args.description,
+        language: 'bash',
+      },
+      approvalRule: literalRulePattern(this.name, args.command),
+      matchesRule: (ruleArgs) => matchesGlobRuleSubject(ruleArgs, args.command),
+      execute: ({ signal, onUpdate, onForegroundTaskStart, toolCallId }) =>
+        this.execution(args, signal, toolCallId, onUpdate, onForegroundTaskStart, expectedGeneration),
+    };
+  }
+
+  private reviewedGeneration(): string | undefined {
+    try {
+      return pinnedGeneration(this.environment.inspect());
+    } catch {
+      return undefined;
+    }
+  }
+
+  private executionCwd(args: BashInput): string {
+    try {
+      const view = new EnvironmentWorkspaceView(this.environment.inspect(), this.workspaceCtx);
+      return view.resolve(args.cwd ?? view.workDir);
+    } catch {
+      return args.cwd ?? this.ctx.cwd;
+    }
+  }
+
+  private spawn(
+    processService: IHostProcessService,
+    view: EnvironmentWorkspaceView,
+    cwd: string | undefined,
+    command: string,
+  ): Promise<IHostProcess> {
+    const env = view.host;
+    const effectiveCwd = view.resolve(cwd ?? view.workDir);
+    const shellCwd = view.shellPathBridge?.toShellPath(effectiveCwd) ?? effectiveCwd;
+    const shellCommand = `cd ${shellQuote(shellCwd)} && ${command}`;
+    const noninteractiveEnv: Record<string, string> = {
+      NO_COLOR: '1',
+      TERM: 'dumb',
+      GIT_TERMINAL_PROMPT: process.env['GIT_TERMINAL_PROMPT'] ?? '0',
+      SHELL: env.shellPath,
+    };
+
+    return processService.spawn(env.shellPath, ['-c', shellCommand], { cwd: effectiveCwd, env: noninteractiveEnv });
+  }
+
+  private async execution(
+    args: BashInput,
+    signal: AbortSignal,
+    toolCallId: string,
+    onUpdate?: (update: ToolUpdate) => void,
+    onForegroundTaskStart?: (taskId: string) => void,
+    expectedGeneration?: string,
+  ): Promise<ExecutableToolResult> {
+    const validationError = this.validateRunRequest(args, signal);
+    if (validationError !== undefined) return validationError;
+
+    const startsInBackground = args.run_in_background === true;
+    const foregroundTimeoutMs = normalizeTimeoutMs(args.timeout, false);
+    const lease = await acquireOrWhenReady(this.environment, ['process']);
+    if (expectedGeneration !== undefined && lease.environment.identity.generation !== expectedGeneration) {
+      lease.dispose();
+      return { isError: true, output: 'Environment changed before execution. Retry the tool call.' };
+    }
+    const view = new EnvironmentWorkspaceView(lease.environment, this.workspaceCtx);
+    const env = view.host;
+    const command = env.osKind === 'Windows' ? rewriteWindowsNullRedirect(args.command) : args.command;
+    const description = startsInBackground ? args.description!.trim() : foregroundDescription(args);
+    const timeoutMs = startsInBackground
+      ? args.disable_timeout
+        ? undefined
+        : normalizeTimeoutMs(args.timeout, true)
+      : foregroundTimeoutMs;
+
+    const builder = new ToolOutputAccumulator();
+    let proc: IHostProcess;
+    try {
+      proc = lease.track(await this.spawn(lease.environment.process!, view, args.cwd, command), this.ctx.sessionId);
+    } catch (error) {
+      lease.dispose();
+      return {
+        isError: true,
+        output: error instanceof Error ? error.message : String(error),
+      };
+    }
+    closeProcessStdin(proc);
+
+    let collectForegroundOutput = !startsInBackground;
+    let foregroundOutputPersisted = false;
+    let foregroundTaskId: string | undefined;
+    const onProcessOutput = startsInBackground
+      ? undefined
+      : (kind: 'stdout' | 'stderr', text: string): void => {
+          if (!collectForegroundOutput) return;
+          onUpdate?.({ kind, text });
+          builder.write(text);
+          if (
+            !foregroundOutputPersisted &&
+            builder.totalChars > DEFAULT_TOOL_RESULT_MAX_CHARS &&
+            foregroundTaskId !== undefined
+          ) {
+            this.tasks.persistOutput(foregroundTaskId);
+            foregroundOutputPersisted = true;
+          }
+        };
+
+    let taskId: string;
+    try {
+      taskId = this.tasks.registerTask(
+        new ProcessTask(proc, command, description, onProcessOutput, () => lease.dispose(), toolCallId),
+        {
+          detached: startsInBackground,
+          timeoutMs,
+          detachTimeoutMs: this.detachTimeoutMs(),
+          autoBackgroundOnTimeout: this.allowBackground() && this.autoBackgroundOnTimeout(),
+          signal: startsInBackground ? undefined : signal,
+        },
+      );
+      foregroundTaskId = startsInBackground ? undefined : taskId;
+    } catch (error) {
+      collectForegroundOutput = false;
+      await killSpawnedProcess(proc);
+      lease.dispose();
+      return {
+        isError: true,
+        output: error instanceof Error ? error.message : String(error),
+      };
+    }
+
+    if (!startsInBackground) onForegroundTaskStart?.(taskId);
+
+    if (startsInBackground) {
+      return this.backgroundStartedResult(taskId, proc, description, {
+        title: 'Background task started',
+        brief: `Started ${taskId}`,
+      });
+    }
+
+    try {
+      const release = await this.tasks.waitForForegroundRelease(taskId);
+      if (release === 'detached' || release === 'timeout_detached') {
+        collectForegroundOutput = false;
+        const labels =
+          release === 'timeout_detached'
+            ? {
+                title: 'Command timed out and moved to background',
+                brief: `Backgrounded ${taskId} after timeout`,
+              }
+            : {
+                title: 'Task moved to background by the user',
+                brief: `Backgrounded ${taskId} by the user`,
+              };
+        return this.backgroundStartedResult(
+          taskId,
+          proc,
+          description,
+          labels,
+          builder,
+          release === 'timeout_detached' ? 'foreground_detached' : 'foreground_detached_by_user',
+        );
+      }
+
+      return await this.foregroundCompletionResult(taskId, proc, builder, foregroundTimeoutMs);
+    } finally {
+      collectForegroundOutput = false;
+    }
+  }
+
+  private validateRunRequest(
+    args: BashInput,
+    signal: AbortSignal,
+  ): ExecutableToolResult | undefined {
+    if (signal.aborted) return { isError: true, output: 'Aborted before command started' };
+    if (args.command.length === 0) return { isError: true, output: 'Command cannot be empty.' };
+    if (args.run_in_background !== true) return undefined;
+    if (!this.allowBackground()) {
+      return {
+        isError: true,
+        output:
+          'Background execution is not available for this agent because TaskOutput and TaskStop are not enabled.',
+      };
+    }
+    if (!args.description?.trim()) {
+      return {
+        isError: true,
+        output: 'description is required when run_in_background is true.',
+      };
+    }
+    return undefined;
+  }
+
+  private async foregroundCompletionResult(
+    taskId: string,
+    proc: IHostProcess,
+    builder: ToolOutputAccumulator,
+    foregroundTimeoutMs: number,
+  ): Promise<ExecutableToolResult> {
+    const current = this.tasks.getTask(taskId);
+    const exitCode = current?.kind === 'process' ? current.exitCode : proc.exitCode;
+    let result: ToolOutputAccumulatorResult;
+    if (current?.status === 'timed_out') {
+      const timeoutLabel = formatTimeoutLabel(foregroundTimeoutMs);
+      result = builder.error(`Command killed by timeout (${timeoutLabel})`, {
+        brief: `Killed by timeout (${timeoutLabel})`,
+      });
+    } else if (
+      current?.status === 'killed' &&
+      current.stopReason === userCancellationReason().message
+    ) {
+      result = builder.error('Interrupted by user', { brief: 'Interrupted by user' });
+    } else if (
+      (current?.status === 'failed' || current?.status === 'killed') &&
+      current.stopReason !== undefined
+    ) {
+      result = builder.error(current.stopReason, { brief: current.stopReason });
+    } else if (exitCode === 0) {
+      result = builder.ok('Command executed successfully.');
+    } else {
+      if (builder.nChars === 0) builder.write(`Process exited with code ${String(exitCode)}`);
+      result = builder.error(`Command failed with exit code: ${String(exitCode)}.`, {
+        brief: `Failed with exit code: ${String(exitCode)}`,
+      });
+    }
+    return this.addForegroundOutputReference(taskId, result, builder.totalChars);
+  }
+
+  private async addForegroundOutputReference(
+    taskId: string,
+    result: ToolOutputAccumulatorResult,
+    totalChars: number,
+  ): Promise<ExecutableToolResult> {
+    if (totalChars <= DEFAULT_TOOL_RESULT_MAX_CHARS) return result;
+    const output = await this.tasks.getOutputSnapshot(taskId, 0);
+    if (!output.fullOutputAvailable || output.outputPath === undefined) {
+      return result;
+    }
+
+    const taskOutputHint = this.allowBackground()
+      ? `\nnext_step: Use TaskOutput(task_id="${taskId}") to query the task output.`
+      : '';
+    const taskInfo = `task_id: ${taskId}\noutput_size_bytes: ${String(output.outputSizeBytes)}${taskOutputHint}`;
+    const existingSuffix = result.spill?.suffix;
+    return {
+      ...result,
+      spill: {
+        outputPath: output.outputPath,
+        totalChars,
+        suffix: existingSuffix !== undefined ? `${existingSuffix}\n${taskInfo}` : taskInfo,
+      },
+    };
+  }
+
+  private backgroundStartedResult(
+    taskId: string,
+    proc: IHostProcess,
+    description: string,
+    labels: { title: string; brief: string },
+    builder = new ToolOutputAccumulator(),
+    scenario: 'background_started' | 'foreground_detached' | 'foreground_detached_by_user' = 'background_started',
+  ): ExecutableToolResult {
+    const status = this.tasks.getTask(taskId)?.status ?? 'running';
+    const detachedByUser = scenario === 'foreground_detached_by_user' ? 'detached_by_user: true\n' : '';
+    const metadata =
+      `task_id: ${taskId}\n` +
+      `pid: ${String(proc.pid)}\n` +
+      `description: ${description}\n` +
+      `status: ${status}\n` +
+      detachedByUser +
+      `automatic_notification: true\n` +
+      this.nextStepLines(scenario) +
+      'human_shell_hint: The task is visible in the background-task panel.';
+
+    const foregroundResult = builder.ok('');
+    const foregroundOutput = foregroundResult.output.length > 0 ? foregroundResult.output : '';
+    const result: ExecutableToolResult & {
+      readonly brief: string;
+    } = {
+      isError: false,
+      output:
+        foregroundOutput.length === 0
+          ? metadata
+          : `${metadata}\n\nforeground_output:\n${foregroundOutput}`,
+      brief: labels.brief,
+    };
+    return result;
+  }
+
+  private nextStepLines(
+    scenario: 'background_started' | 'foreground_detached' | 'foreground_detached_by_user',
+  ): string {
+    if (scenario === 'foreground_detached' || scenario === 'foreground_detached_by_user') {
+      const avoid = this.allowBackground()
+        ? 'do NOT wait, poll, or call TaskOutput on it'
+        : 'do NOT wait or poll';
+      const moved =
+        scenario === 'foreground_detached_by_user'
+          ? 'The user moved this task to the background.'
+          : 'The task now runs in the background.';
+      return (
+        `next_step: ${moved} You will be automatically notified ` +
+        `when it completes — ${avoid}; continue with your current work.\n`
+      );
+    }
+    if (!this.allowBackground()) {
+      return 'next_step: You will be automatically notified when it completes.\n';
+    }
+    return (
+      'next_step: The completion arrives automatically in a later turn — do NOT wait, poll, ' +
+      'or call TaskOutput on it; continue with your current work.\n' +
+      'next_step: Use TaskStop only if the task must be cancelled.\n'
+    );
+  }
+}
+
+registerAgentToolService(IBashTool, BashTool, {
+  name: 'Bash',
+  domain: 'os/backends',
+  requiredEnvironmentCapabilities: ['process'],
+});
+
+function formatTimeoutLabel(timeoutMs: number): string {
+  return timeoutMs % 1000 === 0 ? `${String(timeoutMs / 1000)}s` : `${String(timeoutMs)}ms`;
+}
+
+function foregroundDescription(args: BashInput): string {
+  const explicit = args.description?.trim();
+  if (explicit !== undefined && explicit.length > 0) return explicit;
+  const preview = args.command.length > 60 ? `${args.command.slice(0, 60)}…` : args.command;
+  return `Bash: ${preview}`;
+}
+
+function closeProcessStdin(proc: IHostProcess): void {
+  try {
+    proc.stdin.end();
+  } catch {
+  }
+}
+
+async function killSpawnedProcess(proc: IHostProcess): Promise<void> {
+  try {
+    await proc.kill('SIGTERM');
+  } catch {
+  } finally {
+    await disposeProcess(proc);
+  }
+}
+
+function shellQuote(s: string): string {
+  return `'${s.replaceAll("'", "'\\''")}'`;
+}
+
+const WINDOWS_NUL_REDIRECT = /(\d?&?>+\s*)[Nn][Uu][Ll](?=\s|$|[|&;)\n])/g;
+
+function rewriteWindowsNullRedirect(command: string): string {
+  return command.replace(WINDOWS_NUL_REDIRECT, '$1/dev/null');
+}

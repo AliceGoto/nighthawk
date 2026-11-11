@@ -1,0 +1,17 @@
+{
+  "name": "@nighthawk/vis",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Debug visualization tool for nighthawk sessions",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "pnpm --filter @nighthawk/vis-server build && pnpm --filter @nighthawk/vis-web build && node scripts/copy-web-dist.mjs",
+    "prestart": "pnpm run build",
+    "start": "node server/dist/server.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

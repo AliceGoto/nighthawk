@@ -1,0 +1,32 @@
+import { fileURLToPath } from 'node:url';
+
+import { defineConfig } from 'tsdown';
+
+import { rawTextPlugin } from '../../build/raw-text-plugin.mjs';
+
+export default defineConfig({
+  entry: ['./src/index.ts'],
+  format: ['esm'],
+  dts: false,
+  outDir: 'dist',
+  clean: true,
+  plugins: [rawTextPlugin()],
+  banner: {
+    js: [
+      "import { fileURLToPath as __cjsShimFileURLToPath } from 'node:url';",
+      "import { dirname as __cjsShimDirname } from 'node:path';",
+      'const __filename = __cjsShimFileURLToPath(import.meta.url);',
+      'const __dirname = __cjsShimDirname(__filename);',
+    ].join('\n'),
+  },
+  alias: {
+    '@nighthawk/nighthawk-oauth/provider-credential': fileURLToPath(
+      new URL('../oauth/src/provider-credential.ts', import.meta.url),
+    ),
+    '@nighthawk/nighthawk-oauth': fileURLToPath(new URL('../oauth/src/index.ts', import.meta.url)),
+  },
+  deps: {
+    alwaysBundle: [/^@nighthawk\//],
+    neverBundle: [],
+  },
+});

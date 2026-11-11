@@ -1,0 +1,14 @@
+packages:
+  # Includes the standalone session-import conversion package.
+  - packages/*
+  - apps/*
+  - apps/vis/server
+  - apps/vis/web
+  - docs
+
+catalog:
+  zod: 4.3.6
+
+overrides:
+  "nighthawk>@tailwindcss/vite": "4.1.18"
+  "nighthawk>tailwindcss": "4.1.18"

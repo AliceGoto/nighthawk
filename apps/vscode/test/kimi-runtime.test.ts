@@ -1,0 +1,1062 @@
+/**
+ * Scenario: the VS Code host owns one NightHawk harness and routes Webviews to shared SDK sessions.
+ * Responsibilities: create/resume/switch, per-session settings, multi-view ownership, detach, and disposal.
+ * Wiring: NightHawkRuntime and SessionRuntime are real; in-memory Session/NightHawkHarness fakes form the public SDK boundary.
+ * Run: pnpm exec vitest run --config apps/vscode/vitest.config.ts test/kimi-runtime.test.ts
+ */
+
+import type {
+  ApprovalHandler,
+  CreateSessionOptions,
+  Event,
+  JsonObject,
+  NightHawkHarness,
+  PermissionMode,
+  PromptInput,
+  QuestionHandler,
+  RefreshProviderModelsResponse,
+  ResumeSessionInput,
+  Session,
+  SessionStatus,
+  SessionSummary,
+  ThinkingEffort,
+} from "@nighthawk/nighthawk-sdk";
+import { setTelemetryContext, track, withTelemetryContext } from "@nighthawk/nighthawk-telemetry";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { Events } from "../shared/bridge";
+import { NightHawkRuntime, type OpenSessionOptions } from "../src/runtime/kimi-runtime";
+import { startModelCatalogRefresh } from "../src/runtime/model-catalog-refresh";
+
+const sdkFactories = vi.hoisted(() => {
+  const harness = {
+    homeDir: "/tmp/kimi-runtime-home",
+    close: vi.fn(async () => undefined),
+    getConfig: vi.fn(async () => ({
+      providers: {},
+      modelCatalog: { refreshOnStart: false, refreshIntervalMs: 0 },
+    })),
+    refreshProviderModels: vi.fn(async () => ({ changed: [], unchanged: [], failed: [] })),
+  };
+  return {
+    harness,
+    createNightHawkHarness: vi.fn(() => harness),
+  };
+});
+
+vi.mock("@nighthawk/nighthawk-sdk", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@nighthawk/nighthawk-sdk")>();
+  return {
+    ...original,
+    createNightHawkHarness: sdkFactories.createNightHawkHarness,
+  };
+});
+
+interface FakeSessionBoundary {
+  readonly session: Session;
+  readonly setModels: string[];
+  readonly setThinkingEfforts: ThinkingEffort[];
+  readonly setPermissions: PermissionMode[];
+  readonly metadataUpdates: JsonObject[];
+  readonly handlerInstallations: { approval: number; question: number };
+  readonly subscriptionCount: () => number;
+  readonly closeCount: () => number;
+  readonly emit: (event: Event) => void;
+  readonly setPromptImpl: (impl: (input: string | PromptInput) => Promise<void>) => void;
+}
+
+function createFakeSession(
+  id: string,
+  workDir: string,
+  initial: Partial<SessionStatus> = {},
+  metadata?: JsonObject,
+): FakeSessionBoundary {
+  const listeners = new Set<(event: Event) => void>();
+  const setModels: string[] = [];
+  const setThinkingEfforts: ThinkingEffort[] = [];
+  const setPermissions: PermissionMode[] = [];
+  const metadataUpdates: JsonObject[] = [];
+  const handlerInstallations = { approval: 0, question: 0 };
+  let subscriptions = 0;
+  let closes = 0;
+  let promptImpl: (input: string | PromptInput) => Promise<void> = async () => {};
+  let status: SessionStatus = {
+    model: initial.model ?? "nighthawk-test",
+    thinkingEffort: initial.thinkingEffort ?? "off",
+    permission: initial.permission ?? "manual",
+    planMode: initial.planMode ?? false,
+    contextTokens: 0,
+    maxContextTokens: 128_000,
+    contextUsage: 0,
+  };
+  let summary: SessionSummary = {
+    id,
+    workDir,
+    sessionDir: `/home/sessions/${id}`,
+    createdAt: 1,
+    updatedAt: 2,
+    metadata,
+  };
+
+  const session = {
+    id,
+    workDir,
+    get summary() {
+      return summary;
+    },
+    set summary(value: SessionSummary | undefined) {
+      if (value !== undefined) summary = value;
+    },
+    setApprovalHandler(handler: ApprovalHandler | undefined) {
+      if (handler !== undefined) handlerInstallations.approval += 1;
+    },
+    setQuestionHandler(handler: QuestionHandler | undefined) {
+      if (handler !== undefined) handlerInstallations.question += 1;
+    },
+    onEvent(listener: (event: Event) => void) {
+      subscriptions += 1;
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    async prompt(input: string | PromptInput) {
+      await promptImpl(input);
+    },
+    async steer(_input: string | PromptInput) {},
+    async cancel() {},
+    async getStatus() {
+      return status;
+    },
+    async setModel(model: string) {
+      setModels.push(model);
+      status = { ...status, model };
+    },
+    async setThinking(effort: ThinkingEffort) {
+      setThinkingEfforts.push(effort);
+      status = { ...status, thinkingEffort: effort };
+    },
+    async setPermission(permission: PermissionMode) {
+      setPermissions.push(permission);
+      status = { ...status, permission };
+    },
+    async updateMetadata(patch: JsonObject) {
+      metadataUpdates.push(patch);
+      summary = { ...summary, metadata: { ...summary.metadata, ...patch } };
+    },
+    async close() {
+      closes += 1;
+    },
+  } as unknown as Session;
+
+  return {
+    session,
+    setModels,
+    setThinkingEfforts,
+    setPermissions,
+    metadataUpdates,
+    handlerInstallations,
+    subscriptionCount: () => subscriptions,
+    closeCount: () => closes,
+    emit: (event: Event) => {
+      for (const listener of [...listeners]) listener(event);
+    },
+    setPromptImpl: (impl) => {
+      promptImpl = impl;
+    },
+  };
+}
+
+interface FakeHarnessBoundary {
+  readonly harness: NightHawkHarness;
+  readonly createInputs: CreateSessionOptions[];
+  readonly resumeInputs: ResumeSessionInput[];
+  readonly closeSessionIds: string[];
+  readonly deleteSessionIds: string[];
+  readonly getConfig: ReturnType<typeof vi.fn>;
+  readonly refreshProviderModels: ReturnType<typeof vi.fn>;
+  readonly closeCount: () => number;
+  readonly sessions: Map<string, FakeSessionBoundary>;
+  addSession(
+    id: string,
+    workDir: string,
+    initial?: Partial<SessionStatus>,
+    metadata?: JsonObject,
+  ): FakeSessionBoundary;
+}
+
+function createFakeHarness(
+  normalizeCreatedWorkDir: (workDir: string) => string = (workDir) => workDir,
+): FakeHarnessBoundary {
+  const sessions = new Map<string, FakeSessionBoundary>();
+  const createInputs: CreateSessionOptions[] = [];
+  const resumeInputs: ResumeSessionInput[] = [];
+  const closeSessionIds: string[] = [];
+  const deleteSessionIds: string[] = [];
+  let creates = 0;
+  let closes = 0;
+
+  const addSession = (
+    id: string,
+    workDir: string,
+    initial?: Partial<SessionStatus>,
+    metadata?: JsonObject,
+  ) => {
+    const boundary = createFakeSession(id, workDir, initial, metadata);
+    sessions.set(id, boundary);
+    return boundary;
+  };
+
+  const getConfig = vi.fn(async () => ({
+    providers: {},
+    modelCatalog: { refreshOnStart: false, refreshIntervalMs: 0 },
+  }));
+  const refreshProviderModels = vi.fn(async () => ({ changed: [], unchanged: [], failed: [] }));
+
+  const harness = {
+    getConfig,
+    refreshProviderModels,
+    async createSession(options: CreateSessionOptions) {
+      createInputs.push(options);
+      creates += 1;
+      return addSession(
+        `created-${creates}`,
+        normalizeCreatedWorkDir(options.workDir),
+        {
+          model: options.model,
+          thinkingEffort: options.thinking,
+          permission: options.permission,
+        },
+        options.metadata,
+      ).session;
+    },
+    async resumeSession(input: ResumeSessionInput) {
+      resumeInputs.push(input);
+      const boundary = sessions.get(input.id);
+      if (boundary === undefined) throw new Error(`Unknown session: ${input.id}`);
+      return boundary.session;
+    },
+    async closeSession(id: string) {
+      closeSessionIds.push(id);
+    },
+    async deleteSession(id: string) {
+      deleteSessionIds.push(id);
+    },
+    async close() {
+      closes += 1;
+    },
+  } as unknown as NightHawkHarness;
+
+  return {
+    harness,
+    createInputs,
+    resumeInputs,
+    closeSessionIds,
+    deleteSessionIds,
+    getConfig,
+    refreshProviderModels,
+    closeCount: () => closes,
+    sessions,
+    addSession,
+  };
+}
+
+function openOptions(overrides: Partial<OpenSessionOptions> = {}): OpenSessionOptions {
+  return {
+    webviewId: "view-1",
+    workDir: "/workspace",
+    model: "nighthawk-test",
+    effort: "off",
+    yoloMode: false,
+    ...overrides,
+  };
+}
+
+function createRuntime(
+  normalizeCreatedWorkDir?: (workDir: string) => string,
+) {
+  const sdk = createFakeHarness(normalizeCreatedWorkDir);
+  const runtime = new NightHawkRuntime({
+    version: "0.6.0",
+    harness: sdk.harness,
+    broadcast: () => undefined,
+    captureBaseline: () => undefined,
+    log: () => undefined,
+  });
+  return { runtime, sdk };
+}
+
+const EMPTY_REFRESH_RESULT: RefreshProviderModelsResponse = {
+  changed: [],
+  unchanged: [],
+  failed: [],
+};
+
+const CHANGED_REFRESH_RESULT: RefreshProviderModelsResponse = {
+  changed: [{ provider_id: "managed:nighthawk", provider_name: "NightHawk", added: 1, removed: 0 }],
+  unchanged: [],
+  failed: [],
+};
+
+describe("Model catalog refresh", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("refreshes on start and every six hours, then broadcasts changes until disposal", async () => {
+    const sdk = createFakeHarness();
+    sdk.getConfig.mockResolvedValue({ providers: {} });
+    sdk.refreshProviderModels.mockResolvedValue(CHANGED_REFRESH_RESULT);
+    const broadcast = vi.fn();
+    const runtime = new NightHawkRuntime({
+      version: "test",
+      harness: sdk.harness,
+      broadcast,
+      captureBaseline: () => undefined,
+      log: () => undefined,
+    });
+
+    await vi.waitFor(() => {
+      expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    });
+    expect(sdk.refreshProviderModels).toHaveBeenCalledWith({ scope: "all" });
+    expect(broadcast).toHaveBeenCalledWith(Events.ModelCatalogChanged, {});
+
+    await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(2);
+    expect(broadcast).toHaveBeenCalledTimes(2);
+
+    await runtime.dispose();
+    await runtime.dispose();
+    await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(2);
+    expect(broadcast).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the configured interval and startup policy", async () => {
+    const sdk = createFakeHarness();
+    sdk.getConfig.mockResolvedValue({
+      providers: {},
+      modelCatalog: { refreshOnStart: false, refreshIntervalMs: 1000 },
+    });
+    const onChanged = vi.fn();
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged,
+      log: () => undefined,
+      env: {},
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sdk.refreshProviderModels).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(sdk.refreshProviderModels).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    expect(onChanged).not.toHaveBeenCalled();
+    dispose();
+  });
+
+  it("lets env override config and disables the interval at zero", async () => {
+    const sdk = createFakeHarness();
+    sdk.getConfig.mockResolvedValue({
+      providers: {},
+      modelCatalog: { refreshOnStart: false, refreshIntervalMs: 1000 },
+    });
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged: () => undefined,
+      log: () => undefined,
+      env: {
+        NIGHTHAWK_MODEL_CATALOG_REFRESH_ON_START: "yes",
+        NIGHTHAWK_MODEL_CATALOG_REFRESH_INTERVAL_MS: "0",
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    dispose();
+  });
+
+  it("logs partial failures and exceptions without suppressing changes or later ticks", async () => {
+    const sdk = createFakeHarness();
+    const failed = [{ provider: "managed:nighthawk", reason: "partial failure" }];
+    const error = new Error("network down");
+    sdk.getConfig.mockResolvedValue({ providers: {} });
+    sdk.refreshProviderModels
+      .mockResolvedValueOnce({ ...CHANGED_REFRESH_RESULT, failed })
+      .mockRejectedValueOnce(error)
+      .mockResolvedValue(EMPTY_REFRESH_RESULT);
+    const onChanged = vi.fn();
+    const log = vi.fn();
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged,
+      log,
+      env: { NIGHTHAWK_MODEL_CATALOG_REFRESH_INTERVAL_MS: "1000" },
+    });
+
+    await vi.waitFor(() => {
+      expect(onChanged).toHaveBeenCalledTimes(1);
+    });
+    expect(log).toHaveBeenCalledWith(expect.any(String), failed);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(log).toHaveBeenCalledWith(expect.any(String), error);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(3);
+    expect(onChanged).toHaveBeenCalledTimes(1);
+    dispose();
+  });
+
+  it("skips interval ticks while a refresh is in flight", async () => {
+    const sdk = createFakeHarness();
+    sdk.getConfig.mockResolvedValue({
+      providers: {},
+      modelCatalog: { refreshOnStart: false, refreshIntervalMs: 1000 },
+    });
+    let resolveRefresh!: (result: RefreshProviderModelsResponse) => void;
+    sdk.refreshProviderModels.mockReturnValue(new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }));
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged: () => undefined,
+      log: () => undefined,
+      env: {},
+    });
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    resolveRefresh(EMPTY_REFRESH_RESULT);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(2);
+    dispose();
+  });
+
+  it("falls back when an interval exceeds the Node timer limit", async () => {
+    const sdk = createFakeHarness();
+    sdk.getConfig.mockResolvedValue({
+      providers: {},
+      modelCatalog: { refreshOnStart: false, refreshIntervalMs: 1000 },
+    });
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged: () => undefined,
+      log: () => undefined,
+      env: { NIGHTHAWK_MODEL_CATALOG_REFRESH_INTERVAL_MS: "2147483648" },
+    });
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(sdk.refreshProviderModels).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    dispose();
+  });
+
+  it("does not start after disposal while config is pending", async () => {
+    const sdk = createFakeHarness();
+    let resolveConfig!: (config: { providers: Record<string, never> }) => void;
+    sdk.getConfig.mockReturnValue(new Promise((resolve) => {
+      resolveConfig = resolve;
+    }));
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged: () => undefined,
+      log: () => undefined,
+      env: {},
+    });
+
+    dispose();
+    resolveConfig({ providers: {} });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sdk.refreshProviderModels).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("suppresses an in-flight change notification after disposal", async () => {
+    const sdk = createFakeHarness();
+    sdk.getConfig.mockResolvedValue({ providers: {} });
+    let resolveRefresh!: (result: RefreshProviderModelsResponse) => void;
+    sdk.refreshProviderModels.mockReturnValue(new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }));
+    const onChanged = vi.fn();
+    const dispose = startModelCatalogRefresh({
+      harness: sdk.harness,
+      onChanged,
+      log: () => undefined,
+      env: {},
+    });
+
+    await vi.waitFor(() => {
+      expect(sdk.refreshProviderModels).toHaveBeenCalledTimes(1);
+    });
+    dispose();
+    resolveRefresh(CHANGED_REFRESH_RESULT);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+});
+
+describe("NightHawk runtime (owns shared SDK sessions for Webviews)", () => {
+  it("creates the harness through the SDK factory when none is injected", async () => {
+    const runtime = new NightHawkRuntime({
+      version: "0.6.0",
+      broadcast: () => undefined,
+      captureBaseline: () => undefined,
+      log: () => undefined,
+    });
+    expect(sdkFactories.createNightHawkHarness).toHaveBeenCalledOnce();
+    expect(sdkFactories.createNightHawkHarness).toHaveBeenCalledWith({
+      homeDir: undefined,
+      identity: {
+        productName: "nighthawk-vscode",
+        version: "0.6.0",
+        platform: "nighthawk_vscode",
+      },
+      uiMode: "vscode",
+      telemetry: {
+        track,
+        withContext: withTelemetryContext,
+        setContext: setTelemetryContext,
+      },
+    });
+    expect(runtime.harness).toBe(sdkFactories.harness as unknown as NightHawkHarness);
+    await runtime.dispose();
+  });
+
+  it("forwards the requested settings when creating an SDK session", async () => {
+    const { runtime, sdk } = createRuntime();
+
+    const opened = await runtime.openSession(
+      openOptions({ model: "kimi-k2", effort: "high", yoloMode: true }),
+    );
+
+    expect(sdk.createInputs).toEqual([
+      {
+        workDir: "/workspace",
+        model: "kimi-k2",
+        thinking: "high",
+        permission: "yolo",
+        metadata: { vscode_legacy_approval: { yolo: true, afk: false } },
+      },
+    ]);
+    expect(opened.subscribers).toEqual(["view-1"]);
+  });
+
+  it("accepts the normalized SDK workDir when a Windows session is created", async () => {
+    const { runtime } = createRuntime((workDir) => workDir.replaceAll("\\", "/"));
+
+    const opened = await runtime.openSession(openOptions({
+      workDir: "C:\\Users\\Example User\\项目",
+    }));
+
+    expect(opened.session.workDir).toBe("C:/Users/Example User/项目");
+  });
+
+  it("resumes a Windows session when only separators and casing differ", async () => {
+    const { runtime, sdk } = createRuntime();
+    sdk.addSession("saved-win", "C:/Users/Example User/项目");
+
+    const opened = await runtime.openSession(openOptions({
+      sessionId: "saved-win",
+      workDir: "c:\\users\\example user\\项目",
+    }));
+
+    expect(opened.id).toBe("saved-win");
+  });
+
+  it("uses off thinking when a new session receives an empty effort", async () => {
+    const { runtime, sdk } = createRuntime();
+
+    await runtime.openSession(openOptions({ effort: "   " }));
+
+    expect(sdk.createInputs[0]?.thinking).toBe("off");
+  });
+
+  it("resumes the requested SDK session instead of creating a replacement", async () => {
+    const { runtime, sdk } = createRuntime();
+    sdk.addSession("saved-1", "/workspace");
+
+    const opened = await runtime.openSession(openOptions({ sessionId: "saved-1" }));
+
+    expect(opened.id).toBe("saved-1");
+    expect(sdk.resumeInputs).toEqual([{ id: "saved-1", includeSubagents: true }]);
+    expect(sdk.createInputs).toEqual([]);
+  });
+
+  it("switches a Webview to the requested session", async () => {
+    const { runtime, sdk } = createRuntime();
+    await runtime.openSession(openOptions());
+    sdk.addSession("saved-2", "/workspace");
+
+    const selected = await runtime.openSession(openOptions({ sessionId: "saved-2" }));
+
+    expect(runtime.getSessionForView("view-1")?.id).toBe("saved-2");
+    expect(selected.id).toBe("saved-2");
+  });
+
+  it("closes an unshared old session when its Webview switches away", async () => {
+    const { runtime, sdk } = createRuntime();
+    const old = await runtime.openSession(openOptions());
+    const oldBoundary = sdk.sessions.get(old.id)!;
+    sdk.addSession("saved-2", "/workspace");
+
+    await runtime.openSession(openOptions({ sessionId: "saved-2" }));
+
+    expect(oldBoundary.closeCount()).toBe(1);
+  });
+
+  it("shares one SDK subscription when two Webviews attach to the same session", async () => {
+    const { runtime, sdk } = createRuntime();
+    const first = await runtime.openSession(openOptions({ webviewId: "view-1" }));
+    const boundary = sdk.sessions.get(first.id)!;
+
+    const second = await runtime.openSession(
+      openOptions({ webviewId: "view-2", sessionId: first.id }),
+    );
+
+    expect(second).toBe(first);
+    expect(first.subscribers).toEqual(["view-1", "view-2"]);
+    expect(boundary.subscriptionCount()).toBe(1);
+    expect(boundary.handlerInstallations).toEqual({ approval: 1, question: 1 });
+  });
+
+  it("does not double-wrap the SDK session when two opens race for it", async () => {
+    const sdk = createFakeHarness();
+    const broadcasts: { event: string; data: unknown; webviewId?: string }[] = [];
+    const runtime = new NightHawkRuntime({
+      version: "0.6.0",
+      harness: sdk.harness,
+      broadcast: (event, data, webviewId) => {
+        broadcasts.push({ event, data, webviewId });
+      },
+      captureBaseline: () => undefined,
+      log: () => undefined,
+    });
+    const boundary = sdk.addSession("saved-1", "/workspace");
+
+    const [first, second] = await Promise.all([
+      runtime.openSession(openOptions({ sessionId: "saved-1" })),
+      runtime.openSession(openOptions({ sessionId: "saved-1" })),
+    ]);
+
+    expect(second).toBe(first);
+    expect(boundary.subscriptionCount()).toBe(1);
+
+    boundary.emit({
+      type: "assistant.delta",
+      sessionId: "saved-1",
+      agentId: "main",
+      turnId: 1,
+      delta: "Hello",
+    });
+
+    const parts = broadcasts.filter(
+      ({ data }) => (data as { type?: string }).type === "ContentPart",
+    );
+    expect(parts).toHaveLength(1);
+  });
+
+  it("coalesces two concurrent new-session opens for one view onto one session", async () => {
+    const { runtime, sdk } = createRuntime();
+
+    const [first, second] = await Promise.all([
+      runtime.openSession(openOptions()),
+      runtime.openSession(openOptions()),
+    ]);
+
+    expect(second).toBe(first);
+    expect(sdk.createInputs).toHaveLength(1);
+    expect(first.subscribers).toEqual(["view-1"]);
+  });
+
+  it("does not double-wrap the SDK session when two attaches race for it", async () => {
+    const sdk = createFakeHarness();
+    const broadcasts: { event: string; data: unknown; webviewId?: string }[] = [];
+    const runtime = new NightHawkRuntime({
+      version: "0.6.0",
+      harness: sdk.harness,
+      broadcast: (event, data, webviewId) => {
+        broadcasts.push({ event, data, webviewId });
+      },
+      captureBaseline: () => undefined,
+      log: () => undefined,
+    });
+    const boundary = sdk.addSession("saved-1", "/workspace");
+
+    const [first, second] = await Promise.all([
+      runtime.attachResumedSession("view-1", boundary.session),
+      runtime.attachResumedSession("view-1", boundary.session),
+    ]);
+
+    expect(second).toBe(first);
+    expect(boundary.subscriptionCount()).toBe(1);
+
+    boundary.emit({
+      type: "assistant.delta",
+      sessionId: "saved-1",
+      agentId: "main",
+      turnId: 1,
+      delta: "Hello",
+    });
+
+    const parts = broadcasts.filter(
+      ({ data }) => (data as { type?: string }).type === "ContentPart",
+    );
+    expect(parts).toHaveLength(1);
+  });
+
+  it("preserves the resumed session's model instead of reapplying the configured default", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession("saved-1", "/workspace", { model: "old-model" });
+
+    const opened = await runtime.openSession(openOptions({ sessionId: "saved-1", model: "new-model" }));
+
+    expect(session.setModels).toEqual([]);
+    await expect(opened.session.getStatus()).resolves.toMatchObject({ model: "old-model" });
+  });
+
+  it("preserves the resumed session's thinking effort instead of reapplying the configured default", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession("saved-1", "/workspace", { thinkingEffort: "max" });
+
+    const opened = await runtime.openSession(openOptions({ sessionId: "saved-1", effort: "medium" }));
+
+    expect(session.setThinkingEfforts).toEqual([]);
+    await expect(opened.session.getStatus()).resolves.toMatchObject({ thinkingEffort: "max" });
+  });
+
+  it("announces the session's actual status to the attaching view so the display matches it", async () => {
+    const sdk = createFakeHarness();
+    const broadcasts: { event: string; data: unknown; webviewId?: string }[] = [];
+    const runtime = new NightHawkRuntime({
+      version: "0.6.0",
+      harness: sdk.harness,
+      broadcast: (event, data, webviewId) => {
+        broadcasts.push({ event, data, webviewId });
+      },
+      captureBaseline: () => undefined,
+      log: () => undefined,
+    });
+    sdk.addSession("saved-1", "/workspace", {
+      model: "nighthawk-test",
+      thinkingEffort: "max",
+      planMode: true,
+    });
+
+    await runtime.openSession(openOptions({ sessionId: "saved-1", effort: "medium" }));
+
+    expect(broadcasts).toContainEqual({
+      event: Events.StreamEvent,
+      data: {
+        type: "StatusUpdate",
+        payload: {
+          model: "nighthawk-test",
+          thinking_effort: "max",
+          plan_mode: true,
+          context_usage: 0,
+        },
+        _sessionId: "saved-1",
+      },
+      webviewId: "view-1",
+    });
+  });
+
+  it("uses the yolo setting as the initial value for an unmarked resumed session", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession("saved-1", "/workspace", { permission: "manual" });
+
+    await runtime.openSession(openOptions({ sessionId: "saved-1", yoloMode: true }));
+
+    expect(session.metadataUpdates).toEqual([
+      { vscode_legacy_approval: { yolo: true, afk: false } },
+    ]);
+  });
+
+  it("lets the global yolo setting override a persisted off flag on resume", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession(
+      "saved-1",
+      "/workspace",
+      { permission: "manual" },
+      { vscode_legacy_approval: { yolo: false, afk: false } },
+    );
+
+    const opened = await runtime.openSession(openOptions({ sessionId: "saved-1", yoloMode: true }));
+
+    expect(session.setPermissions).toEqual(["yolo"]);
+    expect(session.metadataUpdates).toEqual([
+      { vscode_legacy_approval: { yolo: true, afk: false } },
+    ]);
+    expect(opened.legacyApprovalFlags).toEqual({ yolo: true, afk: false });
+  });
+
+  it("lets the global yolo setting disable a persisted session yolo flag on resume", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession(
+      "saved-1",
+      "/workspace",
+      { permission: "yolo" },
+      { vscode_legacy_approval: { yolo: true, afk: false } },
+    );
+
+    const opened = await runtime.openSession(openOptions({ sessionId: "saved-1", yoloMode: false }));
+
+    expect(session.setPermissions).toEqual(["manual"]);
+    expect(session.metadataUpdates).toEqual([
+      { vscode_legacy_approval: { yolo: false, afk: false } },
+    ]);
+    expect(opened.legacyApprovalFlags).toEqual({ yolo: false, afk: false });
+  });
+
+  it("keeps the persisted afk flag while applying the global yolo setting on resume", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession(
+      "saved-1",
+      "/workspace",
+      { permission: "manual" },
+      { vscode_legacy_approval: { yolo: false, afk: true } },
+    );
+
+    const opened = await runtime.openSession(openOptions({ sessionId: "saved-1", yoloMode: true }));
+
+    expect(session.setPermissions).toEqual(["auto"]);
+    expect(opened.legacyApprovalFlags).toEqual({ yolo: true, afk: true });
+  });
+
+  it("restores persisted afk with core auto permission", async () => {
+    const { runtime, sdk } = createRuntime();
+    const session = sdk.addSession(
+      "saved-1",
+      "/workspace",
+      { permission: "manual" },
+      { vscode_legacy_approval: { yolo: false, afk: true } },
+    );
+
+    await runtime.openSession(openOptions({ sessionId: "saved-1", yoloMode: false }));
+
+    expect(session.setPermissions).toEqual(["auto"]);
+  });
+
+  it("changes the setting-backed yolo flag without clearing session afk", async () => {
+    const { runtime } = createRuntime();
+    const opened = await runtime.openSession(openOptions());
+    await opened.toggleLegacyApproval("afk");
+
+    await runtime.setYoloModeForActiveSessions(true);
+
+    expect(opened.legacyApprovalFlags).toEqual({ yolo: true, afk: true });
+    await expect(opened.session.getStatus()).resolves.toMatchObject({ permission: "auto" });
+  });
+
+  it("keeps a shared session open when one of its Webviews detaches", async () => {
+    const { runtime, sdk } = createRuntime();
+    const opened = await runtime.openSession(openOptions({ webviewId: "view-1" }));
+    await runtime.openSession(openOptions({ webviewId: "view-2", sessionId: opened.id }));
+    const boundary = sdk.sessions.get(opened.id)!;
+
+    await runtime.detachView("view-1");
+
+    expect(boundary.closeCount()).toBe(0);
+    expect(runtime.getSessionForView("view-2")?.id).toBe(opened.id);
+  });
+
+  it("closes an SDK session when its last Webview detaches", async () => {
+    const { runtime, sdk } = createRuntime();
+    const opened = await runtime.openSession(openOptions());
+    const boundary = sdk.sessions.get(opened.id)!;
+
+    await runtime.detachView("view-1");
+
+    expect(boundary.closeCount()).toBe(1);
+    expect(runtime.getSession(opened.id)).toBeUndefined();
+  });
+
+  it("reattaches the same resumed session without replacing its handlers", async () => {
+    const { runtime, sdk } = createRuntime();
+    const boundary = sdk.addSession("saved-1", "/workspace");
+    const first = await runtime.attachResumedSession("view-1", boundary.session);
+
+    const second = await runtime.attachResumedSession("view-1", boundary.session);
+
+    expect(second).toBe(first);
+    expect(boundary.subscriptionCount()).toBe(1);
+    expect(boundary.handlerInstallations).toEqual({ approval: 1, question: 1 });
+    expect(boundary.closeCount()).toBe(0);
+  });
+
+  it("removes every Webview mapping when a shared session is closed", async () => {
+    const { runtime } = createRuntime();
+    const opened = await runtime.openSession(openOptions({ webviewId: "view-1" }));
+    await runtime.openSession(openOptions({ webviewId: "view-2", sessionId: opened.id }));
+
+    await runtime.closeSession(opened.id);
+
+    expect(runtime.getSessionForView("view-1")).toBeUndefined();
+    expect(runtime.getSessionForView("view-2")).toBeUndefined();
+  });
+
+  it("delegates deletion after the active session has been closed", async () => {
+    const { runtime, sdk } = createRuntime();
+    const opened = await runtime.openSession(openOptions());
+    const boundary = sdk.sessions.get(opened.id)!;
+
+    await runtime.deleteSession(opened.id);
+
+    expect(boundary.closeCount()).toBe(1);
+    expect(sdk.deleteSessionIds).toEqual([opened.id]);
+  });
+
+  it("closes every active SDK session when the host runtime is disposed", async () => {
+    const { runtime, sdk } = createRuntime();
+    const first = await runtime.openSession(openOptions({ webviewId: "view-1" }));
+    const secondBoundary = sdk.addSession("saved-2", "/workspace");
+    await runtime.openSession(openOptions({ webviewId: "view-2", sessionId: "saved-2" }));
+
+    await runtime.dispose();
+
+    expect(sdk.sessions.get(first.id)?.closeCount()).toBe(1);
+    expect(secondBoundary.closeCount()).toBe(1);
+    expect(sdk.closeCount()).toBe(1);
+  });
+
+  it("does not retain a resumed session when it belongs to a different working directory", async () => {
+    const { runtime, sdk } = createRuntime();
+    const foreign = sdk.addSession("foreign-1", "/other-workspace");
+
+    await expect(
+      runtime.openSession(openOptions({ sessionId: "foreign-1" })),
+    ).rejects.toThrow("The selected session belongs to a different working directory.");
+
+    expect(runtime.getSession("foreign-1")).toBeUndefined();
+    expect(foreign.closeCount()).toBe(1);
+  });
+
+  function createRecordingRuntime() {
+    const sdk = createFakeHarness();
+    const broadcasts: Array<{ event: string; data: unknown }> = [];
+    const runtime = new NightHawkRuntime({
+      version: "test",
+      harness: sdk.harness,
+      broadcast: (event, data) => {
+        broadcasts.push({ event, data });
+      },
+      captureBaseline: () => undefined,
+      log: () => undefined,
+    });
+    return { runtime, sdk, broadcasts };
+  }
+
+  it("fails a reentrant prompt without disturbing the running turn", async () => {
+    const { runtime, sdk, broadcasts } = createRecordingRuntime();
+    const opened = await runtime.openSession(openOptions());
+    const boundary = sdk.sessions.get(opened.id)!;
+
+    let releaseTurn!: () => void;
+    boundary.setPromptImpl(() => new Promise<void>((resolve) => {
+      releaseTurn = resolve;
+    }));
+    const first = opened.prompt("first message");
+    boundary.emit({ type: "turn.started", agentId: "main", sessionId: opened.id, turnId: "t1" } as unknown as Event);
+    expect(opened.isBusy).toBe(true);
+
+    await expect(opened.prompt("concurrent message")).resolves.toEqual({ status: "failed" });
+
+    // The rejection surfaces as a mid-turn warning; the active turn is untouched.
+    expect(opened.isBusy).toBe(true);
+    const busyWarning = broadcasts.find(({ data }) => (data as { type?: string }).type === "error");
+    expect(busyWarning?.data).toMatchObject({
+      type: "error",
+      phase: "runtime",
+      detail: "A response is already being generated for this session.",
+      terminal: false,
+    });
+
+    boundary.emit({ type: "turn.ended", agentId: "main", sessionId: opened.id, turnId: "t1", reason: "completed" } as unknown as Event);
+    releaseTurn();
+    await expect(first).resolves.toEqual({ status: "finished" });
+    expect(opened.isBusy).toBe(false);
+  });
+
+  it("rejects a prompt during an exclusive operation with a terminal error", async () => {
+    const { runtime, broadcasts } = createRecordingRuntime();
+    const opened = await runtime.openSession(openOptions());
+
+    let releaseExclusive!: () => void;
+    const exclusive = opened.runExclusiveAfterCancelling(
+      () => new Promise<void>((resolve) => {
+        releaseExclusive = resolve;
+      }),
+    );
+    // No active work means no later stream_complete: the rejection must be
+    // terminal so the caller's composer can unlock.
+    expect(opened.isBusy).toBe(true);
+
+    await expect(opened.prompt("during fork")).resolves.toEqual({ status: "failed" });
+    const rejection = broadcasts.find(({ data }) => (data as { type?: string }).type === "error");
+    expect(rejection?.data).toMatchObject({ type: "error", phase: "runtime" });
+    expect((rejection?.data as Record<string, unknown>)["terminal"]).toBeUndefined();
+
+    releaseExclusive();
+    await exclusive;
+    expect(opened.isBusy).toBe(false);
+  });
+
+  it("marks a mid-turn core error as non-terminal until the turn ends", async () => {
+    const { runtime, sdk, broadcasts } = createRecordingRuntime();
+    const opened = await runtime.openSession(openOptions());
+    const boundary = sdk.sessions.get(opened.id)!;
+
+    let releaseTurn!: () => void;
+    boundary.setPromptImpl(() => new Promise<void>((resolve) => {
+      releaseTurn = resolve;
+    }));
+    const first = opened.prompt("first message");
+    boundary.emit({ type: "turn.started", agentId: "main", sessionId: opened.id, turnId: "t1" } as unknown as Event);
+
+    boundary.emit({
+      type: "error",
+      agentId: "main",
+      sessionId: opened.id,
+      code: "records.write_failed",
+      message: "Failed to write agent records: EACCES",
+    } as unknown as Event);
+
+    // The turn is still running: no settlement, no terminal error on the wire.
+    expect(opened.isBusy).toBe(true);
+    const warning = broadcasts.find(({ data }) => (data as { type?: string }).type === "error");
+    expect(warning?.data).toMatchObject({
+      type: "error",
+      code: "records.write_failed",
+      phase: "runtime",
+      terminal: false,
+    });
+
+    boundary.emit({ type: "turn.ended", agentId: "main", sessionId: opened.id, turnId: "t1", reason: "completed" } as unknown as Event);
+    releaseTurn();
+    await expect(first).resolves.toEqual({ status: "finished" });
+    expect(opened.isBusy).toBe(false);
+  });
+
+  it("keeps preflight failures terminal", async () => {
+    const { runtime, sdk, broadcasts } = createRecordingRuntime();
+    const opened = await runtime.openSession(openOptions());
+    const boundary = sdk.sessions.get(opened.id)!;
+
+    boundary.setPromptImpl(() => Promise.reject(new Error("provider down")));
+
+    await expect(opened.prompt("hi")).resolves.toEqual({ status: "failed" });
+    const failure = broadcasts.find(({ data }) => (data as { type?: string }).type === "error");
+    expect(failure?.data).toMatchObject({ type: "error", phase: "preflight" });
+    expect((failure?.data as Record<string, unknown>)["terminal"]).toBeUndefined();
+    expect(opened.isBusy).toBe(false);
+  });
+});

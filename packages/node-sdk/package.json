@@ -1,0 +1,80 @@
+{
+  "name": "@nighthawk/nighthawk-sdk",
+  "version": "0.23.0",
+  "private": true,
+  "description": "TypeScript SDK for the NightHawk Agent",
+  "license": "MIT",
+  "author": "Moonshot AI",
+  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/packages/node-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "directory": "packages/node-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+  },
+  "keywords": [
+    "nighthawk",
+    "sdk",
+    "typescript",
+    "agent",
+    "api"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./exec-server": {
+      "types": "./src/exec-server.ts",
+      "default": "./src/exec-server.ts"
+    },
+    "./ssh-askpass": {
+      "types": "./src/ssh-askpass.ts",
+      "default": "./src/ssh-askpass.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.mts",
+        "import": "./dist/index.mjs",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsdown && pnpm run build:dts",
+    "build:dts": "node scripts/build-dts.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .tmp-api-extractor"
+  },
+  "dependencies": {
+    "@antfu/utils": "^9.3.0",
+    "smol-toml": "^1.6.1",
+    "yazl": "^3.3.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.95.2",
+    "@google/genai": "^1.49.0",
+    "@nighthawk/agent-core-v2": "workspace:^",
+    "@nighthawk/nighthawk-oauth": "workspace:^",
+    "@nighthawk/nighthawk-product": "workspace:^",
+    "@nighthawk/klient": "workspace:^",
+    "@types/yazl": "^2.4.6",
+    "jimp": "^1.6.1",
+    "openai": "^6.34.0"
+  }
+}

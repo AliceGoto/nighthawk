@@ -1,0 +1,918 @@
+import { homedir as osHomedir } from 'node:os';
+import { isAbsolute, join, resolve } from 'node:path';
+
+import {
+  log,
+  type CapabilityStatus,
+  type PluginInfo,
+  type PluginSummary,
+  type Session,
+} from '@nighthawk/nighthawk-sdk';
+import { Spacer } from '@nighthawk/pi-tui';
+
+import { Markdown } from '#/tui/components/markdown/markdown';
+
+import {
+  PluginInstallTrustConfirmComponent,
+  PluginMcpSelectorComponent,
+  PluginRemoveConfirmComponent,
+  PluginStopProcessesConfirmComponent,
+  PluginsPanelComponent,
+  type PluginInstallTrustConfirmResult,
+  type PluginMcpSelection,
+  type PluginRemoveConfirmResult,
+  type PluginsPanelSelection,
+  type PluginsPanelTabId,
+} from '../components/dialogs/plugins-selector';
+import {
+  buildPluginsInfoLines,
+  buildPluginsListLines,
+} from '../components/messages/plugins-status-panel';
+import { UsagePanelComponent } from '../components/messages/usage-panel';
+import { createMarkdownTheme } from '../theme/pi-tui-theme';
+import { formatErrorMessage } from '../utils/event-payload';
+import { createMarkdownOptions } from '../utils/markdown-options';
+import {
+  capabilityIdForMarketplaceEntry,
+  installedPluginForMarketplaceEntry,
+  isCapabilityPluginId,
+} from '../utils/capability-marketplace';
+import {
+  formatPluginSourceLabel,
+  isOfficialPluginInstall,
+  isOfficialPluginSource,
+} from '../utils/plugin-source-label';
+import {
+  NIGHTHAWK_PLUGIN_MARKETPLACE_URL_ENV,
+  QUOTA_CONSUMING_PLUGIN_IDS,
+} from '#/constant/app';
+import {
+  loadPluginMarketplace,
+  withMarketplaceLatestVersions,
+  type PluginMarketplaceEntry,
+} from '#/utils/plugin-marketplace';
+import type { SlashCommandHost } from './dispatch';
+
+interface ShowPluginsPickerOptions {
+  readonly selectedId?: string;
+  readonly pluginHint?: {
+    readonly id: string;
+    readonly text: string;
+  };
+  readonly initialTab?: PluginsPanelTabId;
+  readonly marketplaceSource?: string;
+}
+
+interface PluginMcpServerHint {
+  readonly server: string;
+  readonly text: string;
+}
+
+interface ShowPluginMcpPickerOptions {
+  readonly selectedServer?: string;
+  readonly serverHint?: PluginMcpServerHint;
+}
+
+/** The plugin-management surface `/plugins` operates on. */
+type PluginApi = Pick<
+  Session,
+  | 'listPlugins'
+  | 'installPlugin'
+  | 'setPluginEnabled'
+  | 'setPluginMcpServerEnabled'
+  | 'removePlugin'
+  | 'reloadPlugins'
+  | 'getPluginInfo'
+>;
+
+/**
+ * Resolve the plugin-management API. Plugin state is app-global, so a
+ * session-less startup still gets a working `/plugins` through the harness's
+ * global facade; once a session exists the session's own API is used.
+ */
+async function resolvePluginApi(host: SlashCommandHost): Promise<PluginApi> {
+  if (host.session !== undefined) return host.session;
+  return {
+    listPlugins: () => host.harness.listPlugins(),
+    installPlugin: (source) => host.harness.installPlugin(source),
+    setPluginEnabled: (id, enabled) => host.harness.setPluginEnabled(id, enabled),
+    setPluginMcpServerEnabled: (id, server, enabled) =>
+      host.harness.setPluginMcpServerEnabled(id, server, enabled),
+    removePlugin: (id) => host.harness.removePlugin(id),
+    reloadPlugins: () => host.harness.reloadPlugins(),
+    getPluginInfo: (id) => host.harness.getPluginInfo(id),
+  };
+}
+
+export async function handlePluginsCommand(host: SlashCommandHost, rawArgs: string): Promise<void> {
+  const args = rawArgs.trim().split(/\s+/).filter((part) => part.length > 0);
+  const sub = args[0];
+  const rest = args.slice(1);
+  const session = await resolvePluginApi(host);
+
+  try {
+    if (sub === undefined) {
+      await showPluginsPicker(host);
+      return;
+    }
+    if (sub === 'list') {
+      await renderPluginsList(host);
+      return;
+    }
+    if (sub === 'install') {
+      const source = rest.join(' ').trim();
+      if (source.length === 0) {
+        host.showError('Usage: /plugins install <local-path-or-zip-url>');
+        return;
+      }
+      if (!(await confirmInstallTrust(host, source, isOfficialPluginSource(source)))) {
+        host.showStatus('Install cancelled.');
+        return;
+      }
+      const spinner = host.showProgressSpinner(`Installing plugin from ${truncateForStatus(source)}…`);
+      try {
+        await installPluginFromSource(host, source);
+        spinner.stop({ ok: true, label: `Install finished — see details below.` });
+      } catch (error) {
+        spinner.stop({ ok: false, label: `Install failed: ${formatErrorMessage(error)}` });
+        throw error;
+      }
+      return;
+    }
+    if (sub === 'marketplace') {
+      const marketplaceSource = rest.join(' ').trim() || undefined;
+      await showPluginsPicker(host, {
+        // Custom marketplaces often omit `tier`, so their entries land on the
+        // Curated tab (entry.tier !== 'official'). Open there when a custom
+        // source is supplied; otherwise the default catalog's official entries
+        // make Official the right landing tab.
+        initialTab: marketplaceSource === undefined ? 'official' : 'third-party',
+        marketplaceSource,
+      });
+      return;
+    }
+    if (sub === 'info') {
+      const id = rest[0];
+      if (id === undefined) {
+        await showPluginsPicker(host);
+        return;
+      }
+      await renderPluginInfo(host, id);
+      return;
+    }
+    if (sub === 'mcp') {
+      const action = rest[0];
+      const id = rest[1];
+      const server = rest[2];
+      if ((action !== 'enable' && action !== 'disable') || id === undefined || server === undefined) {
+        host.showError('Usage: /plugins mcp enable|disable <id> <server>');
+        return;
+      }
+      await session.setPluginMcpServerEnabled(id, server, action === 'enable');
+      host.showStatus(
+        `${action === 'enable' ? 'Enabled' : 'Disabled'} MCP server ${server} for ${id}. Run /reload or /new to apply.`,
+      );
+      return;
+    }
+    if (sub === 'enable' || sub === 'disable') {
+      const id = rest[0];
+      if (id === undefined) {
+        await showPluginsPicker(host);
+        return;
+      }
+      await applyPluginEnabled(host, id, sub === 'enable');
+      return;
+    }
+    if (sub === 'remove') {
+      const id = rest[0];
+      if (id === undefined) {
+        host.showError('Usage: /plugins remove <id>');
+        return;
+      }
+      if (!(await confirmRemovePlugin(host, id))) {
+        host.showStatus(`Remove cancelled: ${id}.`);
+        return;
+      }
+      await removePlugin(host, id);
+      return;
+    }
+    if (sub === 'reload') {
+      await reloadPlugins(host);
+      return;
+    }
+    const plugins = await session.listPlugins();
+    if (plugins.some((plugin) => plugin.id === sub)) {
+      await renderPluginInfo(host, sub);
+      return;
+    }
+    host.showError(`Unknown /plugins action: ${sub}. Run /plugins to choose interactively.`);
+  } catch (error) {
+    host.showError(`/plugins ${sub ?? ''} failed: ${formatErrorMessage(error)}`);
+  }
+}
+
+/**
+ * Resolve the capability API. Like plugin state, capability state is
+ * app-global on the v2 engine, so a session-less startup still gets
+ * readiness and installs through the harness's global facade; with a live
+ * session the session's own API is used.
+ */
+type CapabilityApi = Pick<Session, 'listCapabilities' | 'getCapability' | 'installCapability'>;
+
+async function resolveCapabilityApi(host: SlashCommandHost): Promise<CapabilityApi> {
+  if (host.session !== undefined) return host.session;
+  return host.harness;
+}
+
+function logCapabilityStatus(capability: CapabilityStatus, installed?: boolean): void {
+  const payload = {
+    capabilityId: capability.id,
+    pluginId: capability.pluginId,
+    installed,
+    supported: capability.supported,
+    state: capability.state,
+    version: capability.version,
+    install: capability.install,
+    steps: capability.steps,
+  };
+  const hasStepIssues = capability.steps.some((step) => step.state !== 'ok');
+  if (
+    capability.install.error !== undefined ||
+    (installed !== false && hasStepIssues)
+  ) {
+    log.warn('capability needs attention', payload);
+  } else {
+    log.info('capability status', payload);
+  }
+}
+
+async function showPluginsPicker(
+  host: SlashCommandHost,
+  options?: ShowPluginsPickerOptions,
+): Promise<void> {
+  let plugins: readonly PluginSummary[];
+  try {
+    plugins = await (await resolvePluginApi(host)).listPlugins();
+  } catch (error) {
+    host.showError(`Failed to load plugins: ${formatErrorMessage(error)}`);
+    return;
+  }
+
+  let capabilities: readonly CapabilityStatus[] = [];
+  try {
+    capabilities = await (await resolveCapabilityApi(host)).listCapabilities();
+  } catch (error) {
+    log.warn('capability status unavailable', { error });
+  }
+
+  for (const capability of capabilities) {
+    const installed = installedPluginForMarketplaceEntry(
+      capability.pluginId ?? capability.id,
+      plugins,
+      capability,
+      true,
+    );
+    logCapabilityStatus(capability, installed !== undefined);
+  }
+
+  const catalogIsDefault = isDefaultMarketplaceCatalog(options?.marketplaceSource);
+  const panel = new PluginsPanelComponent({
+    installed: plugins,
+    capabilities,
+    catalogIsDefault,
+    initialTab: options?.initialTab,
+    selectedId: options?.selectedId,
+    pluginHint: options?.pluginHint,
+    onSelect: (selection) => {
+      void handlePluginsPanelSelection(
+        host,
+        panel,
+        selection,
+        catalogIsDefault,
+        options?.marketplaceSource !== undefined ||
+        process.env[NIGHTHAWK_PLUGIN_MARKETPLACE_URL_ENV] !== undefined
+          ? panel.marketplaceSource()
+          : undefined,
+      ).catch((error: unknown) => {
+        host.showError(`/plugins failed: ${formatErrorMessage(error)}`);
+      });
+    },
+    onCancel: () => {
+      host.restoreEditor();
+    },
+    onRequestMarketplace: () => {
+      void loadMarketplaceCatalog(host, panel, options?.marketplaceSource);
+    },
+  });
+  host.mountEditorReplacement(panel);
+  if (options?.initialTab !== 'custom') {
+    panel.setMarketplaceLoading();
+    void loadMarketplaceCatalog(host, panel, options?.marketplaceSource);
+  }
+}
+
+function isDefaultMarketplaceCatalog(
+  source: string | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (source !== undefined) return false;
+  if (env[NIGHTHAWK_PLUGIN_MARKETPLACE_URL_ENV] !== undefined) {
+    return env['NIGHTHAWK_PLUGIN_MARKETPLACE_FROM_DEV_SERVER'] === '1';
+  }
+  return true;
+}
+
+async function loadMarketplaceCatalog(
+  host: SlashCommandHost,
+  panel: PluginsPanelComponent,
+  source: string | undefined,
+): Promise<void> {
+  try {
+    const catalog = await loadPluginMarketplace({
+      workDir: host.state.appState.workDir,
+      source,
+      reconcileAvailability: async (changed) => {
+        if (!changed) return;
+        const plugins = await resolvePluginApi(host);
+        await plugins.reloadPlugins();
+        await host.refreshPluginCommands(host.session);
+        panel.setInstalled(await plugins.listPlugins());
+      },
+    });
+    panel.setMarketplace(catalog.plugins, catalog.source);
+    panel.setMarketplaceCatalogVersions(catalog.plugins);
+    host.state.ui.requestRender();
+    try {
+      const enriched = await withMarketplaceLatestVersions(catalog);
+      panel.setMarketplace(enriched.plugins, enriched.source);
+    } catch (error) {
+      log.warn('marketplace version lookup failed', { error });
+    }
+    host.state.ui.requestRender();
+  } catch (error) {
+    panel.setMarketplaceError(formatErrorMessage(error));
+    host.state.ui.requestRender();
+  }
+}
+
+async function showPluginMcpPicker(
+  host: SlashCommandHost,
+  id: string,
+  options?: ShowPluginMcpPickerOptions,
+): Promise<void> {
+  let info: PluginInfo;
+  try {
+    info = await (await resolvePluginApi(host)).getPluginInfo(id);
+  } catch (error) {
+    host.showError(`Failed to load plugin MCP servers: ${formatErrorMessage(error)}`);
+    return;
+  }
+
+  host.mountEditorReplacement(
+    new PluginMcpSelectorComponent({
+      info,
+      selectedServer: options?.selectedServer,
+      serverHint: options?.serverHint,
+      onSelect: (selection) => {
+        // Every MCP action re-mounts a picker, so let the handler do the
+        // mounting — pre-restoring the editor here would flash on toggle.
+        void handlePluginMcpSelection(host, selection).catch((error: unknown) => {
+          host.showError(`/plugins mcp failed: ${formatErrorMessage(error)}`);
+        });
+      },
+      onCancel: () => {
+        host.restoreEditor();
+        void showPluginsPicker(host, { selectedId: id });
+      },
+    }),
+  );
+}
+
+async function confirmRemovePlugin(host: SlashCommandHost, id: string): Promise<boolean> {
+  let displayName = id;
+  try {
+    displayName = (await (await resolvePluginApi(host)).getPluginInfo(id)).displayName;
+  } catch {
+    // Keep the confirmation available even when plugin details cannot be loaded.
+  }
+
+  return new Promise((resolveConfirmed) => {
+    host.mountEditorReplacement(
+      new PluginRemoveConfirmComponent({
+        id,
+        displayName,
+        onDone: (result: PluginRemoveConfirmResult) => {
+          host.restoreEditor();
+          resolveConfirmed(result.kind === 'confirm');
+        },
+      }),
+    );
+  });
+}
+
+async function confirmInstallTrust(
+  host: SlashCommandHost,
+  label: string,
+  official: boolean,
+): Promise<boolean> {
+  // NightHawk-built official plugins are trusted implicitly; anything else requires
+  // the user to explicitly opt in via the trust prompt.
+  if (official) return true;
+  return new Promise((resolveConfirmed) => {
+    host.mountEditorReplacement(
+      new PluginInstallTrustConfirmComponent({
+        label,
+        onDone: (result: PluginInstallTrustConfirmResult) => {
+          host.restoreEditor();
+          resolveConfirmed(result.kind === 'confirm');
+        },
+      }),
+    );
+  });
+}
+
+const CAPABILITY_POLL_INTERVAL_MS = 700;
+const CAPABILITY_POLL_ATTEMPTS = 260; // ~3 minutes of runtime setup budget
+
+async function pollCapabilityInstall(
+  host: SlashCommandHost,
+  id: string,
+): Promise<CapabilityStatus | undefined> {
+  const api = await resolveCapabilityApi(host);
+  let previousProgress = '';
+  for (let attempt = 0; attempt < CAPABILITY_POLL_ATTEMPTS; attempt += 1) {
+    await new Promise((resolve) => {
+      setTimeout(resolve, CAPABILITY_POLL_INTERVAL_MS);
+    });
+    const status = await api.getCapability(id);
+    if (!status.install.running) return status;
+    const progress = `${status.install.step ?? ''}:${status.install.percent ?? ''}`;
+    if (progress !== previousProgress) {
+      previousProgress = progress;
+      log.info('capability install progress', {
+        capabilityId: id,
+        step: status.install.step,
+        percent: status.install.percent,
+      });
+    }
+  }
+  return undefined;
+}
+
+export const __pluginsCommandInternals = {
+  installCapabilityFromPanel,
+  installMarketplaceEntryFromPanel,
+  installPluginFromSource,
+  isDefaultMarketplaceCatalog,
+  loadMarketplaceCatalog,
+  pollCapabilityInstall,
+  removePlugin,
+};
+
+async function installCapabilityFromPanel(
+  host: SlashCommandHost,
+  panel: PluginsPanelComponent,
+  entry: PluginMarketplaceEntry,
+  capabilityId: CapabilityStatus['id'],
+): Promise<void> {
+  const label = entry.displayName;
+  panel.setInstalling(truncateForStatus(label));
+  host.state.ui.requestRender();
+  const api = await resolveCapabilityApi(host);
+  log.info('capability install requested', { capabilityId });
+  try {
+    const alreadyRunning = await api
+      .getCapability(capabilityId)
+      .then((status) => status.install.running, () => false);
+    if (!alreadyRunning) {
+      await api.installCapability(capabilityId);
+    } else {
+      log.info('following running capability install', { capabilityId });
+    }
+  } catch (error) {
+    log.warn('capability install failed to start', { capabilityId, error });
+    panel.clearInstalling();
+    host.state.ui.requestRender();
+    host.showError(`Failed to install ${label}: ${formatErrorMessage(error)}`);
+    host.restoreEditor();
+    return;
+  }
+  let result: CapabilityStatus | undefined;
+  try {
+    result = await pollCapabilityInstall(host, capabilityId);
+    if (result?.install.confirmationRequired === 'stop-processes') {
+      panel.clearInstalling();
+      const confirmed = await new Promise<boolean>((resolveConfirmed) => {
+        host.mountEditorReplacement(
+          new PluginStopProcessesConfirmComponent({ label, onDone: resolveConfirmed }),
+        );
+      });
+      if (!confirmed) {
+        host.restoreEditor();
+        host.showStatus(`Install cancelled: ${label}.`);
+        return;
+      }
+      panel.setInstalling(truncateForStatus(label));
+      host.mountEditorReplacement(panel);
+      try {
+        await api.installCapability(capabilityId, { stopRunningProcesses: true });
+      } catch (error) {
+        panel.clearInstalling();
+        host.restoreEditor();
+        host.showError(`Failed to install ${label}: ${formatErrorMessage(error)}`);
+        return;
+      }
+      result = await pollCapabilityInstall(host, capabilityId);
+    }
+  } catch (error) {
+    log.warn('capability install polling failed', { capabilityId, error });
+    result = undefined;
+  }
+  panel.clearInstalling();
+  host.restoreEditor();
+  if (result === undefined) {
+    host.showStatus(`${label} installation is still running in the background.`);
+    return;
+  }
+  logCapabilityStatus(result);
+  if (result.install.confirmationRequired !== undefined) {
+    host.showError(
+      `${label} installation did not complete. Processes are still running; install again from /plugins.`,
+    );
+    return;
+  }
+  if (result.install.error !== undefined) {
+    host.showError(`${label} installation failed: ${result.install.error}`);
+    host.showStatus('Fix the reported error, then install again from /plugins.', 'warning');
+    return;
+  }
+  if (result.state !== 'ready') {
+    const permissionsRequired =
+      capabilityId === 'nighthawk-cu' &&
+      result.steps.some((step) => step.id.startsWith('permissions.') && step.state !== 'ok');
+    if (permissionsRequired) {
+      host.showStatus(
+        'Grant Accessibility and Screen Recording in System Settings → Privacy & Security.',
+        'warning',
+      );
+    } else {
+      host.showError(
+        `${label} installation did not complete. Check the logs and install again from /plugins.`,
+      );
+    }
+    host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+    return;
+  }
+  if (capabilityId === 'nighthawk-webbridge') {
+    host.showNotice(`${label} is installed.`);
+    host.state.transcriptContainer.addChild(new Spacer(1));
+    host.state.transcriptContainer.addChild(
+      new Markdown(WEBBRIDGE_POST_INSTALL_MARKDOWN, 2, 0, createMarkdownTheme(), undefined, {
+        ...createMarkdownOptions(),
+        copySource: true,
+      }),
+    );
+    host.state.ui.requestRender();
+    return;
+  }
+  host.showStatus(`${label} is installed.`);
+  host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+}
+
+async function installFromPanel(
+  host: SlashCommandHost,
+  panel: PluginsPanelComponent,
+  label: string,
+  official: boolean,
+  install: () => Promise<void>,
+): Promise<void> {
+  if (!(await confirmInstallTrust(host, label, official))) {
+    host.showStatus(`Install cancelled: ${label}.`);
+    host.restoreEditor();
+    return;
+  }
+  if (official) {
+    panel.setInstalling(truncateForStatus(label));
+  } else {
+    host.showStatus(`Installing or updating ${label} from marketplace…`);
+  }
+  host.state.ui.requestRender();
+  try {
+    await install();
+  } catch (error) {
+    if (official) {
+      panel.clearInstalling();
+      host.state.ui.requestRender();
+    } else {
+      host.mountEditorReplacement(panel);
+    }
+    host.showError(`Failed to install ${label}: ${formatErrorMessage(error)}`);
+    return;
+  }
+  host.restoreEditor();
+}
+
+async function installMarketplaceEntryFromPanel(
+  host: SlashCommandHost,
+  panel: PluginsPanelComponent,
+  entry: PluginMarketplaceEntry,
+  catalogIsDefault: boolean,
+  marketplaceSource?: string,
+): Promise<void> {
+  if (entry.id === 'nighthawk-webbridge') {
+    throw new Error(
+      'Marketplace plugin "nighthawk-webbridge" is legacy; install "nighthawk-browser-extension" instead',
+    );
+  }
+  const capabilityId = capabilityIdForMarketplaceEntry(entry.id, catalogIsDefault);
+  if (capabilityId !== undefined) {
+    await installCapabilityFromPanel(host, panel, entry, capabilityId);
+    return;
+  }
+  await installFromPanel(
+    host,
+    panel,
+    entry.displayName,
+    isOfficialPluginSource(entry.source),
+    () => installPluginFromMarketplace(
+      host,
+      entry,
+      panel.expectedMarketplaceVersion(entry),
+      marketplaceSource,
+    ),
+  );
+}
+
+async function applyPluginEnabled(
+  host: SlashCommandHost,
+  id: string,
+  enabled: boolean,
+  showStatus = true,
+): Promise<string> {
+  const session = await resolvePluginApi(host);
+  await session.setPluginEnabled(id, enabled);
+  let info: PluginInfo | undefined;
+  try {
+    info = await session.getPluginInfo(id);
+  } catch {
+    info = undefined;
+  }
+  const mcpHint =
+    enabled && info !== undefined && info.mcpServerCount > info.enabledMcpServerCount
+      ? ` Some MCP servers are disabled; re-enable with /plugins mcp enable ${id} <server>.`
+      : '';
+  if (showStatus) {
+    host.showStatus(`${enabled ? 'Enabled' : 'Disabled'} ${id}. Run /reload or /new to apply.${mcpHint}`);
+  }
+  const inlineMcpHint = mcpHint.length > 0 ? ' · MCP servers disabled' : '';
+  return `${pluginInlineChangeHint()}${inlineMcpHint}`;
+}
+
+async function handlePluginsPanelSelection(
+  host: SlashCommandHost,
+  panel: PluginsPanelComponent,
+  selection: PluginsPanelSelection,
+  catalogIsDefault: boolean,
+  marketplaceSource?: string,
+): Promise<void> {
+  switch (selection.kind) {
+    case 'toggle': {
+      const hint = await applyPluginEnabled(host, selection.id, selection.enabled, false);
+      await showPluginsPicker(host, {
+        initialTab: 'installed',
+        selectedId: selection.id,
+        pluginHint: { id: selection.id, text: hint },
+      });
+      return;
+    }
+    case 'remove':
+      if (!(await confirmRemovePlugin(host, selection.id))) {
+        host.showStatus(`Remove cancelled: ${selection.id}.`);
+        await showPluginsPicker(host, { initialTab: 'installed', selectedId: selection.id });
+        return;
+      }
+      await removePlugin(host, selection.id);
+      await showPluginsPicker(host, { initialTab: 'installed' });
+      return;
+    case 'mcp':
+      await showPluginMcpPicker(host, selection.id);
+      return;
+    case 'details':
+      host.restoreEditor();
+      await renderPluginInfo(host, selection.id);
+      return;
+    case 'reload':
+      await reloadPlugins(host);
+      await showPluginsPicker(host, { initialTab: 'installed' });
+      return;
+    case 'install':
+      await installMarketplaceEntryFromPanel(
+        host,
+        panel,
+        selection.entry,
+        catalogIsDefault,
+        marketplaceSource,
+      );
+      return;
+    case 'install-source':
+      await installFromPanel(
+        host,
+        panel,
+        selection.source,
+        isOfficialPluginSource(selection.source),
+        () => installPluginFromSource(host, selection.source),
+      );
+      return;
+  }
+}
+
+async function handlePluginMcpSelection(
+  host: SlashCommandHost,
+  selection: PluginMcpSelection,
+): Promise<void> {
+  switch (selection.kind) {
+    case 'toggle':
+      await (
+        await resolvePluginApi(host)
+      ).setPluginMcpServerEnabled(selection.pluginId, selection.server, selection.enabled);
+      await showPluginMcpPicker(host, selection.pluginId, {
+        selectedServer: selection.server,
+        serverHint: {
+          server: selection.server,
+          text: pluginInlineChangeHint(),
+        },
+      });
+      return;
+    case 'back':
+      await showPluginsPicker(host, { selectedId: selection.pluginId });
+      return;
+  }
+}
+
+async function removePlugin(host: SlashCommandHost, id: string): Promise<void> {
+  await (await resolvePluginApi(host)).removePlugin(id);
+  host.showStatus(`Removed ${id}.`);
+  if (isCapabilityPluginId(id)) {
+    host.showStatus(
+      'Note: the runtime binaries were left untouched, but NightHawk plugin wiring is disabled for new sessions. Restart NightHawk before reinstalling from the Official tab.',
+    );
+    return;
+  }
+  host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+}
+
+async function renderPluginsList(
+  host: SlashCommandHost,
+  plugins?: readonly PluginSummary[],
+): Promise<void> {
+  const currentPlugins = plugins ?? (await (await resolvePluginApi(host)).listPlugins());
+  const title = ` Plugins (${currentPlugins.length}) `;
+  const panel = new UsagePanelComponent(
+    () => buildPluginsListLines({ plugins: currentPlugins }),
+    'primary',
+    title,
+  );
+  host.state.transcriptContainer.addChild(panel);
+  host.state.ui.requestRender();
+}
+
+async function renderPluginInfo(host: SlashCommandHost, id: string): Promise<void> {
+  const info = await (await resolvePluginApi(host)).getPluginInfo(id);
+  const panel = new UsagePanelComponent(
+    () => buildPluginsInfoLines({ info }),
+    'primary',
+    ` ${info.id} `,
+  );
+  host.state.transcriptContainer.addChild(panel);
+  host.state.ui.requestRender();
+}
+
+async function installPluginFromSource(
+  host: SlashCommandHost,
+  source: string,
+): Promise<void> {
+  const session = await resolvePluginApi(host);
+  const beforeList = await session.listPlugins();
+  const summary = await session.installPlugin({
+    source: resolvePluginInstallSource(source, host.state.appState.workDir),
+  });
+  showPluginInstallResult(host, beforeList, summary);
+}
+
+async function installPluginFromMarketplace(
+  host: SlashCommandHost,
+  entry: PluginMarketplaceEntry,
+  expectedVersion: string | undefined,
+  marketplaceSource?: string,
+): Promise<void> {
+  const session = await resolvePluginApi(host);
+  const beforeList = await session.listPlugins();
+  const migrateFrom =
+    entry.id === 'nighthawk-browser-extension' &&
+    beforeList.some((plugin) => plugin.id === 'nighthawk-webbridge')
+      ? 'nighthawk-webbridge'
+      : undefined;
+  const summary = await session.installPlugin({
+    marketplaceId: entry.id,
+    expectedVersion,
+    expectedSha256: entry.sha256sum,
+    migrateFrom,
+    marketplaceSource,
+  });
+  showPluginInstallResult(host, beforeList, summary);
+}
+
+const PLUGIN_RELOAD_HINT = 'Run /new or /reload to apply plugin changes.';
+
+const WEBBRIDGE_POST_INSTALL_MARKDOWN = [
+  '*Two steps left to use NightHawk Browser Extension:*',
+  '1. Install the browser extension',
+  '',
+  '   - [Chrome Web Store](https://chromewebstore.google.com/detail/nighthawk-webbridge/fldmhceldgbpfpkbgopacenieobmligc)',
+  '   - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/nighthawk-webbridge/bnlffdbcfnanfbknnlaflhlhkocccckg)',
+  '   - [Manual installation guide](https://www.kimi.com/code/docs/nighthawk-cli/customization/plugins.html#install-the-browser-extension)',
+  '',
+  '2. Run `/reload` or `/new` to apply it.',
+].join('\n');
+
+const PLUGIN_QUOTA_NOTE = 'Note: This plugin consumes your quota.';
+
+function showPluginInstallResult(
+  host: SlashCommandHost,
+  beforeList: readonly PluginSummary[],
+  summary: PluginSummary,
+): void {
+  const previous = beforeList.find((entry) => entry.id === summary.id);
+  const serverWord = summary.mcpServerCount === 1 ? 'server' : 'servers';
+  const mcpHint =
+    summary.mcpServerCount > 0
+      ? ` Declares ${summary.mcpServerCount} MCP ${serverWord}; enabled by default and configurable from /plugins.`
+      : '';
+  const action = describeInstallAction(previous, summary);
+  host.showStatus(`${action} (${summary.id}).${mcpHint}`);
+  host.showStatus(PLUGIN_RELOAD_HINT, 'warning');
+  // Gate on provenance, not just the id: a local/GitHub fork whose manifest
+  // reuses a billed plugin's id is not the official quota-consuming build.
+  if (QUOTA_CONSUMING_PLUGIN_IDS.includes(summary.id) && isOfficialPluginInstall(summary)) {
+    host.showStatus(PLUGIN_QUOTA_NOTE, 'warning');
+  }
+}
+
+function describeInstallAction(
+  previous: PluginSummary | undefined,
+  next: PluginSummary,
+): string {
+  const sourceLabel = formatPluginSourceLabel(next);
+  const versionFromTo = (prev?: string, cur?: string): string => {
+    if (prev === undefined || prev === cur) return cur === undefined ? '' : ` ${cur}`;
+    return ` ${prev} → ${cur ?? '-'}`;
+  };
+  if (previous === undefined) {
+    return `Installed ${next.displayName}${versionFromTo(undefined, next.version)} ${sourcePhrase(sourceLabel)}`;
+  }
+  if (sourceIdentity(previous) !== sourceIdentity(next)) {
+    const prevSourceLabel = formatPluginSourceLabel(previous);
+    return `Migrated ${next.displayName}: ${prevSourceLabel} → ${sourceLabel}${versionFromTo(previous.version, next.version)}`;
+  }
+  return `Updated ${next.displayName}${versionFromTo(previous.version, next.version)} ${sourcePhrase(sourceLabel)}`;
+}
+
+// formatPluginSourceLabel already prefixes zip-url hosts with "via", so adding
+// "from" would read as "from via <host>". Only prepend "from" otherwise.
+function sourcePhrase(sourceLabel: string): string {
+  return sourceLabel.startsWith('via ') ? sourceLabel : `from ${sourceLabel}`;
+}
+
+function sourceIdentity(plugin: PluginSummary): string {
+  if (plugin.source === 'github' && plugin.github !== undefined) {
+    return `github:${plugin.github.owner}/${plugin.github.repo}`;
+  }
+  return plugin.source;
+}
+
+function truncateForStatus(input: string): string {
+  const max = 80;
+  return input.length > max ? `${input.slice(0, max - 1)}…` : input;
+}
+
+async function reloadPlugins(host: SlashCommandHost): Promise<void> {
+  const summary = await (await resolvePluginApi(host)).reloadPlugins();
+  const line = `Reload: +${summary.added.length} -${summary.removed.length}` +
+    (summary.errors.length > 0 ? ` (${summary.errors.length} errors)` : '');
+  host.showStatus(line);
+  // Rebuild the TUI's plugin slash-command list from the reloaded service so
+  // newly added/enabled commands resolve in this session-less UI right away.
+  await host.refreshPluginCommands(host.session);
+}
+
+function resolvePluginInstallSource(source: string, workDir: string): string {
+  const trimmed = source.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed === '~') return osHomedir();
+  if (trimmed.startsWith('~/')) return join(osHomedir(), trimmed.slice(2));
+  return isAbsolute(trimmed) ? trimmed : resolve(workDir, trimmed);
+}
+
+function pluginInlineChangeHint(): string {
+  return 'run /reload or /new to apply';
+}

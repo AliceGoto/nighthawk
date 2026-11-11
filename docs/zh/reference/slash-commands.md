@@ -1,0 +1,175 @@
+# 斜杠命令
+
+斜杠命令是 NightHawk CLI 在交互式 TUI 中提供的内置控制命令，涵盖账号配置、会话管理、模式切换、信息查询等操作。在输入框中输入 `/` 即可触发命令补全，候选列表随后续字符实时过滤；命令的别名也会一并参与匹配。
+
+输入完整命令名后按 `Enter` 执行。如果输入的 `/` 开头内容不匹配任何内置或 Skill 命令，则按普通消息发送给 Agent。
+
+::: tip 提示
+部分命令仅在空闲（idle）状态下可用。会话正在流式输出或压缩上下文时执行这些命令会被拦截，需先按 `Esc` 或 `Ctrl-C` 中断。下表「随时可用」列标注了流式输出期间也可用的命令。
+:::
+
+## 账号与配置
+
+| 命令 | 别名 | 说明 | 随时可用 |
+| --- | --- | --- | --- |
+| `/login` | — | 选择账号或平台并登录：NightHawk 走 OAuth 验证码流程，NightHawk Platform 通过 API 密钥登录 | 否 |
+| `/logout` | — | 清除当前所选账号的凭据 | 否 |
+| `/provider` | — | 打开交互式供应商管理器，查看、添加和删除已配置的供应商。详见[平台与模型 — `/provider` 与供应商管理](../configuration/providers.md#provider-—-交互式供应商管理) | 是 |
+| `/provider refresh [providerId]` | — | 运行时重新拉取供应商的模型列表：不带参数时刷新全部供应商，带参数时只刷新指定供应商。输出会按供应商汇报新增和下架的模型 | 是 |
+| `/model` | — | 切换当前会话使用的 LLM 模型 | 是 |
+| `/secondary-model` | `/subagent-model` | 选择 subagent 的默认模型（写入 `[secondary_model] default_model`，详见[subagent 模型池](../configuration/config-files.md#subagent-模型池)） | 是 |
+| `/settings` | `/config` | 打开 TUI 内的设置面板 | 是 |
+| `/experiments` | `/experimental` | 打开实验功能面板 | 是 |
+| `/permission` | — | 选择权限模式 | 是 |
+| `/editor` | — | 配置 `Ctrl-G` 调起的外部编辑器 | 是 |
+| `/theme` | — | 切换终端 UI 配色主题 | 是 |
+
+## 会话管理
+
+| 命令 | 别名 | 说明 | 随时可用 |
+| --- | --- | --- | --- |
+| `/new` | `/clear` | 在当前环境开启全新会话，丢弃当前对话 | 否 |
+| `/sessions` | `/resume` | 浏览历史会话并切换/恢复 | 否 |
+| `/tasks` | `/task` | 浏览后台任务列表 | 是 |
+| `/fork` | — | 基于当前会话 fork 一份新会话，保留完整对话历史；fork 后仍停留在当前会话 | 否 |
+| `/title [<text>]` | `/rename` | 不带参数时显示当前会话标题；带参数时设置为新标题（最长 200 字符） | 是 |
+| `/compact [<instruction>]` | — | 压缩当前对话上下文，释放 token 占用；可附带自定义指令，提示模型压缩时保留哪些信息；Agent 运行期间使用会加入消息队列，轮到它时自动执行；等待期间若上下文已被自动压缩，该次排队会被跳过 | 是 |
+| `/undo [<count>]` | — | 从当前上下文撤销最近的提示词。不带数量时打开选择器；带数量时撤销对应条数。最后一次上下文压缩之前的提示词不能撤销。撤销会一并回滚这些提示词产生的 todo 列表和计划模式状态（不回滚代码改动） | 否 |
+| `/reload` | — | 重新加载当前会话并应用最新的 `config.toml` 设置（供应商、模型等）和 `tui.toml` 界面偏好，无需重启 CLI；同时会把 AGENTS.md、Skill、subagent 及模型的外部变更告知 Agent | 否 |
+| `/reload-tui` | — | 仅重新加载 `tui.toml` 界面偏好（主题、编辑器、通知等），不重建会话 | 是 |
+| `/init` | — | 分析当前代码库并生成 `AGENTS.md` | 否 |
+| `/export-md [<path>]` | `/export` | 将当前会话导出为 Markdown 文件 | 否 |
+| `/export-debug-zip` | — | 将当前会话导出为调试用 ZIP 压缩包（与 [`nighthawk export`](./kimi-command.md#nighthawk-export) 行为一致） | 否 |
+| `/import-sessions` | — | 将最近 15 天或 30 天的 Claude Code 和 Codex 会话导入为普通会话（与 [`nighthawk import-sessions`](./kimi-command.md#nighthawk-import-sessions) 行为一致） | 否 |
+| `/copy` | — | 将最后一条 AI 回复复制到剪贴板 | 否 |
+| `/add-dir [<path>]` | — | 为当前会话添加额外的工作目录。不带路径（或传入 `list`）运行时列出已配置的目录。添加时可选择是否将目录记入工作区注册表（持久保留） | 否 |
+| `/web` | — | 在 web UI 中打开当前会话：选择一个运行中的实例进行连接，或在 TUI 退出后新开一个前台服务器。参见 [`nighthawk web`](./kimi-command.md#nighthawk-web) | 是 |
+| `/desktop` | `/install-desktop` | 在浏览器中打开 NightHawk 桌面端页面（地址随当前区域而定：`https://www.kimi.com/code` 或 `https://www.kimi.ai/code`）。参见 [`nighthawk install-desktop`](./kimi-command.md#nighthawk-install-desktop) | 是 |
+
+## 模式与运行控制
+
+| 命令 | 别名 | 说明 | 随时可用 |
+| --- | --- | --- | --- |
+| `/yolo` | `/yes` | 打开权限模式列表并预选 "Ask When Needed"，按 `Enter` 确认开启。该模式下常规修改和命令自动完成；高危操作、提问和计划仍会问你 | 是 |
+| `/auto` | — | 打开权限模式列表并预选 "Never Ask"，按 `Enter` 确认开启。该模式下所有操作和判断自动完成，只有 Plan 模式下的计划会等你审阅 | 是 |
+| `/plan [on\|off]` | — | 切换 Plan 模式。不带参数时翻转；显式传 `on`/`off` 时强制设置。单纯切换不会创建空计划文件 | 是 |
+| `/plan clear` | — | 清除当前 plan 方案 | 否 |
+| `/swarm on\|off` | — | 开启或关闭 swarm mode，但不发送提示词。`AgentSwarm` 仅在 swarm mode 开启时运行。 | 是 |
+| `/swarm <task>` | — | 先开启 swarm mode，再把 `<task>` 作为普通提示词发送。如果该轮次正常完成，swarm mode 会自动关闭。若当前是 `manual` 权限模式，启动前会提示是否切换到 "Ask When Needed" 或 "Never Ask" 模式。 | 否 |
+| `/tower` 或 `/tower status` | — | 查看 base、mission、roster、review 门槛、inbox、并发和近期活动，不启动模型轮次 | 是 |
+| `/tower on` | — | 开启 Tower 模式，不改变已记录的 base，也不发送提示词；首次初始化时默认采用当前本地 branch | 是 |
+| `/tower off` | — | 退出 Tower 模式，不停止运行中的后台 Agent，也不删除 `.tower/` 状态 | 是 |
+| `/tower <base-branch>` | — | 开启 Tower，并设定或重新锚定 mission 要合并到的本地 base branch；不会发送任务目标 | 是 |
+| `/tower teardown` | — | 要求 Agent 移除符合条件的 mission worktree，同时保护有未提交改动或有存活 Agent 的 worktree；保留 branch 和 `.tower/comms/`，Tower 模式保持开启 | 是 |
+| `/goal [...]` | — | 开始或管理目标模式 | 见下文 |
+
+Tower 是实验功能。开启方式、工作流程、安全边界和清理边界见 [Tower 多 Agent 协作](../guides/tower.md)。
+
+::: warning 注意
+`/yolo` 会跳过普通工具调用的审批确认，使用前请确保了解可能的风险。Plan 模式的退出审批不会被 `/yolo` 跳过；Plan 模式下的 `Bash` 也按 `/yolo` 的普通放行规则处理。
+:::
+
+## 目标模式
+
+`/goal` 用于开始或管理目标模式：NightHawk 会在自动续跑的轮次中持续朝一个持久目标工作。使用指导和示例见[交互与输入：目标模式](../guides/interaction.md#目标模式)。
+
+```sh
+/goal 更新 checkout 文档，运行 docs build，如果 20 轮后仍被阻塞就停止
+```
+
+| 命令 | 作用 | 可用性 |
+| --- | --- | --- |
+| `/goal` 或 `/goal status` | 显示当前目标及其状态、已用时间、轮次数、token 数 | 随时可用 |
+| `/goal pause` | 暂停当前的目标，但不删除 | 随时可用 |
+| `/goal resume` | 继续被暂停或被阻塞的目标 | 仅空闲时 |
+| `/goal cancel` | 移除当前目标 | 随时可用 |
+| `/goal replace <objective>` | 用新目标替换已保存的目标 | 仅空闲时 |
+| `/goal next <objective>` | 为当前会话安排一个后续目标。如果当前没有目标，则立即开始它。当前目标完成前，Agent 不会看到已排队的目标 | 随时可用 |
+| `/goal next manage` | 打开后续目标管理器。用 <kbd>↑</kbd> / <kbd>↓</kbd> 浏览，<kbd>Space</kbd> 选择一个目标以便移动，选中后用 <kbd>↑</kbd> / <kbd>↓</kbd> 调整顺序，<kbd>E</kbd> 编辑，<kbd>D</kbd> 删除，<kbd>Esc</kbd> 取消。编辑输入框中，用 <kbd>Shift-Enter</kbd> 或 <kbd>Ctrl-J</kbd> 添加新行，用 <kbd>Enter</kbd> 保存 | 随时可用 |
+
+`status`、`pause`、`resume`、`cancel`、`replace` 和 `next` 只有作为 `/goal` 后的第一个词时才是子命令。如果你的目标需要以这些词开头，请在目标前加 `--`：
+
+```sh
+/goal -- cancel 函数需要在订单失败时返回可重试错误，并补充测试
+```
+
+如果后续目标需要以 `manage` 开头，请在 `next` 后加 `--`：
+
+```sh
+/goal next -- manage 发布检查清单
+```
+
+在非交互式 prompt 模式中，只有创建形式会启动目标模式：
+
+```sh
+nighthawk -p "/goal 修复 checkout 测试失败"
+```
+
+Prompt 模式在目标完成时以退出码 `0` 退出，在目标阻塞时以 `3` 退出，在目标暂停时以 `6` 退出。其它 `/goal` 子命令，包括 `next`，都是 TUI 控制命令，不由 `nighthawk -p` 处理。
+
+## 信息与状态
+
+| 命令 | 别名 | 说明 | 随时可用 |
+| --- | --- | --- | --- |
+| `/help` | `/h`、`/?` | 显示快捷键和所有可用命令 | 是 |
+| `/btw [问题]` | — | 在 fork 出的 subagent 中打开旁路对话，不改变当前 main agent 轮次；不带问题时会先打开面板等待输入 | 是 |
+| `/usage` | — | 显示 token 用量、上下文占用以及配额信息 | 是 |
+| `/status` | — | 显示当前会话运行时状态：版本、模型、工作目录、权限模式等 | 是 |
+| `/mcp` | — | 列出当前会话中的 MCP server 及连接状态 | 是 |
+| `/plugins` | — | 打开交互式 plugin 管理器 | 是 |
+| `/version` | — | 显示 NightHawk CLI 版本号 | 是 |
+| `/feedback` | `/bug` | 提交反馈，可附加诊断日志和代码库上下文 | 是 |
+
+## 退出
+
+| 命令 | 别名 | 说明 | 随时可用 |
+| --- | --- | --- | --- |
+| `/exit` | `/quit`、`/q` | 退出 NightHawk CLI | 否 |
+
+## 内置 Skill 命令
+
+NightHawk CLI 随包内置了一组 Skill，直接以 `/<name>` 形式出现在斜杠命令面板中。与外部 Skill 不同，它们不需要 `skill:` 前缀，开箱即用。
+
+| 命令 | 说明 |
+| --- | --- |
+| `/mcp-config` | 配置 MCP server 并处理 MCP OAuth 登录。详见 [MCP](../customization/mcp.md) |
+| `/custom-theme [<text>]` | 创建或编辑自定义 TUI 配色主题。详见 [主题](../customization/themes.md) |
+| `/update-config` | 查看或编辑 `config.toml`（模型、供应商、权限、hooks）和 `tui.toml`（主题、编辑器、通知、自动更新） |
+| `/check-kimi-code-docs` | 依据官方文档回答 NightHawk 产品问题（CLI 用法、配置、会员、错误码） |
+| `/import-from-cc-codex` | 从 Claude Code 和 Codex 导入 instructions、skills 和 MCP 设置 |
+| `/sub-skill` | 发现并将本地 skill 库存重组为分层子 skill 包。包含 `/sub-skill.review`（只读提案）和 `/sub-skill.consolidate`（执行重组） |
+
+所有内置 Skill 命令仅在空闲状态下可用。
+
+## Skill 动态命令
+
+已激活的外部 Skill 会自动注册为斜杠命令。普通外部 Skill 以 `skill:` 作为命名空间前缀：
+
+```
+/skill:<name> [附加文本]
+```
+
+例如 `/skill:code-style` 加载名为 `code-style` 的 Skill 并发送给 Agent；命令后附带的文本拼接到 Skill 提示词之后。
+
+外部子 Skill 会直接以点分名称出现在斜杠命令面板中：
+
+```
+/<parent-skill>.<sub-skill> [附加文本]
+```
+
+例如，父 Skill 名为 `code-style`，其中子 Skill 的本地名称为 `review`，面板中显示为 `/code-style.review`。点分命令名由层级自动生成，子 Skill 的 `SKILL.md` 可以保留本地 `name`。
+
+为方便输入，外部 Skill 命令同时支持省略 `skill:` 前缀的简写形式 `/<name>`，前提是该名称未被系统斜杠命令或插件命令占用——即 `/code-style` 会回退匹配到 `/skill:code-style`。
+
+NightHawk CLI 随包内置的 Skill 会直接以 `/<name>` 形式出现在斜杠命令面板中。例如，`/mcp-config` 用于配置 MCP server 和处理 MCP OAuth 登录，`/custom-theme [附加文本]` 用于进入自定义主题流程，创建或编辑 TUI 主题。
+
+::: info 说明
+Agent 忙碌时输入的外部 Skill 命令不会被拒绝，而是排队等待当前轮次结束——按 `Ctrl-S` 可让排队的命令立即插入正在运行的轮次。`flow` 类型的 Skill 同样通过 `/skill:<name>` 暴露，没有独立的 `/flow:` 命名空间。
+:::
+
+Skill 的安装与编写详见 [Agent Skills](../customization/skills.md)。
+
+## 下一步
+
+- [键盘快捷键](./keyboard.md) — TUI 键盘操作速查
+- [内置工具](./tools.md) — Agent 可调用的工具完整参考

@@ -1,0 +1,112 @@
+# 配置覆盖
+
+NightHawk CLI 有三个地方可以影响运行参数：配置文件、命令行选项、环境变量。三者并非简单的优先级叠加，而是面向不同场景、作用范围互不相同：
+
+- **配置文件** 保存长期偏好（模型、密钥、循环控制等），每次启动都生效
+- **命令行选项** 做本次启动的临时切换，退出后失效
+- **环境变量** 主要负责数据目录定位、OAuth 端点切换，以及少数运行时开关。它**不是配置字段的通用后备来源**
+
+凭证解析不读取 shell 环境变量：在终端 `export NIGHTHAWK_API_KEY=xxx` 不会生效。原因见下文[供应商凭证](#供应商凭证)。
+
+## 环境变量的三类作用
+
+环境变量按作用分三类，不能合并成一条线性优先级：
+
+1. **定位配置文件**：`NIGHTHAWK_HOME` 决定数据根目录，配置文件路径因此变为 `$NIGHTHAWK_HOME/config.toml`。这一步先于其他所有解析，不是普通参数的后备来源。
+2. **运行时开关**：`NIGHTHAWK_DISABLE_TELEMETRY` 等少量变量直接关闭对应子系统。即使 `config.toml` 里 `telemetry = true`，只要这个变量是真值，遥测就会被禁用。语义是"额外禁用"，不是"普通覆盖"。
+3. **运行端点与诊断**：`NIGHTHAWK_OAUTH_HOST`、`NIGHTHAWK_BASE_URL`、`NIGHTHAWK_LOG_LEVEL` 等在 OAuth 或日志子系统初始化时读取。完整列表见[环境变量](./env-vars.md)。
+
+## 普通运行参数的优先级
+
+对模型别名、[Plan 模式](../guides/interaction.md#plan-模式)、[yolo 模式](../guides/interaction.md#三种权限模式)、Skills 目录等普通运行参数，优先级从高到低：
+
+1. **命令行选项**（`-m`、`--plan`、`--yolo` 等）：仅对本次启动生效
+2. **用户配置文件**（`~/.nighthawk/config.toml`）：保存长期偏好
+
+少数环境变量明确覆盖特定配置字段，例如 `NIGHTHAWK_BACKGROUND_KEEP_ALIVE_ON_EXIT` 的优先级高于 `[background].keep_alive_on_exit`。这类例外在[环境变量](./env-vars.md)和[配置文件](./config-files.md)对应字段里都有标注。
+
+::: warning
+**普通运行参数不会从 shell 环境变量取后备值。** 供应商的 `api_key` / `base_url` 只从 `config.toml`（包括 `[providers.<name>.env]` 子表）读取，不会回退到 shell 里 `export` 的变量。例外有两处：`NIGHTHAWK_MODEL_*` 系列和供应商的 `api_key_env` 字段，这两个显式通道*确实*会从 shell 读取凭证，详见[用环境变量定义模型](./env-vars.md#用环境变量定义模型nighthawk_model_)和[供应商凭证](#供应商凭证)。
+:::
+
+目前 CLI 只读取一份用户级配置文件，没有项目级配置文件机制。需要在不同项目间隔离配置时，用 `NIGHTHAWK_HOME` 指向不同的数据目录，见下文[典型场景](#典型场景)。
+
+## 供应商凭证
+
+供应商凭证（`api_key`、`base_url`）有独立的解析规则，不走普通参数的优先级链。
+
+对单个供应商，凭证按以下顺序解析：
+
+1. `[providers.<name>].api_key`：配置文件里直接写的密钥
+2. `[providers.<name>].api_key_env`：指定一个 shell 环境变量名，从该变量读取密钥
+3. `[providers.<name>.env]` 子表里的对应键（`NIGHTHAWK_API_KEY`、`ANTHROPIC_API_KEY` 等）：上面两个字段都不存在时才读这里
+4. 三者都缺 → 启动报错，提示该供应商缺少凭证
+
+`api_key` 和 `api_key_env` 是互斥的替代项，不是优先级回退链：只能设置其中一个——同时设置会被判为配置冲突，`api_key_env` 与 `oauth` 同设同样会被拒绝。
+
+`api_key_env` 是「不从 shell 环境变量取凭证」唯一有意开放的例外：密钥在每次请求时从进程自身的环境中重新读取，不会被缓存到进程生命周期之外，也不写进 `config.toml`。注意，运行中的进程只能看到它启动时的环境——轮换变量需要重启 nighthawk / TUI 或 kap-server 进程；在父 shell 里重新 `export` 只影响新启动的进程。声明了 `api_key_env` 但变量未设置或为空时，会快速失败并报错，指明供应商和变量名——会话就绪检查（print 模式、kap-server 会话创建）和请求发送时都会拦截——绝不静默忽略，也不回退到其他凭证来源。
+
+`base_url` 的解析方式相同：先读 `[providers.<name>].base_url`，再读 `[providers.<name>.env]` 里的 `*_BASE_URL` 键。
+
+> `[providers.<name>.env]` 子表只是配置文件里的一段 TOML，不会真正写入 shell 环境变量。仅当对应的直接字段（`api_key` / `base_url`）为空时，CLI 才会读取该子表。
+
+完整的凭证键名列表见[环境变量：供应商凭证键](./env-vars.md#供应商凭证键写在-configtoml-里)。
+
+## 命令行选项
+
+启动时传入的选项优先级最高，只对本次启动生效：
+
+| 选项 | 作用 |
+| --- | --- |
+| `-S, --session [id]` | 恢复指定会话；不带 id 时进入交互式选择 |
+| `-c, --continue` | 续上当前目录的上一次会话 |
+| `-y, --yolo` | 自动批准普通工具调用，Agent 仍可能提问 |
+| `--auto` | 以 auto 权限模式启动：Agent 不会向用户提问，只有 Plan 模式下的计划会等你审阅 |
+| `--plan` | 以 Plan 模式启动 |
+| `-m, --model <model>` | 指定本次使用的模型别名 |
+| `-p, --prompt <prompt>` | 非交互模式：执行单条提示词后退出 |
+| `--output-format <format>` | `-p` 模式的输出格式：`text` 或 `stream-json` |
+| `--skills-dir <dir>` | 替换自动发现的 Skills 目录（可重复，仅本次生效） |
+
+互斥规则（违反时启动报错）：
+
+- `--output-format` 只能配合 `-p` 使用
+- `--prompt` 不能同时用 `--yolo` 或 `--plan`
+- `--continue` 和 `--session` 不能同时用
+- 非 prompt 模式下，`--yolo` 和 `--plan` 不能配合 `--continue` 或 `--session`
+
+::: tip
+`--skills-dir` 是一次性替换，只影响本次启动。如需长期追加搜索目录，在 `config.toml` 里写 `extra_skill_dirs`（详见 [Agent Skills](../customization/skills.md)）。
+:::
+
+## 典型场景
+
+**隔离测试环境**：用单独的数据目录，避免污染主配置和会话：
+
+```sh
+NIGHTHAWK_HOME="$PWD/.nighthawk-sandbox" nighthawk
+```
+
+**一次性使用测试密钥**：由于供应商凭证只从配置文件读，把测试密钥写进 `env` 子表：
+
+```toml
+[providers.nighthawk.env]
+NIGHTHAWK_API_KEY = "sk-test"
+```
+
+**跳过审批运行批处理任务**：
+
+```sh
+nighthawk --yolo -p "批量重命名以下文件..."
+```
+
+**临时进入 Plan 模式**（若想永久生效，在配置文件设 `default_plan_mode = true`）：
+
+```sh
+nighthawk --plan
+```
+
+## 下一步
+
+- [配置文件](./config-files.md) — 所有可配置字段的完整参考
+- [环境变量](./env-vars.md) — `NIGHTHAWK_HOME` 等变量的完整列表与说明

@@ -1,0 +1,153 @@
+# Agent Skills
+
+Agent Skills 是 NightHawk CLI 扩展模型能力的轻量机制。一个 Skill 就是一份带 YAML frontmatter 的 Markdown 文档，描述某项专业知识或工作流程：项目的代码风格规范、PR review 流程、提交消息格式。
+
+与每次把同样的指引粘到提示词里相比，Skill 把内容沉淀在文件里，可以跨项目和团队复用，既可以通过斜杠命令一键加载，也可以让模型在需要时自动调用。
+
+## 创建 Skill
+
+Skill 文件需放在[已知的扫描目录](#skill-存放位置)中。支持两种文件结构：
+
+- **目录形式（推荐）**：在 Skills 目录下创建一个子目录，主文件命名为 `SKILL.md`，可在同目录下放置脚本、参考资料等辅助文件。
+- **扁平形式**：不建子目录，把一个 `.md` 文件直接放在 Skills 目录下，适合不需要辅助文件的简单 Skill。
+
+两种结构都会注册出 Skill，区别只在文件组织方式：
+
+```text
+skills/
+├── review-pr/              # 目录形式 → Skill 名 review-pr
+│   ├── SKILL.md            # 主文件
+│   └── checklist.md        # 辅助文件，正文用 ${NIGHTHAWK_SKILL_DIR} 引用
+└── commit.md               # 扁平形式 → Skill 名 commit
+```
+
+Skill 名的推导规则：
+
+- 目录形式取 frontmatter 的 `name` 字段（必填，见下文表格）；惯例让子目录名与 `name` 保持一致——`review-pr/SKILL.md` 里写 `name: review-pr`，注册为 `review-pr`。
+- 扁平形式的 `name` 可省略，省略时取文件名去掉 `.md` 扩展名：`commit.md` 注册为 `commit`。注意「去掉 `.md`」只发生在注册后的 Skill 名上——磁盘上的文件必须带 `.md` 扩展名才会被扫描到，不要真的创建一个没有扩展名的 `commit` 文件。
+- 同一目录下 `<name>/SKILL.md` 与 `<name>.md` 同时存在时，以目录形式为准，扁平文件被忽略。
+
+扁平形式还有两点限制：
+
+- 只有直接放在 Skills 目录顶层的 `.md` 文件会被识别；子目录里散放的 `.md`（`SKILL.md` 除外）不会被当作 Skill。
+- 扁平 Skill 没有自己的目录，`${NIGHTHAWK_SKILL_DIR}` 指向 Skills 目录本身，不便携带辅助文件——需要辅助文件时请改用目录形式。
+
+### 文件格式
+
+`SKILL.md` 由 YAML frontmatter 和 Markdown 正文两部分组成：
+
+```markdown
+---
+name: code-style
+description: 项目代码风格规范，定义命名、缩进、注释和文件组织
+type: prompt
+whenToUse: 当用户让我编写、修改或审查项目源代码时
+disableModelInvocation: false
+arguments:
+  - target
+  - mode
+---
+
+请按下述规范处理代码：
+
+- 缩进使用 2 空格
+- 变量名使用 `camelCase`，类型名使用 `PascalCase`
+- 公开函数必须带 TSDoc 注释
+- 单行不超过 100 字符
+```
+
+### Frontmatter 字段
+
+| 字段 | 说明 |
+| --- | --- |
+| `name` | Skill 名称，大小写不敏感。目录型 `SKILL.md` 必填；扁平 `.md` 省略时取文件名（不含 `.md` 扩展名） |
+| `description` | 一行总结，模型用它判断何时使用。目录型必填，扁平 `.md` 省略时取正文第一行非空内容（截至 240 字符） |
+| `type` | 类型：`prompt`（默认）、`inline`（同 `prompt`）、`flow`（仅手动调用）。其他值被跳过 |
+| `whenToUse` | 触发场景描述，也接受 `when-to-use`、`when_to_use` 写法 |
+| `disableModelInvocation` | 设为 true 禁止模型自动调用，也接受 `disable-model-invocation`、`disable_model_invocation` 写法 |
+| `arguments` | 命名参数列表，字符串数组或空白分隔字符串（如 `arguments: target mode`）。声明后正文可用 `$<name>` 读取 |
+
+::: warning 注意
+目录型 `SKILL.md` 中 `name` 和 `description` **必须**显式填写，省略任意一项均会导致解析失败。
+:::
+
+### 正文占位符
+
+正文在发送给模型前会展开少量占位符：
+
+- `$ARGUMENTS`：调用时附带的完整原始参数字符串
+- `$ARGUMENTS[0]`、`$ARGUMENTS[1]` 及简写 `$0`、`$1`：按空白分词后的位置参数（从 0 开始）
+- `$<name>`：`arguments` 中声明的命名参数
+- `${NIGHTHAWK_SKILL_DIR}`：当前 Skill 文件所在目录
+
+位置参数支持单双引号包裹：在 `/skill:commit "fix login" patch` 中，`$0` 展开为 `fix login`。若正文不含任何参数占位符，调用时附带的文本会以 `\n\nARGUMENTS: <文本>` 的形式追加到正文末尾。
+
+## Skill 存放位置
+
+NightHawk CLI 按作用域分四档扫描，越具体的作用域优先级越高：**Project > User > Extra > Built-in**。
+
+**用户级**（对所有项目生效）：
+- `$NIGHTHAWK_HOME/skills/`（默认：`~/.nighthawk/skills/`）
+- `~/.agents/skills/`
+
+NightHawk 专属用户级 Skill 目录会随 `NIGHTHAWK_HOME` 移动，隔离数据根时也会隔离 NightHawk 专属 Skills。通用 `~/.agents/skills/` 目录仍放在真实 OS home 下，以便跨工具共享。
+
+**项目级**（项目根 = 工作目录向上最近的含 `.git` 的目录）：
+- `.nighthawk/skills/`
+- `.agents/skills/`
+
+当工作区包含多个已配置的源目录时，NightHawk CLI 会按上述项目根规则发现每个源目录的项目级 Skills，并合并到同一个 Skill 列表中。出现同名 Skill 时，主目录优先；附加目录之间按工作区中的目录顺序决定优先级。任意源目录中的 Skill 发生变化时，列表都会自动刷新。仅当前会话临时添加的目录不参与合并；如需使用其中的 Skills，请将该目录记住到工作区。
+
+**额外目录**：通过 `config.toml` 顶层的 `extra_skill_dirs` 声明：
+
+```toml
+extra_skill_dirs = ["~/team-skills", ".agents/team-skills"]
+```
+
+**内置 Skills** 随 CLI 一起分发，优先级最低，为常见任务提供开箱即用的工作流，例如配置 MCP server、定制 TUI 主题和编辑配置文件。完整列表详见[内置 Skill 命令](../reference/slash-commands.md#内置-skill-命令)。其中介绍 NightHawk 自身的部分可以通过顶层 [`builtin_product_skills`](../configuration/config-files.md#顶层字段) 字段关闭。
+
+## 调用 Skill
+
+用户通过斜杠命令主动调用：
+
+```
+/skill:code-style
+/skill:git-commits 修复登录接口的并发问题
+```
+
+模型也可以根据 `description` 和 `whenToUse` 自动调用 Skill。`disableModelInvocation` 设为 true 或 `type` 设为 flow 时不自动调用。Skill 调用最多允许嵌套 3 层，超过后会被终止。
+
+## 完整示例
+
+```markdown
+---
+name: review-pr
+description: 按团队标准审查一个 Pull Request，输出结构化的 review 报告
+type: prompt
+whenToUse: 当用户让我审查 PR、检查代码变更或评估提交质量时
+arguments:
+  - pr_ref
+---
+
+请按照以下流程审查用户指定的 PR：$pr_ref
+
+1. 拉取并阅读 `$pr_ref` 的全部 diff。
+2. 对照以下检查项逐条核对：
+   - 是否包含对应的测试用例
+   - 公开 API 是否有文档更新
+   - 是否引入了新的依赖；若有，说明引入理由
+   - 错误处理是否覆盖了边界情况
+3. 参考同目录下的检查清单：`references/checklist.md`
+4. 输出一份 review 报告，包含：
+   - 总体结论（approve / request changes / comment）
+   - 必须修改项（blocking）
+   - 建议改进项（non-blocking）
+   - 值得肯定的地方
+```
+
+将文件保存为 `$NIGHTHAWK_HOME/skills/review-pr/SKILL.md`，未设置 `NIGHTHAWK_HOME` 时为 `~/.nighthawk/skills/review-pr/SKILL.md`。检查清单放在同目录的 `references/checklist.md`。重开会话后即可调用，例如 `/skill:review-pr #1234`，其中的参数会展开到 `$pr_ref`。
+
+## 下一步
+
+- [Plugins](./plugins.md) — 把 Skills 打包成可安装单元，与团队共享
+- [Agent 与 subagent](./agents.md) — Skills 如何影响 subagent 的行为

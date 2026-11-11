@@ -1,0 +1,132 @@
+# Repository-level Agent Guide
+
+Reply in the same language as the user.
+
+This is a TypeScript monorepo built for agent-assisted development. Keep the root `AGENTS.md` limited to hot-path rules: the project map, hard constraints, and workflow requirements — things every task needs to know.
+
+## Working Principles
+
+- Think from first principles. Start from real requirements, code facts, and verification results; if the goal is unclear, discuss it with the user first.
+- Treat code, not documentation, as the source of truth. Unless the user explicitly says otherwise, do not read ordinary Markdown just to understand the implementation.
+- Before making code changes, read the relevant code and the most recent constraints, and follow the nearest `AGENTS.md` in the directory tree.
+- Keep changes focused. Do not slip in unrelated refactors along the way.
+- When committing, do not add any co-author attribution, and do not reveal the identity of the agent in commit messages, PR descriptions, or any explanatory text.
+
+## Project Map
+
+- `apps/nighthawk`: the CLI / TUI application. It consumes core capabilities through `@nighthawk/nighthawk-sdk` and must not depend directly on engine packages. When writing or modifying its terminal UI, use the `write-tui` skill (`.agents/skills/write-tui/SKILL.md`).
+- the browser web UI: **its source no longer lives in this repo.** It is developed in the code-app repo (`apps/web`) and shipped as the committed, prebuilt bundle `apps/nighthawk/dist-web` (gitignored, force-added), synced from code-app with `NIGHTHAWK_REPO=<this checkout> pnpm run sync:web` — sync and commit the bundle in the same change whenever the web UI should ship differently. `apps/nighthawk/scripts/check-web-assets.mjs` guards packaging against a missing bundle. To hack on the web UI against this repo's server, run `pnpm dev:server` here and point code-app's `pnpm dev:web` at it via `NIGHTHAWK_SERVER_URL`.
+- `apps/vis`, `apps/vis/server`, `apps/vis/web`: visual debugging tools for sessions and replays.
+- `packages/agent-core-v2`: the DI × Scope agent engine (the v2 port behind kap-server). Three `LifecycleScope` tiers — `App` / `Session` / `Agent` (`app/scopes.ts`) — plus the L3 unit layer (`Service`/`Fiber` units, collection contribution points, the Feature seam in `src/features/`); `WorkspaceInstance`/`Program` graphs are materialized at runtime through `IWorkspaceInstanceManager`, with the App-scoped `ISessionManager` creating per-workspace session controllers through `Program`.
+- `packages/node-sdk`: the public TypeScript SDK and harness.
+- `packages/oauth`: NightHawk OAuth and managed auth utilities.
+- `packages/telemetry`: shared client-side telemetry infrastructure.
+- `packages/transcript`: the isomorphic transcript rendering data layer — L1 agent-granular store, L2 idempotent operations, L3 `off/turn/block/delta` subscription granularity, L4 framework-free view registry, plus turn-cursor pagination. Pure TypeScript (browser-safe, no engine imports); the sole owner of the transcript contract types (`src/contract/`) and the op-batch sequencing contract.
+- `packages/session-import`: standalone Node.js conversion of external sessions into a single user message that carries the conversation, full effective-history attachments, and image references. It has no engine or UI dependency; callers provide the destination session attachment directory and context budget.
+- `packages/kap-server`: the NightHawk server, backed by `@nighthawk/agent-core-v2`; exposes sessions over REST + WebSocket (`/api/v1` + `/api/v1/ws`), plus the `/api/v1/debug/*` reflection RPC surface (`--debug-endpoints`, loopback bind + bearer auth).
+- `packages/remote-control`: the NightHawk Remote Control tunnel client — registers this machine with the relay and forwards HTTP/WebSocket traffic to the local server, with a machine-wide single-instance lock; consumed by kap-server (the `/api/v1/remote-control` toggle) and by the CLI (`nighthawk web --remote-control`).
+- `packages/agent-core-v2/src/remote`: the remote execution stack inside the engine — self-contained NDJSON line-framed RPC (codex exec-server dialect) between the local `ExecBridge` (ssh/docker/`command` launchers) and the light `nighthawk exec-server` executor, plus the provider that registers declared targets as `Environment`s (the fs/process RPC stubs are an OS backend under `src/os/backends/remote`, sibling of `node-local`); exported as `@nighthawk/agent-core-v2/remote` and `/remote/server`. The executor stays light — `src/remote/server` may import only node builtins, relative modules, `#/remote/protocol`, `#/os/interface`, `#/_base/execEnv` and the DI-free node-local fs/process backends it adapts (enforced by the package's `lint:imports`); the CLI reaches it only through the SDK's light `@nighthawk/nighthawk-sdk/exec-server` subpath, loaded dynamically in `src/cli/exec-server.ts`.
+- `packages/klient`: the client SDK — a contract-driven facade over agent-core-v2 (`global.*` / `session(id).*` / `agent(id).*`, zod-validated); transport via subpath entry (`@nighthawk/klient/ipc|memory`, both return the same `Klient`); also hosts the e2e suites. See `packages/klient/AGENTS.md`.
+- `packages/tree-sitter-bash`: a pure-TypeScript bash parser (no runtime deps, no wasm); `parse(source, { timeoutMs, maxNodes })` runs under a deterministic budget and returns a discriminated `ParseResult` — callers must treat aborted/hasError trees as "cannot analyze" and degrade. Parser only, no safety judgments; see the package README's "Known differences" section.
+- `packages/minidb`: the embedded JSON document store (`MiniDb`) behind kap-server's search index — snapshot + WAL persistence with an exclusive write lock, a larger-than-RAM full-text layer, and persistent index generations. See `packages/minidb/AGENTS.md`.
+
+## Environment Requirements
+
+- **Node.js**: `>=24.15.0` (from the root `package.json` `engines`; `.nvmrc` is `24.15.0`, used by nvm / fnm / mise to pick the minimum recommended version).
+- **pnpm**: `10.33.0` (from the root `package.json` `packageManager`).
+- `pnpm install` will fail when the Node version is not satisfied, because `.npmrc` sets `engine-strict=true`.
+
+## Monorepo Workspace Maintenance
+
+- `pnpm-workspace.yaml` is the source of truth for workspace membership, but `flake.nix` also contains **hardcoded** `workspacePaths` and `workspaceNames` lists.
+- **Whenever you add or remove a workspace package, you MUST update both `pnpm-workspace.yaml` and `flake.nix` — for every package, including leaf / test / e2e packages that nothing depends on.**
+  - `pnpm-workspace.yaml` uses globs (`packages/*`, `apps/*`), so most packages land there automatically; `flake.nix` is fully manual and is where omissions happen.
+  - Missing a path in `flake.nix`'s `workspacePaths` will silently drop files from the Nix build's `src` fileset.
+  - Missing a name in `flake.nix`'s `workspaceNames` will break `pnpmConfigHook` because dependencies for that workspace will not be fetched.
+- The automated "Check flake.nix workspace sync" (`scripts/check-nix-workspace.mjs`) only validates the transitive dependency **closure of `@nighthawk/nighthawk`**. A leaf package outside that closure (e.g. an e2e package nobody imports) slips through even when it is missing from `flake.nix`. A green check is therefore NOT proof that `flake.nix` is fully in sync — keep it updated by hand on every add/remove, do not rely on the check to catch omissions.
+
+## General Coding Rules
+
+- `packages/agent-core-v2`, `packages/kap-server`, and `packages/transcript` are comment-free zones: no comments of any kind — no line/block comments, no JSDoc (not even on exported symbols); the only exception is load-bearing lint-suppression directives (`oxlint-disable` / `eslint-disable`), while other tooling directives (`@ts-expect-error`, …) stay banned. Enforced by `scripts/check-no-comments.mjs` over `.ts`/`.tsx`/`.mts`/`.mjs` under `src/`/`test/`/`scripts/`, which runs as part of `pnpm lint`.
+- For optional object properties, pass `undefined` directly instead of using conditional spread.
+  - YES: `{ user }`
+  - NO: `{ ...(user ? { user } : undefined) }`
+- Optional object properties do not need to additionally allow `undefined` in the type.
+  - YES: `interface Options { user?: User }`
+  - NO: `interface Options { user?: User | undefined }`
+- Internal methods with only a single parameter should not be turned into options objects just for stylistic uniformity.
+- Split functions only along abstraction levels: each function reads as one level of narrative (Step-down Rule), and a wrapper that adds no new abstraction level — especially one with a single call site — is inlined instead of extracted.
+- Except for a package's `index.ts`, other `index.ts` files should prefer `export * from './module';`.
+- Do not add too many new test files. Prefer adding tests to the existing test file of the corresponding component or module.
+- When a test fails because of a user modification, default to fixing the test first; do not change the implementation to satisfy an old test unless the implementation truly has a bug.
+- Do not sacrifice code quality for external compatibility unless the user explicitly asks for it. Breaking changes go through changesets and a `major` bump, gated by the rule below.
+
+## Experimental Features
+
+- Gate a not-yet-public feature behind an experimental flag. Flags are env-driven and default off: `NIGHTHAWK_EXPERIMENTAL_<NAME>` toggles one, `NIGHTHAWK_EXPERIMENTAL_FLAG` enables all. Precedence is per-flag env > `[experimental]` config > master env > the flag's `default`. Release by flipping the entry's `default` to `true`.
+  - `packages/agent-core-v2` and kap-server modules: there is no central catalog — declare the flag in the owning domain via `registerFlagDefinition` at import time, then check it with `IFlagService.enabled(id)`.
+
+## Where to Update Instructions
+
+- Hard rules that affect almost every task: update the root `AGENTS.md`.
+- Rules that only affect a specific directory: update the nearest sub-directory `AGENTS.md`.
+- Project-map entries stay at 1–2 sentences; deep package docs live in the package's own `AGENTS.md`.
+- Keep instruction updates focused and supported by code facts.
+
+## Release Workflow
+
+- `main` accumulates changesets; `release/*` maintains `ci: release packages` PRs. Merging the matching version PR authorizes publication after its merge-commit CI succeeds. Ordinary pushes do not publish.
+- npm publishing and native artifacts retain the existing Changesets flow. CDN upload and routing remain separately approved operations. See `.changeset/README.md` for migration and main synchronization.
+
+## Workflow Requirements
+
+- Prefer `rg` / `rg --files` when reading code.
+- When designing changes, follow existing boundaries and local patterns first.
+- In public text and test data, replace real internal identifiers with neutral placeholders such as `example.com`, `example.test`, and `YOUR_API_KEY`. Before opening a PR, ask a read-only agent to audit the diff for context-specific internal identifiers.
+- When creating a PR, use the `write-pr` skill (`.agents/skills/write-pr/SKILL.md`) to write the PR description. The PR title must follow Conventional Commit style, e.g. `chore: remove legacy format commands`.
+- When an AI agent opens or updates a PR, fill in `.github/pull_request_template.md` — link the related issue or explain the problem, then describe what changed. Do not leave placeholder text or submit a generic summary of the diff.
+- Do not submit vague AI-generated PR text. The human author must understand the change well enough to explain the code, edge cases, and why the approach fits this repository.
+- After finishing a task and before submitting a PR, you must run the `gen-changesets` skill (see `.agents/skills/gen-changesets/SKILL.md`) and generate a changeset under `.changeset/` according to its rules.
+- Changesets must strictly follow the rules in `.agents/skills/gen-changesets/SKILL.md`: write one short user-facing sentence that states only what changed, and skip any change users cannot perceive.
+- When generating a changeset, **never** decide on a `major` bump on your own — stop, explain, and get explicit user confirmation first; default to `minor`, fall back to `patch`. See `.agents/skills/gen-changesets/SKILL.md`.
+- Prefer importing via `import ... from '#/...'`, which serves the same purpose as `import ... from '@/...'`.
+- Do not commit throwaway scratch or exploratory files. Never stage:
+  - Agent working notes or handoff/summary documents (e.g. `HANDOVER-*.md`, `HANDOFF-*.md`, `handoff.md`).
+  - Throwaway UI/UX prototypes or design mockups (e.g. `*-designs.html`, `*-mockup.html`, `*-demo(s).html`) at the repo root or under a `design/` folder. The only tracked `.html` files should be Vite `index.html` entrypoints.
+  Before committing or opening a PR, run `git status` and `git diff --staged --stat` and remove anything matching these patterns. Put scratch work under `.tmp/` (gitignored) instead of the repo root or the source tree.
+
+## Code Review Rules
+
+These rules apply to every pull request review, automated or human. The user populations and contract files they refer to are listed in `.agents/skills/review-pr/surfaces.md`.
+
+### Review scope: the PR's diff, not the repo
+
+- Review only the PR's diff against its base. A problem in code the PR does not touch (pre-existing on base) is reported as a non-blocking note, never as a blocking finding — the sole exception is pre-existing code that the PR's behavior directly triggers or amplifies.
+- Report a class of issues in one pass: when a finding generalizes to several locations in the diff, list all of them at once instead of raising them across successive rounds.
+- No pure style or personal-preference findings. Every finding carries a severity: P0 blocking / P1 should-fix / P2 suggestion.
+- Re-reviews are incremental: review only what changed since the previous review; do not restate findings on unchanged code or re-raise resolved threads. Before treating a resolved thread as settled, verify the current code: suppress a finding only when the problem is actually fixed or the finding no longer holds.
+- Domain-specific rules keep their own canonical homes — changesets (`.agents/skills/gen-changesets/SKILL.md`), comment-free zones (General Coding Rules), PR text (`write-pr` skill); review against those, not ad-hoc taste.
+
+### Enumerate changed behavior, not just bugs
+
+Any input that worked before the change — a config key, env var, CLI flag, provider response shape, session written by an older version, client request, or hook payload — must behave the same after it unless the PR declares the change. For every deleted or narrowed branch, condition, default, or prompt sentence, ask who reached it before and where they go now; for every new condition, ask which existing inputs now match it first. Flag a PR that calls a path "unchanged" when its branch condition moved.
+
+### A flipped default or removed behavior needs a named loss and an escape hatch
+
+Everyone on the old default is affected. Require the changeset to name the behavior users lose, not only the new default; a config, env, or flag escape hatch or a maintainer's explicit sign-off in the PR; and a test that pins the old behavior for the population that keeps it.
+
+### Prompt text is behavior
+
+Editing or deleting sentences under `packages/agent-core-v2/src/**/*.md` (system prompt, tool descriptions, reminders, overlays, built-in skills) changes agent behavior for every user who receives that prompt. "No test references the sentence" is not evidence of no impact. Require the PR to name the population that receives the text (every session, plan mode, a flag-gated feature such as Tower), what the sentence enforced, who relied on it, and what enforces it now.
+
+### Contract files are tripwires
+
+The manifests under `packages/agent-core-v2/docs/` (`config-manifest.toml`, `wire-manifest.d.ts`, `state-manifest.d.ts`), `packages/kap-server/test/__snapshots__/apiSurface.snapshot.test.ts.snap`, `packages/node-sdk/src/index.ts`, `packages/agent-core-v2/src/features/externalHooks/`, `packages/acp-server/`, and `apps/nighthawk/src/cli/` are consumed outside this repository: desktop and web in code-app, the VS Code extension, ACP clients such as Zed, SDK users, hook scripts, and headless-output parsers. When they change, require the PR to name the consumers and how data and clients from the previous release keep working.
+
+### Ports and refactors carry the old path's feature inventory
+
+When a change replaces or bypasses an existing path, require a list of what the old path did — env vars honored, fallbacks, accepted inputs — and where each item lives in the new path. A silently dropped item is a regression, not a cleanup.
+
+### Silent failure outranks a crash
+
+A change that makes the product silently ignore configuration, silently approve or skip an action, or silently drop data is the most severe finding: users get no signal to report.

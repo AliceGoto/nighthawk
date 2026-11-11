@@ -1,0 +1,973 @@
+import { isAbsolute } from 'node:path';
+import { Readable } from 'node:stream';
+
+import {
+  ErrorCodes,
+  IHostFileSystem,
+  IEnvironmentService,
+  ISessionWorkdir,
+  IWorkspaceFsService,
+  IWorkspaceService,
+  getLiveSessionById,
+  resumeSessionById,
+  isError2,
+  Error2,
+  LOCAL_ENVIRONMENT_ID,
+  WorkspaceFsService,
+  WorkspaceGitService,
+  ITelemetryService,
+  type Scope,
+} from '@nighthawk/agent-core-v2';
+import { Event } from '@nighthawk/agent-core-v2/_base/event';
+import { IGitService } from '@nighthawk/agent-core-v2/app/git/git';
+import { encodeWorkDirKey } from '@nighthawk/agent-core-v2/_base/utils/workdir-slug';
+import {
+  fsDiffRequestSchema,
+  fsGitStatusRequestSchema,
+  fsGitStatusBatchRequestSchema,
+  fsPullRequestRequestSchema,
+  fsPullRequestBatchRequestSchema,
+  fsGrepRequestSchema,
+  fsListManyRequestSchema,
+  fsListRequestSchema,
+  fsListResponseSchema,
+  fsMkdirRequestSchema,
+  fsReadRequestSchema,
+  fsSearchRequestSchema,
+  fsSearchResponseSchema,
+  fsStatManyRequestSchema,
+  fsStatRequestSchema,
+  fsSuggestRequestSchema,
+  fsSuggestResponseSchema,
+} from '@nighthawk/agent-core-v2/workspace/workspaceFs/fs';
+import type { EnvironmentCapability, EnvironmentLease } from '@nighthawk/agent-core-v2/environment/environment';
+import { z } from 'zod';
+
+import { errEnvelope, okEnvelope } from '../envelope';
+import {
+  launchDetached,
+  openFileCommandFor,
+  openInAppCommandFor,
+  revealFileCommandFor,
+} from '../lib/fileLaunch';
+import { parseRangeHeader, pickHeader } from '../lib/httpRange';
+import { requestLog } from '../lib/requestLog';
+import { defineRoute } from '../middleware/defineRoute';
+import { ErrorCode } from '../protocol/error-codes';
+import {
+  fsOpenInRequestSchema,
+  fsOpenRequestSchema,
+  fsRevealRequestSchema,
+} from '../protocol/rest-fs';
+import { sendEnvironmentError } from './environment';
+
+interface FsRouteHost {
+  post(
+    path: string,
+    options: { preHandler: unknown[]; schema?: Record<string, unknown> },
+    handler: (
+      req: { id: string; body: unknown; params: unknown },
+      reply: { send(payload: unknown): unknown },
+    ) => Promise<void> | void,
+  ): unknown;
+  get(
+    path: string,
+    options: { preHandler: unknown[]; schema?: Record<string, unknown> },
+    handler: (
+      req: { id: string; params: unknown; query: unknown; headers: Record<string, unknown> },
+      reply: FsDownloadReply,
+    ) => unknown,
+  ): unknown;
+}
+
+interface FsDownloadReply {
+  type(mime: string): FsDownloadReply;
+  header(name: string, value: string | number): FsDownloadReply;
+  code(status: number): FsDownloadReply;
+  send(payload: unknown): unknown;
+}
+
+const sessionIdAndTailParamSchema = z.object({
+  session_id: z.string().min(1),
+  tail: z.string().min(1),
+});
+
+const fsDownloadQuerySchema = z.object({
+  allow_external_symlinks: z.enum(['true', 'false']).optional(),
+});
+
+const workspaceFsListBodySchema = fsListRequestSchema
+  .omit({ include_git_status: true })
+  .extend({
+    workspace: z.string().min(1),
+  });
+
+const workspaceFsSearchBodySchema = fsSearchRequestSchema.extend({
+  workspace: z.string().min(1),
+});
+
+const workspaceFsSuggestBodySchema = fsSuggestRequestSchema.extend({
+  workspace: z.string().min(1),
+});
+
+const rootFsSuggestBodySchema = fsSuggestRequestSchema.extend({
+  roots: z.array(z.string().min(1)).min(1).max(32),
+});
+
+const detailsSchema = z.array(z.object({ path: z.string(), message: z.string() }));
+
+const FS_ACTIONS = [
+  'list',
+  'read',
+  'list_many',
+  'stat',
+  'stat_many',
+  'mkdir',
+  'search',
+  'grep',
+  'git_status',
+  'git_status:batch',
+  'pull_request',
+  'pull_request:batch',
+  'diff',
+  'open',
+  'open-in',
+  'reveal',
+] as const;
+type FsAction = (typeof FS_ACTIONS)[number];
+const FS_TAIL_PREFIX = 'fs:';
+
+interface FsScope extends EnvironmentReadStreamSource {
+  readonly fs: IWorkspaceFsService;
+  readonly environmentId: string;
+  readonly lease: EnvironmentLease;
+}
+
+function acquireSessionFs(core: Scope, sessionId: string, required: readonly EnvironmentCapability[]): FsScope {
+  const session = getLiveSessionById(core.accessor, sessionId);
+  if (session === undefined) throw new Error2(ErrorCodes.SESSION_NOT_FOUND, `session ${sessionId} does not exist`);
+  const workdir = session.accessor.get(ISessionWorkdir);
+  const lease = core.accessor.get(IEnvironmentService).acquire({ environmentId: workdir.environmentId }, required);
+  return { fs: workdir.fs, hostFs: lease.environment.fs!, lease, environmentId: workdir.environmentId };
+}
+
+function acquireLocalRootedFs(
+  core: Scope,
+  workspaceId: string,
+  roots: { readonly workDir: string; readonly additionalDirs: readonly string[] },
+  required: readonly EnvironmentCapability[],
+): FsScope {
+  const environments = core.accessor.get(IEnvironmentService);
+  const lease = environments.acquire({ environmentId: LOCAL_ENVIRONMENT_ID }, required);
+  try {
+    const hostFs = lease.environment.fs!;
+    const context = { workspaceId, cwd: roots.workDir };
+    const git = new WorkspaceGitService(context, { current: core.accessor.get(IGitService), onDidChange: Event.None as Event<void> });
+    const fs = new WorkspaceFsService(context, { additionalDirs: roots.additionalDirs }, hostFs, environments, core.accessor.get(ITelemetryService), git);
+    return { fs, hostFs, lease, environmentId: LOCAL_ENVIRONMENT_ID };
+  } catch (error) {
+    lease.dispose();
+    throw error;
+  }
+}
+
+async function resolveWorkspaceFs(
+  core: Scope,
+  ref: string,
+  required: readonly EnvironmentCapability[],
+): Promise<FsScope | undefined> {
+  const workspaces = core.accessor.get(IWorkspaceService);
+  let ws = await workspaces.get(ref);
+  if (ws === undefined) {
+    if (!isAbsolute(ref)) return undefined;
+    try {
+      ws = await workspaces.createOrTouch(ref);
+    } catch {
+      return undefined;
+    }
+  }
+  return acquireLocalRootedFs(core, ws.id, { workDir: ws.root, additionalDirs: ws.additionalDirs }, required);
+}
+
+export function registerFsRoutes(app: FsRouteHost, core: Scope): void {
+  const fsActionRoute = defineRoute(
+    {
+      method: 'POST',
+      path: '/sessions/{session_id}/{tail}',
+      params: sessionIdAndTailParamSchema,
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: {},
+        [ErrorCode.SESSION_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_UNAVAILABLE]: {},
+        [ErrorCode.FS_PATH_NOT_FOUND]: {},
+        [ErrorCode.FS_IS_DIRECTORY]: {},
+        [ErrorCode.FS_IS_BINARY]: {},
+        [ErrorCode.FS_TOO_LARGE]: {},
+        [ErrorCode.FS_TOO_MANY_RESULTS]: {},
+        [ErrorCode.FS_PATH_ESCAPES_SESSION]: {},
+        [ErrorCode.FS_GREP_TIMEOUT]: {},
+        [ErrorCode.FS_GIT_UNAVAILABLE]: {},
+        [ErrorCode.FS_ALREADY_EXISTS]: {},
+      },
+      description:
+        'Filesystem action dispatcher. Supported actions: list, read, list_many, stat, stat_many, mkdir, search, grep, git_status, git_status:batch, pull_request, pull_request:batch, diff, open, open-in, reveal.',
+      tags: ['fs'],
+      operationId: 'fsAction',
+    },
+    async (req, reply) => {
+      const { session_id, tail } = req.params as { session_id: string; tail: string };
+
+      if (!tail.startsWith(FS_TAIL_PREFIX)) {
+        reply.send(
+          errEnvelope(ErrorCode.VALIDATION_FAILED, `unsupported action: ${tail}`, req.id),
+        );
+        return;
+      }
+
+      const action = tail.slice(FS_TAIL_PREFIX.length);
+      if (!(FS_ACTIONS as readonly string[]).includes(action)) {
+        reply.send(
+          errEnvelope(ErrorCode.VALIDATION_FAILED, `unsupported action: ${tail}`, req.id),
+        );
+        return;
+      }
+      const fsAction = action as FsAction;
+
+      const session = await resumeSessionById(core.accessor, session_id);
+      let environmentFs: FsScope | undefined;
+      try {
+        const required: EnvironmentCapability[] = ['fs'];
+        if (
+          fsAction === 'search' ||
+          fsAction === 'grep' ||
+          fsAction === 'git_status' ||
+          fsAction === 'git_status:batch' ||
+          fsAction === 'pull_request' ||
+          fsAction === 'pull_request:batch' ||
+          fsAction === 'diff'
+        ) {
+          required.push('process');
+        }
+        environmentFs = session === undefined && fsAction === 'search'
+          ? await resolveWorkspaceFs(core, session_id, required)
+          : session === undefined
+            ? undefined
+            : acquireSessionFs(core, session_id, required);
+        if (environmentFs === undefined) {
+          reply.send(
+            errEnvelope(ErrorCode.SESSION_NOT_FOUND, `session ${session_id} does not exist`, req.id),
+          );
+          return;
+        }
+        if ((fsAction === 'open' || fsAction === 'open-in' || fsAction === 'reveal') && environmentFs.environmentId !== LOCAL_ENVIRONMENT_ID) {
+          throw new Error(`filesystem action ${fsAction} is unavailable on environment ${environmentFs.environmentId}`);
+        }
+        switch (fsAction) {
+          case 'list':
+            await handleList(environmentFs.fs, req, reply);
+            return;
+          case 'read':
+            await handleRead(environmentFs.fs, req, reply);
+            return;
+          case 'list_many':
+            await handleListMany(environmentFs.fs, req, reply);
+            return;
+          case 'stat':
+            await handleStat(environmentFs.fs, req, reply);
+            return;
+          case 'stat_many':
+            await handleStatMany(environmentFs.fs, req, reply);
+            return;
+          case 'mkdir':
+            await handleMkdir(environmentFs.fs, req, reply);
+            return;
+          case 'search':
+            await handleSearch(environmentFs.fs, req, reply);
+            return;
+          case 'grep':
+            await handleGrep(environmentFs.fs, req, reply);
+            return;
+          case 'git_status':
+            await handleGitStatus(environmentFs.fs, req, reply);
+            return;
+          case 'git_status:batch':
+            await handleGitStatusBatch(environmentFs.fs, req, reply);
+            return;
+          case 'pull_request':
+            await handlePullRequest(environmentFs.fs, req, reply);
+            return;
+          case 'pull_request:batch':
+            await handlePullRequestBatch(environmentFs.fs, req, reply);
+            return;
+          case 'diff':
+            await handleDiff(environmentFs.fs, req, reply);
+            return;
+          case 'open':
+            await handleOpen(environmentFs.fs, req, reply);
+            return;
+          case 'open-in':
+            await handleOpenIn(environmentFs.fs, session_id, req, reply);
+            return;
+          case 'reveal':
+            await handleReveal(environmentFs.fs, req, reply);
+            return;
+        }
+      } catch (error) {
+        sendMappedError(reply, req, error);
+      } finally {
+        environmentFs?.lease.dispose();
+      }
+    },
+  );
+  app.post(
+    fsActionRoute.path,
+    fsActionRoute.options,
+    fsActionRoute.handler as unknown as Parameters<FsRouteHost['post']>[2],
+  );
+
+  const workspaceListRoute = defineRoute(
+    {
+      method: 'POST',
+      path: '/workspace/fs::list',
+      body: workspaceFsListBodySchema,
+      success: { data: fsListResponseSchema },
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: { detailsSchema },
+        [ErrorCode.WORKSPACE_NOT_FOUND]: {},
+        [ErrorCode.FS_PATH_NOT_FOUND]: {},
+        [ErrorCode.FS_PERMISSION_DENIED]: {},
+        [ErrorCode.FS_PATH_ESCAPES_SESSION]: {},
+        [ErrorCode.ENVIRONMENT_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_UNAVAILABLE]: {},
+      },
+      description:
+        'List files and directories in a workspace without a session. `workspace` accepts a registered workspace id or an absolute root (registered on the spot).',
+      tags: ['fs'],
+      operationId: 'workspaceFsList',
+    },
+    async (req, reply) => {
+      const { workspace, ...listRequest } = req.body;
+      let environmentFs: FsScope | undefined;
+      try {
+        environmentFs = await resolveWorkspaceFs(core, workspace, ['fs']);
+        if (environmentFs === undefined) {
+          reply.send(
+            errEnvelope(
+              ErrorCode.WORKSPACE_NOT_FOUND,
+              `workspace ${workspace} does not exist`,
+              req.id,
+            ),
+          );
+          return;
+        }
+        const data = await environmentFs.fs.list({ ...listRequest, include_git_status: false });
+        reply.send(okEnvelope(data, req.id));
+      } catch (error) {
+        sendMappedError(reply, req, error);
+      } finally {
+        environmentFs?.lease.dispose();
+      }
+    },
+  );
+  app.post(
+    workspaceListRoute.path,
+    workspaceListRoute.options,
+    workspaceListRoute.handler as unknown as Parameters<FsRouteHost['post']>[2],
+  );
+
+  const workspaceSearchRoute = defineRoute(
+    {
+      method: 'POST',
+      path: '/workspace/fs::search',
+      body: workspaceFsSearchBodySchema,
+      success: { data: fsSearchResponseSchema },
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: { detailsSchema },
+        [ErrorCode.WORKSPACE_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_UNAVAILABLE]: {},
+        [ErrorCode.FS_TOO_MANY_RESULTS]: {},
+      },
+      description:
+        'Search files in a workspace without a session. `workspace` accepts a registered workspace id or an absolute root (registered on the spot).',
+      tags: ['fs'],
+      operationId: 'workspaceFsSearch',
+    },
+    async (req, reply) => {
+      const { workspace, ...searchRequest } = req.body;
+      let environmentFs: FsScope | undefined;
+      try {
+        environmentFs = await resolveWorkspaceFs(core, workspace, ['fs', 'process']);
+        if (environmentFs === undefined) {
+          reply.send(
+            errEnvelope(
+              ErrorCode.WORKSPACE_NOT_FOUND,
+              `workspace ${workspace} does not exist`,
+              req.id,
+            ),
+          );
+          return;
+        }
+        const data = await environmentFs.fs.search(searchRequest);
+        reply.send(okEnvelope(data, req.id));
+      } catch (error) {
+        sendMappedError(reply, req, error);
+      } finally {
+        environmentFs?.lease.dispose();
+      }
+    },
+  );
+  app.post(
+    workspaceSearchRoute.path,
+    workspaceSearchRoute.options,
+    workspaceSearchRoute.handler as unknown as Parameters<FsRouteHost['post']>[2],
+  );
+
+  const workspaceSuggestRoute = defineRoute(
+    {
+      method: 'POST',
+      path: '/workspace/fs::suggest',
+      body: workspaceFsSuggestBodySchema,
+      success: { data: fsSuggestResponseSchema },
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: { detailsSchema },
+        [ErrorCode.WORKSPACE_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_UNAVAILABLE]: {},
+      },
+      description:
+        'Suggest file and directory completion candidates in a workspace without a session. `workspace` accepts a registered workspace id or an absolute root (registered on the spot).',
+      tags: ['fs'],
+      operationId: 'workspaceFsSuggest',
+    },
+    async (req, reply) => {
+      const { workspace, ...suggestRequest } = req.body;
+      let environmentFs: FsScope | undefined;
+      try {
+        environmentFs = await resolveWorkspaceFs(core, workspace, ['fs']);
+        if (environmentFs === undefined) {
+          reply.send(
+            errEnvelope(
+              ErrorCode.WORKSPACE_NOT_FOUND,
+              `workspace ${workspace} does not exist`,
+              req.id,
+            ),
+          );
+          return;
+        }
+        const data = await environmentFs.fs.suggest(suggestRequest);
+        reply.send(okEnvelope(data, req.id));
+      } catch (error) {
+        sendMappedError(reply, req, error);
+      } finally {
+        environmentFs?.lease.dispose();
+      }
+    },
+  );
+  app.post(
+    workspaceSuggestRoute.path,
+    workspaceSuggestRoute.options,
+    workspaceSuggestRoute.handler as unknown as Parameters<FsRouteHost['post']>[2],
+  );
+
+  const rootSuggestRoute = defineRoute(
+    {
+      method: 'POST',
+      path: '/fs::suggest',
+      body: rootFsSuggestBodySchema,
+      success: { data: fsSuggestResponseSchema },
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: { detailsSchema },
+        [ErrorCode.FS_PATH_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_UNAVAILABLE]: {},
+      },
+      description:
+        'Suggest file and directory completion candidates across one or more absolute root directories without a session or workspace. The first root is the primary root: its candidates are returned as relative paths, candidates under additional roots as absolute paths. Overlapping roots are deduplicated. No workspace registration or other side effects.',
+      tags: ['fs'],
+      operationId: 'fsSuggest',
+    },
+    async (req, reply) => {
+      const { roots, ...suggestRequest } = req.body;
+      for (const root of roots) {
+        if (!isAbsolute(root)) {
+          reply.send(
+            errEnvelope(ErrorCode.VALIDATION_FAILED, `root must be an absolute path: ${root}`, req.id),
+          );
+          return;
+        }
+      }
+      const fsRoots = { workDir: roots[0]!, additionalDirs: roots.slice(1) };
+      let environmentFs: FsScope | undefined;
+      try {
+        environmentFs = acquireLocalRootedFs(core, encodeWorkDirKey(fsRoots.workDir), fsRoots, ['fs']);
+        for (const root of [fsRoots.workDir, ...fsRoots.additionalDirs]) {
+          let stat;
+          try {
+            stat = await environmentFs.hostFs.stat(root);
+          } catch {
+            throw new Error2(ErrorCodes.FS_PATH_NOT_FOUND, `root not found: ${root}`, {
+              details: { path: root },
+            });
+          }
+          if (!stat.isDirectory) {
+            throw new Error2(ErrorCodes.FS_PATH_NOT_FOUND, `root is not a directory: ${root}`, {
+              details: { path: root },
+            });
+          }
+        }
+        const data = await environmentFs.fs.suggest(suggestRequest);
+        reply.send(okEnvelope(data, req.id));
+      } catch (error) {
+        sendMappedError(reply, req, error);
+      } finally {
+        environmentFs?.lease.dispose();
+      }
+    },
+  );
+  app.post(
+    rootSuggestRoute.path,
+    rootSuggestRoute.options,
+    rootSuggestRoute.handler as unknown as Parameters<FsRouteHost['post']>[2],
+  );
+
+  const downloadRoute = defineRoute(
+    {
+      method: 'GET',
+      path: '/sessions/{session_id}/fs/*',
+      querystring: fsDownloadQuerySchema,
+      rawResponse: {
+        200: { type: 'string', format: 'binary' },
+      },
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: {},
+        [ErrorCode.SESSION_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_NOT_FOUND]: {},
+        [ErrorCode.ENVIRONMENT_UNAVAILABLE]: {},
+        [ErrorCode.FS_PATH_NOT_FOUND]: {},
+        [ErrorCode.FS_PATH_ESCAPES_SESSION]: {},
+      },
+      description: 'Download a file from the session workspace',
+      tags: ['fs'],
+      operationId: 'downloadFile',
+    },
+    async (req, reply) => {
+      const { session_id } = req.params as { session_id: string };
+      const wildcard = (req.params as Record<string, unknown>)['*'] as string;
+
+      const DOWNLOAD_SUFFIX = ':download';
+      if (!wildcard.endsWith(DOWNLOAD_SUFFIX)) {
+        reply.send(
+          errEnvelope(ErrorCode.VALIDATION_FAILED, `unsupported action: ${wildcard}`, req.id),
+        );
+        return;
+      }
+      const relPath = wildcard.slice(0, -DOWNLOAD_SUFFIX.length);
+      if (relPath.length === 0) {
+        reply.send(errEnvelope(ErrorCode.VALIDATION_FAILED, 'path is empty', req.id));
+        return;
+      }
+
+      const session = await resumeSessionById(core.accessor, session_id);
+      if (session === undefined) {
+        reply.send(
+          errEnvelope(ErrorCode.SESSION_NOT_FOUND, `session ${session_id} does not exist`, req.id),
+        );
+        return;
+      }
+
+      let resolved: Awaited<ReturnType<IWorkspaceFsService['resolveDownload']>>;
+      let environmentFs: FsScope | undefined;
+      try {
+        environmentFs = acquireSessionFs(core, session_id, ['fs']);
+        resolved = await environmentFs.fs.resolveDownload(
+          relPath,
+          req.query.allow_external_symlinks === 'true',
+        );
+      } catch (error) {
+        environmentFs?.lease.dispose();
+        sendMappedError(reply, req, error);
+        return;
+      }
+
+      const r = reply as unknown as FsDownloadReply;
+      const headers = req.headers;
+
+      const ifNoneMatch = pickHeader(headers, 'if-none-match');
+      if (ifNoneMatch !== undefined && ifNoneMatch === resolved.etag) {
+        environmentFs.lease.dispose();
+        r.code(304).header('etag', resolved.etag).send('');
+        return;
+      }
+
+      r.header('etag', resolved.etag);
+      r.header('last-modified', resolved.modifiedAt.toUTCString());
+      r.header(
+        'content-disposition',
+        `attachment; filename="${sanitizeFilename(resolved.relative)}"`,
+      );
+      r.type(resolved.mime);
+
+      const rangeHeader = pickHeader(headers, 'range');
+      const range = parseRangeHeader(rangeHeader, resolved.size);
+      if (range !== null) {
+        r.code(206)
+          .header('content-length', String(range.length))
+          .header('content-range', `bytes ${range.start}-${range.end}/${resolved.size}`);
+        const stream = createEnvironmentReadStream(environmentFs, resolved.absolute, range.start, range.length);
+        stream.on('error', (error: unknown) => {
+          requestLog(req)?.warn(
+            { session_id, path: relPath, err: error },
+            'fs download stream error',
+          );
+          try {
+            stream.destroy();
+          } catch {
+          }
+        });
+        return r.send(stream) as unknown as void;
+      }
+
+      r.code(200).header('content-length', String(resolved.size));
+      const stream = createEnvironmentReadStream(environmentFs, resolved.absolute, 0, resolved.size);
+      stream.on('error', (error: unknown) => {
+        requestLog(req)?.warn(
+          { session_id, path: relPath, err: error },
+          'fs download stream error',
+        );
+        try {
+          stream.destroy();
+        } catch {
+        }
+      });
+      return r.send(stream) as unknown as void;
+    },
+  );
+  app.get(
+    downloadRoute.path,
+    downloadRoute.options,
+    downloadRoute.handler as unknown as Parameters<FsRouteHost['get']>[2],
+  );
+}
+
+export interface EnvironmentReadStreamSource {
+  readonly hostFs: IHostFileSystem;
+  readonly lease: Pick<EnvironmentLease, 'track' | 'dispose'>;
+}
+
+export function createEnvironmentReadStream(
+  source: EnvironmentReadStreamSource,
+  path: string,
+  start: number,
+  length: number,
+): Readable {
+  async function* chunks(): AsyncGenerator<Uint8Array> {
+    let offset = start;
+    let remaining = length;
+    while (remaining > 0) {
+      const chunk = await source.hostFs.readBytes(path, Math.min(64 * 1024, remaining), offset);
+      if (chunk.byteLength === 0) break;
+      offset += chunk.byteLength;
+      remaining -= chunk.byteLength;
+      yield chunk;
+    }
+  }
+  const stream = Readable.from(chunks());
+  const tracked = source.lease.track({ dispose: () => { stream.destroy(); } });
+  let released = false;
+  const release = (): void => {
+    if (released) return;
+    released = true;
+    tracked.dispose();
+    source.lease.dispose();
+  };
+  stream.once('end', release);
+  stream.once('close', release);
+  return stream;
+}
+
+type Req = { id: string; body: unknown };
+type Reply = { send(payload: unknown): unknown };
+
+async function handleList(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsListRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.list(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleRead(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsReadRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.read(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleListMany(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsListManyRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.listMany(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleStat(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsStatRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.stat(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleStatMany(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsStatManyRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.statMany(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleMkdir(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsMkdirRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.mkdir(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleSearch(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsSearchRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.search(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleGrep(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsGrepRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.grep(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleGitStatus(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsGitStatusRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.gitStatus(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleGitStatusBatch(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsGitStatusBatchRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.gitStatusBatch(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handlePullRequestBatch(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsPullRequestBatchRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.pullRequestBatch(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handlePullRequest(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsPullRequestRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.pullRequest(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleDiff(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsDiffRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const data = await fs.diff(parsed.data);
+  reply.send(okEnvelope(data, req.id));
+}
+
+async function handleOpen(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsOpenRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const resolved = await fs.resolvePath(parsed.data.path);
+  await launchDetached(openFileCommandFor(resolved.absolute, parsed.data.line));
+  reply.send(okEnvelope({ opened: true as const }, req.id));
+}
+
+async function handleReveal(fs: IWorkspaceFsService, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsRevealRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const resolved = await fs.resolvePath(parsed.data.path);
+  await launchDetached(revealFileCommandFor(resolved.absolute));
+  reply.send(okEnvelope({ revealed: true as const }, req.id));
+}
+
+async function handleOpenIn(fs: IWorkspaceFsService, sessionId: string, req: Req, reply: Reply): Promise<void> {
+  const parsed = fsOpenInRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    reply.send(buildValidationEnvelope(parsed.error.issues, req.id));
+    return;
+  }
+  const body = parsed.data;
+  const resolved = await fs.resolvePath(body.path);
+  try {
+    await launchDetached(
+      openInAppCommandFor(body.app_id, resolved.absolute, {
+        line: body.line,
+        isDirectory: resolved.isDirectory,
+      }),
+    );
+  } catch (error) {
+    requestLog(req)?.warn(
+      { session_id: sessionId, app_id: body.app_id, error },
+      'fs open-in launch failed',
+    );
+    reply.send(
+      errEnvelope(
+        ErrorCode.INTERNAL_ERROR,
+        `failed to open in ${body.app_id}: ${error instanceof Error ? error.message : String(error)}`,
+        req.id,
+      ),
+    );
+    return;
+  }
+  reply.send(okEnvelope({ opened: true as const }, req.id));
+}
+
+function sendMappedError(reply: Reply, req: { id: string }, err: unknown): void {
+  const requestId = req.id;
+  const log = requestLog(req);
+  if (sendEnvironmentError(reply, requestId, err)) return;
+  if (isError2(err)) {
+    switch (err.code) {
+      case ErrorCodes.FS_PATH_ESCAPES:
+        reply.send(errEnvelope(ErrorCode.FS_PATH_ESCAPES_SESSION, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_PATH_NOT_FOUND:
+        reply.send(errEnvelope(ErrorCode.FS_PATH_NOT_FOUND, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_IS_DIRECTORY:
+        reply.send(errEnvelope(ErrorCode.FS_IS_DIRECTORY, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_ALREADY_EXISTS:
+        reply.send(errEnvelope(ErrorCode.FS_ALREADY_EXISTS, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_IS_BINARY:
+        reply.send(errEnvelope(ErrorCode.FS_IS_BINARY, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_TOO_LARGE:
+        reply.send(errEnvelope(ErrorCode.FS_TOO_LARGE, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_TOO_MANY_RESULTS:
+        reply.send(errEnvelope(ErrorCode.FS_TOO_MANY_RESULTS, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_GREP_TIMEOUT:
+        reply.send(errEnvelope(ErrorCode.FS_GREP_TIMEOUT, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.FS_GIT_UNAVAILABLE:
+        reply.send(errEnvelope(ErrorCode.FS_GIT_UNAVAILABLE, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.SESSION_NOT_FOUND:
+        reply.send(errEnvelope(ErrorCode.SESSION_NOT_FOUND, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.OS_FS_NOT_FOUND:
+      case ErrorCodes.OS_FS_NOT_DIRECTORY:
+        reply.send(errEnvelope(ErrorCode.FS_PATH_NOT_FOUND, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.OS_FS_IS_DIRECTORY:
+        reply.send(errEnvelope(ErrorCode.FS_IS_DIRECTORY, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.OS_FS_ALREADY_EXISTS:
+        reply.send(errEnvelope(ErrorCode.FS_ALREADY_EXISTS, err.message, requestId, err.stack));
+        return;
+      case ErrorCodes.OS_FS_PERMISSION_DENIED:
+        reply.send(errEnvelope(ErrorCode.FS_PERMISSION_DENIED, err.message, requestId, err.stack));
+        return;
+    }
+  }
+  log?.error({ err }, 'fs request failed');
+  reply.send(
+    errEnvelope(
+      ErrorCode.INTERNAL_ERROR,
+      err instanceof Error ? err.message : String(err),
+      requestId,
+      err instanceof Error ? err.stack : undefined,
+    ),
+  );
+}
+
+function buildValidationEnvelope(
+  issues: readonly { path: readonly PropertyKey[]; message: string }[],
+  requestId: string,
+): {
+  code: number;
+  msg: string;
+  data: null;
+  request_id: string;
+  details: { path: string; message: string }[];
+} {
+  const details = issues.map((i) => ({
+    path: i.path.map((p) => String(p)).join('.'),
+    message: i.message,
+  }));
+  const first = details[0];
+  const msg =
+    first === undefined
+      ? 'validation failed'
+      : first.path === ''
+        ? first.message
+        : `${first.path}: ${first.message}`;
+  return {
+    code: ErrorCode.VALIDATION_FAILED,
+    msg,
+    data: null,
+    request_id: requestId,
+    details,
+  };
+}
+
+function sanitizeFilename(rel: string): string {
+  const segs = rel.split('/');
+  const base = segs.at(-1) ?? rel;
+  return base.replaceAll('"', '\\"');
+}

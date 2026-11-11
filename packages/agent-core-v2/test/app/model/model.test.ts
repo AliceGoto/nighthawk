@@ -1,0 +1,508 @@
+import { describe, expect, it } from 'vitest';
+
+import { ConfigRegistry } from '#/app/config/configService';
+import { ErrorCodes, Error2 } from '#/errors';
+import { nighthawkModelEnvOverlay, ENV_MODEL_ALIAS_KEY } from '#/app/kosongConfig/envOverlay';
+import {
+  ENV_MODEL_PROVIDER_KEY,
+  MODELS_SECTION,
+  ModelsSectionSchema,
+  modelsFromToml,
+  modelsToToml,
+} from '#/app/kosongConfig/configSection';
+import { type ModelRecord } from '#/llm-adapter/model/model';
+import { effectiveModelConfig } from '#/llm-adapter/model/model-auth';
+
+
+describe('effectiveModelConfig', () => {
+  it('clamps the input cap to the effective total window without mutating the source', () => {
+    const record = {
+      provider: 'custom',
+      model: 'gpt-5',
+      maxContextSize: 128000,
+      maxInputSize: 272000,
+    };
+
+    const effective = effectiveModelConfig(record);
+    expect(effective.maxInputSize).toBe(128000);
+    expect(record.maxInputSize).toBe(272000);
+
+    const withOverrides = {
+      provider: 'custom',
+      model: 'gpt-5',
+      maxContextSize: 400000,
+      maxInputSize: 272000,
+      overrides: { maxContextSize: 128000 },
+    };
+    const effectiveOverride = effectiveModelConfig(withOverrides);
+    expect(effectiveOverride.maxContextSize).toBe(128000);
+    expect(effectiveOverride.maxInputSize).toBe(128000);
+    expect(withOverrides.maxInputSize).toBe(272000);
+  });
+
+  it('derives the official effort metadata from a Claude model name', () => {
+    expect(
+      effectiveModelConfig({
+        provider: 'anthropic',
+        model: 'claude-opus-4-6',
+        maxContextSize: 200000,
+      }),
+    ).toMatchObject({
+      capabilities: ['thinking'],
+      supportEfforts: ['low', 'medium', 'high', 'max'],
+      defaultEffort: 'high',
+    });
+  });
+
+  it('infers Anthropic effort metadata for an unknown Claude-marked model on a non-NightHawk Anthropic provider', () => {
+    expect(
+      effectiveModelConfig(
+        {
+          provider: 'custom',
+          model: 'custom-claude-model',
+          maxContextSize: 200000,
+          protocol: 'anthropic',
+        },
+        'anthropic',
+      ),
+    ).toMatchObject({
+      capabilities: ['thinking'],
+      supportEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+      defaultEffort: 'high',
+    });
+  });
+
+  it('infers Anthropic effort metadata for a bare Claude family alias on a non-NightHawk Anthropic provider', () => {
+    expect(
+      effectiveModelConfig(
+        {
+          provider: 'custom',
+          model: 'sonnet-latest',
+          maxContextSize: 200000,
+          protocol: 'anthropic',
+        },
+        'anthropic',
+      ),
+    ).toMatchObject({
+      capabilities: ['thinking'],
+      supportEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+      defaultEffort: 'high',
+    });
+  });
+
+  it('does not infer Anthropic effort metadata for a clearly non-Claude model on a non-NightHawk Anthropic provider', () => {
+    expect(
+      effectiveModelConfig(
+        {
+          provider: 'custom',
+          model: 'custom-anthropic-model',
+          maxContextSize: 200000,
+          protocol: 'anthropic',
+        },
+        'anthropic',
+      ),
+    ).toEqual({
+      provider: 'custom',
+      model: 'custom-anthropic-model',
+      maxContextSize: 200000,
+      protocol: 'anthropic',
+    });
+  });
+
+  it('does not infer Anthropic effort metadata for a NightHawk provider routed through the Anthropic protocol', () => {
+    const model: ModelRecord = {
+      provider: 'managed:nighthawk',
+      model: 'kimi-for-coding',
+      maxContextSize: 262144,
+      capabilities: ['thinking', 'always_thinking'],
+      protocol: 'anthropic',
+      adaptiveThinking: true,
+    };
+
+    expect(effectiveModelConfig(model, 'kimi')).toEqual(model);
+  });
+
+  it('does not infer the fallback profile without provider context', () => {
+    const model: ModelRecord = {
+      provider: 'custom',
+      model: 'custom-anthropic-model',
+      maxContextSize: 200000,
+      protocol: 'anthropic',
+    };
+
+    expect(effectiveModelConfig(model)).toEqual(model);
+  });
+
+  it('limits an adaptive_thinking=false model to budget efforts', () => {
+    expect(
+      effectiveModelConfig(
+        {
+          provider: 'custom',
+          model: 'custom-claude-model',
+          maxContextSize: 200000,
+          protocol: 'anthropic',
+          adaptiveThinking: false,
+        },
+        'anthropic',
+      ),
+    ).toMatchObject({
+      capabilities: ['thinking'],
+      supportEfforts: ['low', 'medium', 'high'],
+      defaultEffort: 'high',
+    });
+  });
+
+  it('does not infer Anthropic effort metadata for an unknown model without an Anthropic protocol', () => {
+    const model = {
+      provider: 'custom',
+      model: 'custom-anthropic-model',
+      maxContextSize: 200000,
+    };
+
+    expect(effectiveModelConfig(model)).toEqual(model);
+  });
+
+  it('marks official always-on models while preserving explicit effort metadata', () => {
+    expect(
+      effectiveModelConfig({
+        provider: 'anthropic',
+        model: 'claude-fable-5',
+        maxContextSize: 200000,
+        supportEfforts: ['high', 'max'],
+        defaultEffort: 'max',
+      }),
+    ).toMatchObject({
+      capabilities: ['always_thinking'],
+      supportEfforts: ['high', 'max'],
+      defaultEffort: 'max',
+    });
+  });
+});
+
+describe('models config section', () => {
+  it('self-registers the models section schema', () => {
+    expect(new ConfigRegistry().getSection(MODELS_SECTION)).toBeDefined();
+  });
+});
+
+describe('models TOML transforms', () => {
+  it('camelCases nested model overrides from TOML', () => {
+    expect(
+      modelsFromToml({
+        nighthawk: {
+          provider: 'p',
+          model: 'm',
+          max_context_size: 1000,
+          support_efforts: ['low', 'high', 'max'],
+          overrides: {
+            max_context_size: 500,
+            support_efforts: ['low', 'high'],
+          },
+        },
+      }),
+    ).toEqual({
+      nighthawk: {
+        provider: 'p',
+        model: 'm',
+        maxContextSize: 1000,
+        supportEfforts: ['low', 'high', 'max'],
+        overrides: {
+          maxContextSize: 500,
+          supportEfforts: ['low', 'high'],
+        },
+      },
+    });
+  });
+
+  it('snakeCases nested model overrides for TOML', () => {
+    expect(
+      modelsToToml(
+        {
+          nighthawk: {
+            provider: 'p',
+            model: 'm',
+            maxContextSize: 1000,
+            overrides: {
+              maxContextSize: 500,
+              supportEfforts: ['low', 'high'],
+            },
+          },
+        },
+        {},
+      ),
+    ).toEqual({
+      nighthawk: {
+        provider: 'p',
+        model: 'm',
+        max_context_size: 1000,
+        overrides: {
+          max_context_size: 500,
+          support_efforts: ['low', 'high'],
+        },
+      },
+    });
+  });
+
+  it('deletes on-disk fields the new record carries with an explicit undefined', () => {
+    expect(
+      modelsToToml(
+        {
+          nighthawk: {
+            provider: 'p',
+            model: 'm',
+            maxContextSize: 1000,
+            displayName: undefined,
+            capabilities: undefined,
+          },
+        },
+        {
+          nighthawk: {
+            provider: 'p',
+            model: 'm',
+            max_context_size: 128000,
+            display_name: 'Old Name',
+            capabilities: ['tool_use'],
+            beta_api: true,
+          },
+        },
+      ),
+    ).toEqual({
+      nighthawk: {
+        provider: 'p',
+        model: 'm',
+        max_context_size: 1000,
+        beta_api: true,
+      },
+    });
+  });
+});
+
+type EnvMap = Readonly<Record<string, string | undefined>>;
+
+function applyNightHawkModelEnvOverlay(
+  env: EnvMap,
+  effective: Record<string, unknown> = {},
+): { readonly changed: readonly string[]; readonly effective: Record<string, unknown> } {
+  const changed = nighthawkModelEnvOverlay.apply(
+    effective,
+    (name) => env[name],
+    (domain, value) => {
+      if (domain === MODELS_SECTION) return ModelsSectionSchema.parse(value);
+      return value;
+    },
+  );
+  return { changed, effective };
+}
+
+function expectConfigInvalid(fn: () => unknown): void {
+  try {
+    fn();
+  } catch (error) {
+    expect(error).toBeInstanceOf(Error2);
+    expect((error as Error2).code).toBe(ErrorCodes.CONFIG_INVALID);
+    return;
+  }
+  throw new Error('expected config.invalid');
+}
+
+describe('nighthawkModelEnvOverlay', () => {
+  it('does nothing when NIGHTHAWK_MODEL_NAME is absent', () => {
+    const effective = {
+      models: {
+        existing: { provider: 'p', model: 'm', maxContextSize: 1000 },
+      },
+      defaultModel: 'existing',
+    };
+
+    const result = applyNightHawkModelEnvOverlay({}, effective);
+
+    expect(result.changed).toEqual([]);
+    expect(result.effective).toEqual(effective);
+  });
+
+  it('applies request overrides when NIGHTHAWK_MODEL_NAME is absent', () => {
+    const { changed, effective } = applyNightHawkModelEnvOverlay({
+      NIGHTHAWK_MODEL_TEMPERATURE: '0.3',
+      NIGHTHAWK_MODEL_THINKING_KEEP: 'all',
+    });
+
+    expect(changed).toEqual(['modelOverrides']);
+    expect(effective['modelOverrides']).toEqual({
+      temperature: 0.3,
+      thinkingKeep: 'all',
+    });
+  });
+
+  it('synthesizes an env model alias and default model from the minimal env set', () => {
+    const { changed, effective } = applyNightHawkModelEnvOverlay({
+      NIGHTHAWK_MODEL_NAME: 'kimi-for-coding',
+    });
+
+    expect(changed).toEqual(['models', 'providers', 'defaultModel']);
+    expect(effective['defaultModel']).toBe(ENV_MODEL_ALIAS_KEY);
+    expect(effective['models']).toEqual({
+      [ENV_MODEL_ALIAS_KEY]: {
+        provider: ENV_MODEL_PROVIDER_KEY,
+        model: 'kimi-for-coding',
+        maxContextSize: 262144,
+        capabilities: ['image_in', 'thinking'],
+      },
+    });
+    expect(effective['providers']).toEqual({
+      [ENV_MODEL_PROVIDER_KEY]: { type: 'kimi', baseUrl: 'https://api.moonshot.ai/v1' },
+    });
+  });
+
+  it('omits baseUrl for openai so the base SDK default applies at construction', () => {
+    const { effective } = applyNightHawkModelEnvOverlay(
+      { NIGHTHAWK_MODEL_NAME: 'env-model' },
+      { providers: { [ENV_MODEL_PROVIDER_KEY]: { type: 'openai' } } },
+    );
+
+    expect(effective['providers']).toEqual({
+      [ENV_MODEL_PROVIDER_KEY]: { type: 'openai' },
+    });
+  });
+
+  it('omits baseUrl for anthropic so the SDK picks its default', () => {
+    const { effective } = applyNightHawkModelEnvOverlay(
+      { NIGHTHAWK_MODEL_NAME: 'env-model' },
+      { providers: { [ENV_MODEL_PROVIDER_KEY]: { type: 'anthropic' } } },
+    );
+
+    expect(effective['providers']).toEqual({
+      [ENV_MODEL_PROVIDER_KEY]: { type: 'anthropic' },
+    });
+  });
+
+  it('honors an explicit baseUrl over the type default', () => {
+    const { effective } = applyNightHawkModelEnvOverlay(
+      { NIGHTHAWK_MODEL_NAME: 'env-model' },
+      {
+        providers: {
+          [ENV_MODEL_PROVIDER_KEY]: { type: 'openai', baseUrl: 'https://api.example.com/v1' },
+        },
+      },
+    );
+
+    expect(effective['providers']).toEqual({
+      [ENV_MODEL_PROVIDER_KEY]: { type: 'openai', baseUrl: 'https://api.example.com/v1' },
+    });
+  });
+
+  it('keeps an explicit env provider type instead of the nighthawk default', () => {
+    const { changed, effective } = applyNightHawkModelEnvOverlay(
+      { NIGHTHAWK_MODEL_NAME: 'env-model' },
+      { providers: { [ENV_MODEL_PROVIDER_KEY]: { type: 'openai', baseUrl: 'http://x' } } },
+    );
+
+    expect(changed).toEqual(['models', 'defaultModel']);
+    expect(effective['providers']).toEqual({
+      [ENV_MODEL_PROVIDER_KEY]: { type: 'openai', baseUrl: 'http://x' },
+    });
+  });
+
+  it('preserves configured aliases while adding the env alias', () => {
+    const existing = { provider: 'p', model: 'm', maxContextSize: 1000 };
+    const { effective } = applyNightHawkModelEnvOverlay(
+      { NIGHTHAWK_MODEL_NAME: 'env-model' },
+      { models: { existing } },
+    );
+
+    expect(effective['models']).toMatchObject({
+      existing,
+      [ENV_MODEL_ALIAS_KEY]: { model: 'env-model' },
+    });
+  });
+
+  it('maps extended model metadata and request overrides', () => {
+    const { changed, effective } = applyNightHawkModelEnvOverlay({
+      NIGHTHAWK_MODEL_NAME: 'env-model',
+      NIGHTHAWK_MODEL_MAX_CONTEXT_SIZE: '1000000',
+      NIGHTHAWK_MODEL_MAX_OUTPUT_SIZE: '8192',
+      NIGHTHAWK_MODEL_CAPABILITIES: 'Image_In, thinking , tool_use',
+      NIGHTHAWK_MODEL_DISPLAY_NAME: 'Custom Model',
+      NIGHTHAWK_MODEL_REASONING_KEY: 'reasoning',
+      NIGHTHAWK_MODEL_ADAPTIVE_THINKING: 'true',
+      NIGHTHAWK_MODEL_TEMPERATURE: '0.3',
+      NIGHTHAWK_MODEL_TOP_P: ' 0.95 ',
+      NIGHTHAWK_MODEL_THINKING_KEEP: 'all',
+      NIGHTHAWK_MODEL_MAX_COMPLETION_TOKENS: '4096',
+      NIGHTHAWK_MODEL_MAX_TOKENS: '2048',
+    });
+
+    expect(changed).toEqual(['models', 'providers', 'defaultModel', 'modelOverrides']);
+    expect(
+      (effective['models'] as Record<string, unknown>)[ENV_MODEL_ALIAS_KEY],
+    ).toEqual({
+      provider: ENV_MODEL_PROVIDER_KEY,
+      model: 'env-model',
+      maxContextSize: 1000000,
+      maxOutputSize: 8192,
+      capabilities: ['image_in', 'thinking', 'tool_use'],
+      displayName: 'Custom Model',
+      reasoningKey: 'reasoning',
+      adaptiveThinking: true,
+    });
+    expect(effective['modelOverrides']).toEqual({
+      temperature: 0.3,
+      topP: 0.95,
+      thinkingKeep: 'all',
+      maxCompletionTokens: 4096,
+    });
+  });
+
+  it('falls back to legacy NIGHTHAWK_MODEL_MAX_TOKENS for completion overrides', () => {
+    const { effective } = applyNightHawkModelEnvOverlay({
+      NIGHTHAWK_MODEL_NAME: 'env-model',
+      NIGHTHAWK_MODEL_MAX_TOKENS: '2048',
+    });
+
+    expect(effective['modelOverrides']).toEqual({ maxCompletionTokens: 2048 });
+  });
+
+  it.each([
+    ['NIGHTHAWK_MODEL_MAX_CONTEXT_SIZE', '0'],
+    ['NIGHTHAWK_MODEL_MAX_CONTEXT_SIZE', '1.5'],
+    ['NIGHTHAWK_MODEL_MAX_OUTPUT_SIZE', 'nope'],
+    ['NIGHTHAWK_MODEL_ADAPTIVE_THINKING', 'maybe'],
+    ['NIGHTHAWK_MODEL_TEMPERATURE', 'abc'],
+    ['NIGHTHAWK_MODEL_TEMPERATURE', '1.2.3'],
+    ['NIGHTHAWK_MODEL_TOP_P', 'NaN'],
+  ])('throws config.invalid for invalid %s=%s', (key, value) => {
+    expectConfigInvalid(() =>
+      applyNightHawkModelEnvOverlay({ NIGHTHAWK_MODEL_NAME: 'env-model', [key]: value }),
+    );
+  });
+
+  it('strips env-only model values before write-back', () => {
+    expect(
+      nighthawkModelEnvOverlay.strip?.(
+        'models',
+        {
+          user: { provider: 'p', model: 'm', maxContextSize: 1000 },
+          [ENV_MODEL_ALIAS_KEY]: {
+            provider: ENV_MODEL_PROVIDER_KEY,
+            model: 'env-model',
+            maxContextSize: 262144,
+          },
+        },
+        {},
+      ),
+    ).toEqual({
+      user: { provider: 'p', model: 'm', maxContextSize: 1000 },
+    });
+
+    expect(
+      nighthawkModelEnvOverlay.strip?.('defaultModel', ENV_MODEL_ALIAS_KEY, {
+        default_model: 'user',
+      }),
+    ).toBe('user');
+    expect(nighthawkModelEnvOverlay.strip?.('modelOverrides', { temperature: 0.3 }, {})).toBeUndefined();
+  });
+
+  it('self-registers into ConfigRegistry without ModelService instantiation', () => {
+    const freshRegistry = new ConfigRegistry();
+    expect(freshRegistry.listEffectiveOverlays()).toContain(nighthawkModelEnvOverlay);
+  });
+});

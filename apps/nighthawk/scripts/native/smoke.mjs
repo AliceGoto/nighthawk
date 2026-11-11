@@ -1,0 +1,252 @@
+import { execFile } from 'node:child_process';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { promisify } from 'node:util';
+
+import { appRoot, nativeBinPath, nativeSmokeHome, targetTriple } from './paths.mjs';
+
+const execFileAsync = promisify(execFile);
+const target = targetTriple();
+const executablePath = nativeBinPath(target);
+const smokeHome = nativeSmokeHome();
+const packageJson = JSON.parse(await readFile(resolve(appRoot, 'package.json'), 'utf-8'));
+const expectedVersion = packageJson.version;
+
+function fail(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+async function ensureExecutableExists() {
+  try {
+    await stat(executablePath);
+  } catch {
+    fail(`Native executable not found at ${executablePath}. Run build:native:sea first.`);
+  }
+}
+
+// `nighthawk exec-server --listen stdio` is the remote-executor light entry: the
+// SEA binary must answer the NDJSON handshake with the package version and a
+// target-native environment, keep stdout protocol-only, and exit 0 on stdin EOF.
+async function runExecServerSmoke() {
+  const { spawn } = await import('node:child_process');
+  const startedAt = performance.now();
+  const child = spawn(executablePath, ['exec-server', '--listen', 'stdio'], {
+    cwd: appRoot,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.setEncoding('utf-8');
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk;
+  });
+
+  const pending = [];
+  const waiters = [];
+  let buffer = '';
+  child.stdout.setEncoding('utf-8');
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk;
+    let index = buffer.indexOf('\n');
+    while (index >= 0) {
+      const line = buffer.slice(0, index).trim();
+      buffer = buffer.slice(index + 1);
+      if (line.length > 0) {
+        const parsed = JSON.parse(line);
+        const waiter = waiters.shift();
+        if (waiter !== undefined) waiter(parsed);
+        else pending.push(parsed);
+      }
+      index = buffer.indexOf('\n');
+    }
+  });
+
+  const nextFrame = () =>
+    new Promise((resolveFrame, rejectFrame) => {
+      const queued = pending.shift();
+      if (queued !== undefined) {
+        resolveFrame(queued);
+        return;
+      }
+      const timer = setTimeout(() => {
+        rejectFrame(new Error(`timed out waiting for a protocol frame; stderr so far:\n${stderr}`));
+      }, 30_000);
+      waiters.push((frame) => {
+        clearTimeout(timer);
+        resolveFrame(frame);
+      });
+    });
+
+  const send = (message) => child.stdin.write(`${JSON.stringify(message)}\n`);
+
+  try {
+    send({ method: 'initialize', id: 1, params: { clientName: 'native-smoke', clientVersion: expectedVersion } });
+    const initialize = await nextFrame();
+    const handshakeMs = performance.now() - startedAt;
+    const result = initialize.result ?? {};
+    if (initialize.id !== 1 || result.executorVersion !== expectedVersion) {
+      fail(`exec-server handshake mismatch: expected executorVersion ${expectedVersion}, got ${JSON.stringify(initialize)}`);
+    }
+    const expectedPathClass = process.platform === 'win32' ? 'win32' : 'posix';
+    if (result.environment?.pathClass !== expectedPathClass) {
+      fail(`exec-server reported a non-native environment: ${JSON.stringify(result.environment)}`);
+    }
+    send({ method: 'fs/getMetadata', id: 2, params: { path: appRoot } });
+    const metadata = await nextFrame();
+    if (metadata.id !== 2 || metadata.result?.isDirectory !== true) {
+      fail(`exec-server fs/getMetadata mismatch: ${JSON.stringify(metadata)}`);
+    }
+    child.stdin.end();
+    const exitCode = await new Promise((resolveExit) => {
+      const timer = setTimeout(() => {
+        child.kill('SIGKILL');
+        resolveExit(null);
+      }, 30_000);
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        resolveExit(code);
+      });
+    });
+    if (exitCode !== 0) {
+      fail(`exec-server did not exit 0 on stdin EOF (exit=${exitCode}).\n${stderr}`);
+    }
+    console.log(`exec-server smoke passed (handshake in ${handshakeMs.toFixed(0)}ms)`);
+  } finally {
+    child.kill('SIGKILL');
+  }
+}
+
+// The SSH password retry points SSH_ASKPASS at this binary itself; the process
+// entry must recognise the askpass environment ahead of argv (ssh passes the
+// prompt as the only argument), fetch the secret over the loopback token
+// channel and print it verbatim on stdout.
+async function runSshAskpassSmoke() {
+  const { createServer } = await import('node:net');
+  const token = 'native-smoke-token';
+  const secret = ' native smoke secret ';
+  const server = createServer((socket) => {
+    let input = '';
+    socket.setEncoding('utf8');
+    socket.on('data', (chunk) => {
+      input += chunk;
+      const end = input.indexOf('\n');
+      if (end < 0) return;
+      if (JSON.parse(input.slice(0, end)).token !== token) {
+        socket.destroy();
+        return;
+      }
+      socket.end(`${JSON.stringify({ value: secret })}\n`);
+    });
+  });
+  await new Promise((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+  try {
+    const { stdout } = await execFileAsync(executablePath, ['Password:'], {
+      cwd: appRoot,
+      env: {
+        ...process.env,
+        NIGHTHAWK_SSH_ASKPASS_PORT: String(server.address().port),
+        NIGHTHAWK_SSH_ASKPASS_TOKEN: token,
+      },
+      timeout: 30_000,
+    });
+    if (stdout !== `${secret}\n`) {
+      fail(`ssh askpass smoke printed ${JSON.stringify(stdout)}, expected ${JSON.stringify(`${secret}\n`)}`);
+    }
+    console.log('ssh askpass smoke passed');
+  } catch (error) {
+    fail(`ssh askpass smoke failed: ${error.message}`);
+  } finally {
+    server.close();
+  }
+}
+
+async function runNightHawk(args) {
+  try {
+    const { stdout, stderr } = await execFileAsync(executablePath, args, {
+      cwd: appRoot,
+      maxBuffer: 1024 * 1024 * 16,
+    });
+    return `${stdout}${stderr}`;
+  } catch (error) {
+    const detail = [error.stdout?.trim(), error.stderr?.trim(), error.message]
+      .filter(Boolean)
+      .join('\n');
+    fail(`Native smoke failed: ${executablePath} ${args.join(' ')}\n${detail}`);
+  }
+}
+
+async function runNightHawkWithEnv(args, env) {
+  try {
+    const { stdout, stderr } = await execFileAsync(executablePath, args, {
+      cwd: appRoot,
+      env: { ...process.env, ...env },
+      maxBuffer: 1024 * 1024 * 16,
+    });
+    return `${stdout}${stderr}`;
+  } catch (error) {
+    const detail = [error.stdout?.trim(), error.stderr?.trim(), error.message]
+      .filter(Boolean)
+      .join('\n');
+    fail(`Native smoke failed: ${executablePath} ${args.join(' ')}\n${detail}`);
+  }
+}
+
+function assertIncludes(output, expected, command) {
+  if (!output.includes(expected)) {
+    fail(`Native smoke output for "${command}" did not include "${expected}".\n${output}`);
+  }
+}
+
+await ensureExecutableExists();
+
+const versionOutput = await runNightHawk(['--version']);
+assertIncludes(versionOutput, expectedVersion, '--version');
+
+const helpOutput = await runNightHawk(['--help']);
+assertIncludes(helpOutput, 'Usage: nighthawk', '--help');
+
+const exportHelpOutput = await runNightHawk(['export', '--help']);
+assertIncludes(exportHelpOutput, 'Usage: nighthawk export', 'export --help');
+
+const smokeCache = resolve(smokeHome, 'cache');
+await rm(smokeHome, { recursive: true, force: true });
+await mkdir(smokeCache, { recursive: true });
+try {
+  const nativeAssetOutput = await runNightHawkWithEnv(['--version'], {
+    NIGHTHAWK_CACHE_DIR: smokeCache,
+    NIGHTHAWK_HOME: smokeHome,
+    NIGHTHAWK_NATIVE_ASSET_SMOKE: '1',
+  });
+  assertIncludes(nativeAssetOutput, `Native asset smoke passed: ${target}`, 'native asset smoke');
+  assertIncludes(nativeAssetOutput, 'MiniDb worker build passed', 'MiniDb worker smoke');
+  assertIncludes(nativeAssetOutput, 'search worker ready', 'search worker smoke');
+} finally {
+  await rm(smokeHome, { recursive: true, force: true });
+}
+
+// Plugin MCP servers declared with `command: "node"` are re-executed through
+// this binary as `__plugin_run_node`, which loads the plugin script with a
+// dynamic import(). Keep that path covered so bundler or SEA settings that
+// break dynamic import() fail here instead of inside users' plugins.
+const pluginRoot = resolve(smokeHome, 'plugin');
+await rm(smokeHome, { recursive: true, force: true });
+await mkdir(pluginRoot, { recursive: true });
+try {
+  const pluginEntry = resolve(pluginRoot, 'entry.mjs');
+  await writeFile(
+    pluginEntry,
+    'await Promise.resolve();\nconsole.log(`plugin entry ran ${process.argv.slice(2).join(" ")}`);\n',
+  );
+  const pluginOutput = await runNightHawkWithEnv(['__plugin_run_node', pluginEntry, 'alpha', 'beta'], {
+    NIGHTHAWK_HOME: smokeHome,
+    NIGHTHAWK_PLUGIN_ROOT: pluginRoot,
+  });
+  assertIncludes(pluginOutput, 'plugin entry ran alpha beta', 'plugin node entry');
+} finally {
+  await rm(smokeHome, { recursive: true, force: true });
+}
+
+await runExecServerSmoke();
+await runSshAskpassSmoke();
+
+console.log(`Native smoke passed: ${executablePath}`);

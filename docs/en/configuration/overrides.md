@@ -1,0 +1,112 @@
+# Config overrides
+
+NightHawk CLI has three places where runtime parameters can be influenced: the config file, command-line options, and environment variables. They are not a simple priority stack: the three serve different scenarios and have non-overlapping scopes:
+
+- **Config file** stores long-term preferences (model, keys, loop control, etc.); takes effect on every startup
+- **Command-line options** make one-off changes for the current startup; discarded after exit
+- **Environment variables** primarily handle data directory location, OAuth endpoint switching, and a small number of runtime switches. They are **not a general fallback mechanism for config fields**.
+
+This distinction matters: many users run `export NIGHTHAWK_API_KEY=xxx` in the shell expecting the CLI to pick it up automatically, but it does not. See [Provider credentials](#provider-credentials) below for why.
+
+## Three roles of environment variables
+
+Environment variables fall into three categories by function and cannot be collapsed into a single linear priority order:
+
+1. **Locating the config file**: `NIGHTHAWK_HOME` sets the data root directory, making the config file path `$NIGHTHAWK_HOME/config.toml`. This step runs before all other resolution and is not a fallback for individual parameters.
+2. **Environment switches**: A small set of variables like `NIGHTHAWK_DISABLE_TELEMETRY` directly shut down the corresponding subsystem. Even if `config.toml` has `telemetry = true`, a truthy value for this variable disables telemetry. The semantics are "additionally disable", not "ordinary override".
+3. **Environment endpoints and diagnostics**: Variables like `NIGHTHAWK_OAUTH_HOST`, `NIGHTHAWK_BASE_URL`, and `NIGHTHAWK_LOG_LEVEL` are read when the OAuth or logging subsystems initialize. For the full list, see [Environment variables](./env-vars.md).
+
+## Priority for ordinary runtime parameters
+
+For ordinary runtime parameters such as model alias, Plan mode, permission mode, and Skills directories, priority from highest to lowest is:
+
+1. **Command-line options** (`-m`, `--plan`, `--yolo`, etc.): apply only to the current startup
+2. **User config file** (`~/.nighthawk/config.toml`): stores long-term preferences
+
+A small number of environment variables explicitly override specific config file fields. For example, `NIGHTHAWK_BACKGROUND_KEEP_ALIVE_ON_EXIT` has higher priority than `[background].keep_alive_on_exit`. These exceptions are noted in [Environment variables](./env-vars.md) and in the relevant field descriptions in [Configuration files](./config-files.md).
+
+::: warning
+**Ordinary runtime parameters do not fall back to shell environment variables.** Provider `api_key` / `base_url` are read only from `config.toml` (including the `[providers.<name>.env]` sub-table) and do not fall back to `export`-ed shell variables. The only exceptions are the `NIGHTHAWK_MODEL_*` family and a provider's `api_key_env` field, two explicit channels that *do* read credentials from the shell; see [Define a model from environment variables](./env-vars.md#define-a-model-from-environment-variables-nighthawk_model_) and [Provider credentials](#provider-credentials).
+:::
+
+The CLI currently reads a single user-level config file and has no project-level config file mechanism. To isolate config between different projects, point `NIGHTHAWK_HOME` at different data directories; see [Common scenarios](#common-scenarios) below.
+
+## Provider credentials
+
+Provider credentials (`api_key`, `base_url`) follow their own resolution rules, separate from the ordinary parameter priority chain.
+
+For a single provider, credentials are resolved in this order:
+
+1. `[providers.<name>].api_key`: key written directly in the config file
+2. `[providers.<name>].api_key_env`: name of a shell environment variable to read the key from
+3. The matching key inside the `[providers.<name>.env]` sub-table (`NIGHTHAWK_API_KEY`, `ANTHROPIC_API_KEY`, etc.): consulted only when neither field above is present
+4. If all are absent, startup fails with an error indicating the provider is missing credentials
+
+`api_key` and `api_key_env` are alternatives, not a priority chain: set exactly one — setting both is rejected as a configuration conflict, as is setting `api_key_env` together with `oauth`.
+
+`api_key_env` is the one deliberate exception to "no shell environment variables for credentials": the value is re-read from the process's own environment on every request, so it is never cached beyond the process lifetime and no secret lands in `config.toml`. Note that a running process only sees the environment it started with — rotating the variable takes a restart of the `nighthawk` / TUI or kap-server process; a fresh `export` in the parent shell only affects newly spawned processes. Declaring `api_key_env` while the variable is unset or empty fails fast with an error naming the provider and the variable — at session readiness checks (print mode, kap-server session creation) and at request time — and is never silently ignored, with no fallback to another credential source.
+
+`base_url` is resolved the same way: first `[providers.<name>].base_url`, then the `*_BASE_URL` key in `[providers.<name>.env]`.
+
+> The `[providers.<name>.env]` sub-table is just a TOML section in the config file and does not write anything into the shell environment. It is only consulted when the corresponding direct field (`api_key` / `base_url`) is empty.
+
+For the full list of credential key names, see [Environment variables: provider credential key names](./env-vars.md#provider-credential-key-names-written-in-configtoml).
+
+## Command-line options
+
+Options passed at startup have the highest priority and apply only to the current session:
+
+| Option | Effect |
+| --- | --- |
+| `-S, --session [id]` | Resume a specific session; enters interactive selection when no id is given |
+| `-c, --continue` | Resume the last session for the current working directory |
+| `-y, --yolo` | Ask When Needed mode: routine edits and commands run automatically; the agent may still ask questions |
+| `--auto` | Never Ask mode: the agent will not ask questions; only plans in Plan mode wait for your review |
+| `--plan` | Start in Plan mode |
+| `-m, --model <model>` | Use a specific model alias for this session |
+| `-p, --prompt <prompt>` | Run in non-interactive mode: execute a single prompt and exit |
+| `--output-format <format>` | Output format for `-p` mode: `text` or `stream-json` |
+| `--skills-dir <dir>` | Replace auto-discovered Skills directories (repeatable; applies to this session only) |
+
+Mutual exclusion rules (startup fails if violated):
+
+- `--output-format` can only be used with `-p`
+- `--prompt` cannot be combined with `--yolo` or `--plan`
+- `--continue` and `--session` cannot be used together
+- In non-prompt mode, `--yolo` and `--plan` cannot be combined with `--continue` or `--session`
+
+::: tip
+`--skills-dir` is a one-shot replacement that only affects the current startup. To persistently add search directories, write `extra_skill_dirs` in `config.toml` (see [Agent Skills](../customization/skills.md)).
+:::
+
+## Common scenarios
+
+**Isolated test environment**: use a separate data directory to avoid polluting the main config and sessions:
+
+```sh
+NIGHTHAWK_HOME="$PWD/.nighthawk-sandbox" nighthawk
+```
+
+**One-off test key**: since provider credentials are read only from the config file, write a test key into the `env` sub-table:
+
+```toml
+[providers.nighthawk.env]
+NIGHTHAWK_API_KEY = "sk-test"
+```
+
+**Skip approval for batch tasks**:
+
+```sh
+nighthawk --yolo -p "Batch rename the following files..."
+```
+
+**Enter Plan mode temporarily** (to make it permanent, set `default_plan_mode = true` in the config file):
+
+```sh
+nighthawk --plan
+```
+
+## Next steps
+
+- [Configuration files](./config-files.md) — complete reference for all configurable fields
+- [Environment variables](./env-vars.md) — full list and description of `NIGHTHAWK_HOME` and related variables

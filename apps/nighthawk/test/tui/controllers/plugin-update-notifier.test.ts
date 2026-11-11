@@ -1,0 +1,398 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { PluginSummary } from '@nighthawk/nighthawk-sdk';
+
+import { nighthawkCodePluginMarketplaceUrl } from '#/constant/app';
+import {
+  PluginUpdateNotifier,
+  type PluginUpdateNotifierSession,
+} from '#/tui/controllers/plugin-update-notifier';
+import type { PluginMarketplace } from '#/utils/plugin-marketplace';
+import { readPluginUpdateNoticeState } from '#/utils/plugin-update-notice-state';
+
+function makePluginSummary(overrides: Partial<PluginSummary> = {}): PluginSummary {
+  return {
+    id: 'nighthawk-datasource',
+    displayName: 'NightHawk Datasource',
+    version: '3.3.0',
+    enabled: true,
+    state: 'ok',
+    skillCount: 0,
+    mcpServerCount: 1,
+    enabledMcpServerCount: 1,
+    hookCount: 0,
+    commandCount: 0,
+    hasErrors: false,
+    source: 'zip-url',
+    origin: 'marketplace',
+    catalogId: 'nighthawk-datasource',
+    installedAt: '2026-01-01T00:00:00.000Z',
+    originalSource: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-datasource.zip',
+    ...overrides,
+  };
+}
+
+function makeMarketplaceEntry(
+  id: string,
+  displayName: string,
+  version: string,
+): PluginMarketplace['plugins'][number] {
+  return {
+    id,
+    displayName,
+    source: `https://code.kimi.com/nighthawk/plugins/official/${id}.zip`,
+    tier: 'official',
+    version,
+  };
+}
+
+function makeMarketplace(version = '3.4.0'): PluginMarketplace {
+  return {
+    source: nighthawkCodePluginMarketplaceUrl(),
+    plugins: [makeMarketplaceEntry('nighthawk-datasource', 'NightHawk Datasource', version)],
+  };
+}
+
+interface HarnessOptions {
+  readonly marketplace?: PluginMarketplace;
+  readonly installed?: readonly PluginSummary[];
+  readonly mcpServers?: readonly string[];
+  readonly loadMarketplace?: () => Promise<PluginMarketplace>;
+}
+
+function makeHarness(options: HarnessOptions = {}) {
+  const session: PluginUpdateNotifierSession = {
+    listMcpServers: vi.fn(async () =>
+      (options.mcpServers ?? ['plugin-nighthawk-datasource:data']).map((name) => ({ name })),
+    ),
+    listPlugins: vi.fn(async () => options.installed ?? [makePluginSummary()]),
+  };
+  const notify = vi.fn();
+  const loadMarketplace = vi.fn(
+    options.loadMarketplace ?? (async () => options.marketplace ?? makeMarketplace()),
+  );
+  return { session, notify, loadMarketplace };
+}
+
+const DATASOURCE_TOOL = 'mcp__plugin-nighthawk-datasource_data__call_data_source_tool';
+const EXPECTED_MESSAGE =
+  'Update detected: NightHawk Datasource 3.4.0 is available. ' +
+  'Run /plugins to install the latest version from the Official Marketplace.';
+
+describe('PluginUpdateNotifier', () => {
+  let tempDir: string;
+  let stateFile: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'plugin-update-notifier-'));
+    stateFile = join(tempDir, 'plugin-notices.json');
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  function makeNotifier(harness: ReturnType<typeof makeHarness>) {
+    return new PluginUpdateNotifier({
+      getSession: () => harness.session,
+      workDir: tempDir,
+      notify: harness.notify,
+      loadMarketplace: harness.loadMarketplace,
+      stateFile,
+    });
+  }
+
+  it('notifies once after a plugin MCP tool completes, then stays silent for that version', async () => {
+    const harness = makeHarness();
+    const notifier = makeNotifier(harness);
+
+    await notifier.handleMcpToolCompleted(DATASOURCE_TOOL);
+    expect(harness.notify).toHaveBeenCalledWith(EXPECTED_MESSAGE);
+
+    harness.notify.mockClear();
+    // Follow-up checks run but hit the persisted "already notified" record
+    // instead of notifying again.
+    await notifier.handleMcpToolCompleted(DATASOURCE_TOOL);
+    expect(harness.notify).not.toHaveBeenCalled();
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('ignores non-plugin tool names without touching the session', async () => {
+    const harness = makeHarness();
+    const notifier = makeNotifier(harness);
+
+    await notifier.handleMcpToolCompleted('Bash');
+    await notifier.handleMcpToolCompleted('mcp__github__create_issue');
+
+    expect(harness.session.listMcpServers).not.toHaveBeenCalled();
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('does not notify when the installed version is up to date', async () => {
+    const harness = makeHarness({ installed: [makePluginSummary({ version: '3.4.0' })] });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handleMcpToolCompleted(DATASOURCE_TOOL);
+    expect(harness.session.listPlugins).toHaveBeenCalled();
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('does not notify for plugins absent from the marketplace', async () => {
+    const harness = makeHarness({ installed: [makePluginSummary({ id: 'local-only' })] });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('local-only');
+    // No marketplace entry — the check bails before even listing plugins.
+    expect(harness.session.listPlugins).not.toHaveBeenCalled();
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('does not notify when the catalog is not the official marketplace', async () => {
+    const harness = makeHarness({
+      marketplace: {
+        source: 'https://example.test/custom-marketplace.json',
+        plugins: [makeMarketplaceEntry('nighthawk-datasource', 'NightHawk Datasource', '3.4.0')],
+      },
+    });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    // A custom catalog may advertise anything under any id — the check bails
+    // before comparing versions.
+    expect(harness.session.listPlugins).not.toHaveBeenCalled();
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('does not notify for a same-id fork installed from a local path', async () => {
+    const harness = makeHarness({
+      installed: [
+        makePluginSummary({
+          source: 'local-path',
+          originalSource: undefined,
+          origin: 'custom',
+          catalogId: undefined,
+        }),
+      ],
+    });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('does not notify for a same-id custom ZIP that uses an official URL', async () => {
+    const harness = makeHarness({
+      installed: [makePluginSummary({ origin: 'custom', catalogId: undefined })],
+    });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('does not notify for a custom fork of a built-in capability plugin', async () => {
+    const harness = makeHarness({
+      marketplace: {
+        source: nighthawkCodePluginMarketplaceUrl(),
+        plugins: [makeMarketplaceEntry('nighthawk-cu', 'NightHawk Computer Use', '1.0.0')],
+      },
+      installed: [
+        makePluginSummary({
+          id: 'nighthawk-cu',
+          displayName: 'Custom Computer Use',
+          version: '0.1.0',
+          source: 'local-path',
+          originalSource: undefined,
+          origin: 'custom',
+          catalogId: undefined,
+        }),
+      ],
+    });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-cu');
+    expect(harness.notify).not.toHaveBeenCalled();
+  });
+
+  it('notifies a legacy WebBridge install about the renamed marketplace entry', async () => {
+    const harness = makeHarness({
+      marketplace: {
+        source: nighthawkCodePluginMarketplaceUrl(),
+        plugins: [makeMarketplaceEntry('nighthawk-browser-extension', 'NightHawk Browser Extension', '2.0.0')],
+      },
+      installed: [
+        makePluginSummary({
+          id: 'nighthawk-webbridge',
+          displayName: 'NightHawk WebBridge',
+          version: '1.0.0',
+          origin: 'unknown',
+          catalogId: undefined,
+          originalSource: 'https://code.kimi.com/nighthawk/plugins/official/nighthawk-webbridge.zip',
+        }),
+      ],
+    });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-webbridge');
+    expect(harness.notify).toHaveBeenCalledWith(
+      'Update detected: NightHawk WebBridge 2.0.0 is available. ' +
+        'Run /plugins to install the latest version from the Official Marketplace.',
+    );
+  });
+
+  it('resolves plugin tools whose qualified name core truncated before the separator', async () => {
+    // Server part exactly 50 chars: the 64-char truncation cuts the whole
+    // `__` separator and tool name, leaving `mcp__<server>_<hash>`.
+    const serverName = `plugin-nighthawk-datasource:${'s'.repeat(22)}`;
+    const sanitized = `plugin-nighthawk-datasource_${'s'.repeat(22)}`;
+    expect(`mcp__${sanitized}`.length).toBe(55);
+    const truncatedToolName = `mcp__${sanitized}_a1b2c3d4`;
+
+    const harness = makeHarness({ mcpServers: [serverName] });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handleMcpToolCompleted(truncatedToolName);
+    expect(harness.notify).toHaveBeenCalledWith(EXPECTED_MESSAGE);
+  });
+
+  it('notifies after a plugin command turn ends', async () => {
+    const harness = makeHarness();
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(harness.notify).toHaveBeenCalledWith(EXPECTED_MESSAGE);
+    // Plugin commands resolve the plugin id directly — no MCP server lookup.
+    expect(harness.session.listMcpServers).not.toHaveBeenCalled();
+  });
+
+  it('reminds again when the marketplace advertises a newer version', async () => {
+    const first = makeHarness({ marketplace: makeMarketplace('3.4.0') });
+    const notifier = makeNotifier(first);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(first.notify).toHaveBeenCalledTimes(1);
+
+    // A new notifier (fresh app run) against the same state file stays silent
+    // for the already-notified version…
+    const second = makeHarness({ marketplace: makeMarketplace('3.4.0') });
+    const secondNotifier = makeNotifier(second);
+    await secondNotifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(second.notify).not.toHaveBeenCalled();
+
+    // …but reminds once the marketplace moves to a newer version.
+    const third = makeHarness({ marketplace: makeMarketplace('3.5.0') });
+    const thirdNotifier = makeNotifier(third);
+    await thirdNotifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(third.notify).toHaveBeenCalledWith(
+      'Update detected: NightHawk Datasource 3.5.0 is available. ' +
+        'Run /plugins to install the latest version from the Official Marketplace.',
+    );
+  });
+
+  it('swallows marketplace failures and retries on the next invocation', async () => {
+    let attempts = 0;
+    const harness = makeHarness({
+      loadMarketplace: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error('offline');
+        return makeMarketplace();
+      },
+    });
+    const notifier = makeNotifier(harness);
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(harness.loadMarketplace).toHaveBeenCalledTimes(1);
+    expect(harness.notify).not.toHaveBeenCalled();
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+    expect(harness.notify).toHaveBeenCalledWith(EXPECTED_MESSAGE);
+  });
+
+  it('refreshes plugin slash commands after a background availability reload', async () => {
+    vi.stubEnv('NIGHTHAWK_HOME', tempDir);
+    vi.stubEnv('NIGHTHAWK_PLUGIN_MARKETPLACE_URL', 'https://marketplace.test/catalog');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      plugins: makeMarketplace().plugins,
+    }), { status: 200 })));
+    const harness = makeHarness();
+    const reloadPlugins = vi.fn(async () => undefined);
+    const refreshPluginCommands = vi.fn(async () => undefined);
+    const notifier = new PluginUpdateNotifier({
+      getSession: () => harness.session,
+      workDir: tempDir,
+      notify: harness.notify,
+      reloadPlugins,
+      refreshPluginCommands,
+      stateFile,
+    });
+
+    await notifier.handlePluginCommandCompleted('nighthawk-datasource');
+
+    expect(reloadPlugins).toHaveBeenCalledOnce();
+    expect(refreshPluginCommands).toHaveBeenCalledOnce();
+    expect(refreshPluginCommands.mock.invocationCallOrder[0]).toBeGreaterThan(
+      reloadPlugins.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it('refreshes the memoized MCP server map when a lookup misses', async () => {
+    const harness = makeHarness({ mcpServers: [] });
+    let servers: readonly string[] = [];
+    harness.session.listMcpServers = vi.fn(async () => servers.map((name) => ({ name })));
+    const notifier = makeNotifier(harness);
+
+    // The plugin's MCP server is not registered yet (the plugin gets
+    // installed later in the same app run, applied on /reload or /new).
+    await notifier.handleMcpToolCompleted(DATASOURCE_TOOL);
+    expect(harness.session.listMcpServers).toHaveBeenCalled();
+    expect(harness.notify).not.toHaveBeenCalled();
+
+    // After the reload the new server shows up; the next completion must
+    // refresh the memoized map instead of silently staying unresolved.
+    servers = ['plugin-nighthawk-datasource:data'];
+    await notifier.handleMcpToolCompleted(DATASOURCE_TOOL);
+    expect(harness.notify).toHaveBeenCalledWith(EXPECTED_MESSAGE);
+  });
+
+  it('keeps every notified plugin when a turn uses two outdated plugins', async () => {
+    const harness = makeHarness({
+      marketplace: {
+        source: nighthawkCodePluginMarketplaceUrl(),
+        plugins: [
+          makeMarketplaceEntry('nighthawk-datasource', 'NightHawk Datasource', '3.4.0'),
+          makeMarketplaceEntry('another-plugin', 'Another Plugin', '2.0.0'),
+        ],
+      },
+      installed: [
+        makePluginSummary(),
+        makePluginSummary({
+          id: 'another-plugin',
+          displayName: 'Another Plugin',
+          version: '1.0.0',
+          catalogId: 'another-plugin',
+        }),
+      ],
+    });
+    const notifier = makeNotifier(harness);
+
+    await Promise.all([
+      notifier.handlePluginCommandCompleted('nighthawk-datasource'),
+      notifier.handlePluginCommandCompleted('another-plugin'),
+    ]);
+
+    expect(harness.notify).toHaveBeenCalledTimes(2);
+    // Both entries must survive in the persisted state — no lost update.
+    const state = await readPluginUpdateNoticeState(stateFile);
+    expect(state.notified).toEqual({
+      'nighthawk-datasource': '3.4.0',
+      'another-plugin': '2.0.0',
+    });
+  });
+});

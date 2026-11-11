@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "experimentalDecorators": true
+  },
+  "include": ["src", "test", "examples", "../agent-core-v2/src/env.d.ts"]
+}

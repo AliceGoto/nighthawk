@@ -1,0 +1,49 @@
+import {
+  StartPermissionPromptComponent,
+  type StartPermissionOption,
+} from './start-permission-prompt';
+
+export type SwarmStartPermissionChoice = 'auto' | 'yolo' | 'manual';
+
+export interface SwarmStartPermissionPromptOptions {
+  readonly onSelect: (choice: SwarmStartPermissionChoice) => void;
+  readonly onCancel: () => void;
+}
+
+const OPTIONS: readonly StartPermissionOption<SwarmStartPermissionChoice>[] = [
+  {
+    value: 'auto',
+    label: 'Switch to Never Ask and start',
+    description:
+      'Best for swarm tasks. Tools are approved automatically and questions are skipped; only plans in Plan mode wait for your review.',
+  },
+  {
+    value: 'yolo',
+    label: 'Switch to Ask When Needed and start',
+    description:
+      'Tools are approved automatically. NightHawk may still ask you questions.',
+  },
+  {
+    value: 'manual',
+    label: 'Start in Always Ask',
+    description:
+      'Keep approvals on. NightHawk may stop and wait for you during the swarm task.',
+  },
+];
+
+const NOTICE_LINES = [
+  'Always Ask mode asks you before NightHawk runs commands, edits files, or takes other risky actions, and can block swarm work while agents are running.',
+  'You can go back without losing your command.',
+] as const;
+
+export class SwarmStartPermissionPromptComponent extends StartPermissionPromptComponent<SwarmStartPermissionChoice> {
+  constructor(opts: SwarmStartPermissionPromptOptions) {
+    super({
+      title: 'Start a swarm task with approvals on?',
+      noticeLines: NOTICE_LINES,
+      options: OPTIONS,
+      onSelect: opts.onSelect,
+      onCancel: opts.onCancel,
+    });
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "@nighthawk/remote-control",
+  "version": "0.0.3",
+  "private": true,
+  "description": "NightHawk Remote Control tunnel client: registers this machine with the relay and forwards HTTP/WebSocket traffic to the local server.",
+  "license": "MIT",
+  "author": "Moonshot AI",
+  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/packages/remote-control#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "directory": "packages/remote-control"
+  },
+  "bugs": {
+    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+  },
+  "keywords": [
+    "nighthawk",
+    "remote-control",
+    "relay",
+    "tunnel"
+  ],
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@nighthawk/agent-core-v2": "workspace:^",
+    "@nighthawk/nighthawk-oauth": "workspace:^",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.0"
+  }
+}

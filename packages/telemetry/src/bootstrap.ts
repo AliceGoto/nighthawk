@@ -1,0 +1,98 @@
+import { getDefaultTelemetryClient } from './client';
+import { EventSink } from './sink';
+import { SystemMetricsCollector } from './systemMetrics';
+import { AsyncTransport } from './transport';
+import type { TelemetryRegion, TelemetryRegionResolution } from './types';
+
+export const TELEMETRY_DISABLE_ENV = 'NIGHTHAWK_DISABLE_TELEMETRY';
+
+const TRUE_ENV_VALUES = new Set(['1', 'true', 't', 'yes', 'y']);
+
+export interface TelemetryBootstrapOptions {
+  readonly enabled?: boolean;
+  readonly initiallyEnabled?: boolean;
+  readonly homeDir: string;
+  readonly deviceId: string;
+  readonly sessionId?: string;
+  readonly appName: string;
+  readonly version: string;
+  readonly uiMode?: string;
+  readonly model?: string;
+  readonly buildSha?: string;
+  readonly terminal?: string;
+  readonly locale?: string;
+  readonly region?: TelemetryRegion;
+  readonly regionSource?: string;
+  readonly resolveRegion?: () => TelemetryRegionResolution;
+  readonly getAccessToken?: () => string | null | Promise<string | null>;
+  /**
+   * Invoked when a tracked property is dropped for not being a primitive.
+   * Telemetry stays silent by default; hosts wire this to their logger.
+   */
+  readonly onUnexpectedError?: (error: Error) => void;
+  /**
+   * Region-aware endpoint derived by the composition root (this package stays
+   * dependency-free). A resolver is invoked per flush so an in-process region
+   * switch takes effect without re-initialization; an absent endpoint skips
+   * the send instead of falling back to another region's host.
+   */
+  readonly endpoint?: string | (() => string | undefined);
+}
+
+export function isTelemetryDisabledByEnv(env: NodeJS.ProcessEnv = process.env): boolean {
+  const value = env[TELEMETRY_DISABLE_ENV];
+  return value !== undefined && TRUE_ENV_VALUES.has(value.trim().toLowerCase());
+}
+
+export function shouldEnableTelemetry(
+  input: { readonly enabled?: boolean; readonly env?: NodeJS.ProcessEnv } = {},
+): boolean {
+  return input.enabled !== false && !isTelemetryDisabledByEnv(input.env ?? process.env);
+}
+
+export function initializeTelemetry(options: TelemetryBootstrapOptions): void {
+  const client = getDefaultTelemetryClient();
+  client.setUnexpectedErrorHandler(options.onUnexpectedError ?? null);
+  if (!shouldEnableTelemetry({ enabled: options.enabled })) {
+    client.teardown();
+    return;
+  }
+
+  const intakeEnabled = options.initiallyEnabled !== false;
+  client.setEnabled(intakeEnabled);
+  client.setContext({
+    deviceId: options.deviceId,
+    sessionId: options.sessionId,
+  });
+
+  const transport = new AsyncTransport({
+    homeDir: options.homeDir,
+    deviceId: options.deviceId,
+    endpoint: options.endpoint,
+    getAccessToken: options.getAccessToken,
+  });
+  const sink = new EventSink({
+    transport,
+    resolveRegion: options.resolveRegion,
+    context: {
+      appName: options.appName,
+      version: options.version,
+      uiMode: options.uiMode,
+      model: options.model,
+      buildSha: options.buildSha,
+      terminal: options.terminal,
+      locale: options.locale,
+      region: options.region,
+      regionSource: options.regionSource,
+    },
+  });
+
+  client.attachSink(sink);
+  sink.startPeriodicFlush();
+
+  const systemMetricsCollector = new SystemMetricsCollector({ client });
+  client.setSystemMetricsCollector(systemMetricsCollector);
+  systemMetricsCollector.start();
+
+  if (intakeEnabled) void sink.retryDiskEvents().catch(() => {});
+}

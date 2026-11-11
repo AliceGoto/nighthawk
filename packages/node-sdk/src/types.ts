@@ -1,0 +1,574 @@
+import type { HostUiCapability } from '@nighthawk/agent-core-v2';
+import type {
+  ExportSessionManifest,
+  ShellEnvironment,
+} from '@nighthawk/agent-core-v2/app/sessionExport/sessionExport';
+import type { EnvironmentStatus as SessionEnvironmentStatus } from '@nighthawk/agent-core-v2/environment/environment';
+import type { RemoteEnvironmentEntry } from '@nighthawk/agent-core-v2/remote/declaration/remoteEnvironmentDeclaration';
+import type { NightHawkHostIdentity, OAuthRefreshOutcome } from '@nighthawk/nighthawk-oauth';
+import type { ContentPart } from '@nighthawk/agent-core-v2';
+
+import type { ResumeSessionResult } from '#/replay';
+import type { PermissionMode } from '#/permission';
+import type {
+  TelemetryClient,
+  TelemetryContextPatch,
+  TelemetryProperties,
+} from '#/telemetry';
+
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonValue[] | { readonly [key: string]: JsonValue };
+export type JsonObject = { readonly [key: string]: JsonValue };
+
+export type { ImportCustomRegistryOptions, ImportCustomRegistryResult } from '@nighthawk/klient';
+export type {
+  RefreshProviderModelsOptions,
+  RefreshProviderModelsResponse,
+} from '@nighthawk/klient';
+
+export type Unsubscribe = () => void;
+
+export interface AgentEnvironmentBinding {
+  readonly environmentId: string;
+  readonly cwd?: string;
+}
+
+export type { EnvironmentStatus as SessionEnvironmentStatus } from '@nighthawk/agent-core-v2/environment/environment';
+
+export type SessionEnvironmentType = 'local' | 'ssh' | 'docker' | 'command';
+
+export interface SessionEnvironmentInfo {
+  readonly environmentId: string;
+  readonly type: SessionEnvironmentType;
+  readonly status: SessionEnvironmentStatus;
+  readonly connectError?: string;
+}
+
+export interface SessionEnvironmentState extends AgentEnvironmentBinding {
+  readonly type: SessionEnvironmentType;
+  readonly status: SessionEnvironmentStatus;
+  readonly connectError?: string;
+}
+
+export interface SessionEnvironmentsInfo {
+  readonly environments: readonly SessionEnvironmentInfo[];
+}
+
+export type { RemoteEnvironmentEntry };
+
+export type { CapabilityInstallOptions, CapabilityStatus } from '@nighthawk/agent-core-v2/app/capability/types';
+
+export type {
+  AgentReplayRecord,
+  ResumedAgentState,
+} from '#/replay';
+export type {
+  AgentBackgroundTaskInfo,
+  BackgroundTaskInfo,
+  BackgroundTaskStatus,
+  ProcessBackgroundTaskInfo,
+  QuestionBackgroundTaskInfo,
+} from '#/task';
+export type {
+  AppMcpServerAuthState,
+  AppMcpServerConfig,
+  AppMcpServerDescriptor,
+  AppMcpServerInspection,
+  GlobalMcpServerAuthState,
+  GlobalMcpServerAuthStatus,
+  McpManagedServerInfo,
+  McpServerInfo,
+  McpServerLocator,
+  McpServerSource,
+  McpStartupMetrics,
+  McpServerConfig,
+  McpTestResult,
+} from '#/mcp';
+export type {
+  BackgroundConfig,
+  ConfigDiagnostics,
+  EnvironmentsConfig,
+  NightHawkConfig,
+  NightHawkConfigPatch,
+  LoopControl,
+  ModelAlias,
+  MoonshotServiceConfig,
+  OAuthRef,
+  ProviderConfig,
+  ProviderType,
+  ServicesConfig,
+  ThinkingConfig,
+} from '#/config/index';
+export type { ContextMessage, PromptOrigin } from '#/context';
+export type {
+  ExperimentalFeatureState,
+  ExperimentalFlagMap,
+  ExperimentalFlagSource,
+} from '@nighthawk/agent-core-v2/app/flag/flag';
+export type {
+  GoalBudgetLimits,
+  GoalBudgetReport,
+  GoalChange,
+  GoalChangeStats,
+  GoalSnapshot,
+  GoalStatus,
+  GoalToolResult,
+} from '@nighthawk/agent-core-v2/features/goal/types';
+export type {
+  PluginCommandDef,
+  PluginGithubMetadata,
+  PluginGithubRef,
+  PluginInfo,
+  PluginMcpServerInfo,
+  PluginOrigin,
+  PluginSource,
+  PluginSummary,
+  ReloadSummary,
+} from '@nighthawk/agent-core-v2/app/plugin/types';
+export type {
+  MarketplaceLocation,
+  MarketplaceUpdateStatus,
+  PluginMarketplace,
+  PluginClient,
+  PluginMarketplaceClassification,
+  PluginMarketplaceDistribution,
+  PluginMarketplaceEntry,
+  PluginMarketplaceLocale,
+  PluginMarketplaceLocalizedText,
+  PluginMarketplacePlatform,
+  PluginMarketplaceTier,
+  ReadPluginMarketplaceOptions,
+} from '@nighthawk/agent-core-v2/app/plugin/marketplace';
+export type { InstallPluginInput } from '@nighthawk/agent-core-v2/app/plugin/plugin';
+export type { SkillSummary } from '@nighthawk/agent-core-v2/features/skill/catalog/types';
+export type { ToolInfo } from '#/tool';
+export type {
+  ExportSessionManifest,
+  ShellEnvironment,
+} from '@nighthawk/agent-core-v2/app/sessionExport/sessionExport';
+
+export interface CronTaskSnapshot {
+  readonly id: string;
+  readonly cron: string;
+  readonly recurring: boolean;
+  readonly createdAt: number;
+  readonly lastFiredAt: number | undefined;
+  readonly nextFireAt: number | null;
+}
+
+export interface GetCronTasksResult {
+  readonly tasks: readonly CronTaskSnapshot[];
+}
+
+export type { NightHawkHostIdentity, OAuthRefreshOutcome };
+// Host UI capabilities are an agent-core-v2 seam (`BootstrapInput.args.uiCapabilities`);
+// hosts name them through `NightHawkHarnessOptions.uiCapabilities`, so the type is public here.
+export type { HostUiCapability };
+export type { TelemetryClient, TelemetryContextPatch, TelemetryProperties };
+export type { ContentPart, Role, ThinkingEffort, ToolCall } from '@nighthawk/agent-core-v2';
+// Contributed commands are an agent-core-v2 seam; the type is re-exported
+// from the v2 engine (v1 sessions report an empty command set).
+export type { AgentCommandInfo } from '@nighthawk/agent-core-v2/agent/command/agentCommand';
+
+export type { PermissionMode };
+
+/** One project-level MCP server that trusting would start. */
+export interface WorkspaceTrustMcpServerInfo {
+  readonly name: string;
+  readonly transport: 'stdio' | 'http' | 'sse';
+  readonly command?: string;
+  readonly args?: readonly string[];
+  readonly cwd?: string;
+  readonly url?: string;
+  /** Absolute path of the config file declaring this server. */
+  readonly origin: string;
+}
+
+/** Project-sourced instruction inputs that steer the agent once trusted (prompt-level, no code execution). */
+export interface WorkspaceTrustInstructionSources {
+  /** AGENTS.md files inside the project that will be injected into context (symlink-resolved). */
+  readonly agentsMdPaths: readonly string[];
+  /** Names of project-level skills that will load. */
+  readonly skills: readonly string[];
+  /** Names of project-level agent profiles that will load. */
+  readonly agentProfiles: readonly string[];
+  /** Files and configuration directories to inspect; directories end in a slash. */
+  readonly paths: readonly string[];
+}
+
+/** Trust state of a workspace directory, plus everything trusting it would activate. */
+export interface WorkspaceTrustInfo {
+  readonly trusted: boolean;
+  /** Project-level MCP servers that trusting would start. */
+  readonly gatedMcpServers: readonly WorkspaceTrustMcpServerInfo[];
+  /** Directories outside the project that trusting grants access to (symlink-resolved). */
+  readonly gatedAdditionalDirs: readonly string[];
+  readonly additionalDirSources: readonly string[];
+  readonly warnings: readonly string[];
+  readonly instructionSources: WorkspaceTrustInstructionSources;
+}
+
+export interface WorkspaceTrustInfoOptions {
+  readonly additionalDirs?: readonly string[];
+  readonly environmentId?: string;
+  readonly environmentCwd?: string;
+}
+
+/**
+ * File-suggestion query against a workspace root, no session required. Only
+ * meaningful on the agent-core-v2 engine; the v1 engine has no equivalent
+ * and reports `undefined`.
+ */
+export interface SuggestFilesInput {
+  readonly query: string;
+  readonly limit?: number;
+  /** Complete against this live session's working directory, on the environment the session runs on. */
+  readonly sessionId?: string;
+}
+
+export interface SuggestFilesItem {
+  readonly path: string;
+  readonly name: string;
+  readonly kind: 'file' | 'directory' | 'symlink';
+  /** Matched-character offsets into `path`, for mention-style highlighting. */
+  readonly matchPositions: readonly number[];
+}
+
+export interface SuggestFilesResult {
+  readonly items: readonly SuggestFilesItem[];
+  readonly truncated: boolean;
+}
+
+/** Git query against a workspace root, or a live session's working directory. */
+export interface GitQueryInput {
+  /** Query this live session's working directory, on the environment the session runs on. */
+  readonly sessionId?: string;
+}
+
+/** Working-tree summary of the repository containing the queried directory. */
+export interface GitStatusSummary {
+  /** Current branch; empty on a detached HEAD. */
+  readonly branch: string;
+  readonly dirty: boolean;
+  readonly ahead: number;
+  readonly behind: number;
+  /** Uncommitted line additions against HEAD. */
+  readonly additions: number;
+  /** Uncommitted line deletions against HEAD. */
+  readonly deletions: number;
+}
+
+/** Pull request of the current branch, as reported by `gh`. */
+export type { FsPullRequest as GitPullRequest } from '@nighthawk/agent-core-v2/app/git/git';
+
+/** Metadata of one upload in the engine's daemon file store. */
+export type { FileMeta } from '@nighthawk/agent-core-v2/app/file/fileService';
+
+/** Input for `uploadFile`: the upload's display name and MIME type. */
+export interface UploadFileOptions {
+  readonly name: string;
+  readonly mimeType?: string;
+  /** Optional daemon-side TTL for staging uploads. */
+  readonly expiresInSec?: number;
+}
+
+export interface EditGoalObjectiveInput {
+  readonly objective: string;
+}
+
+export interface CreateGoalInput {
+  readonly objective: string;
+  readonly replace?: boolean;
+}
+
+export type TextPromptPart = Extract<ContentPart, { type: 'text' }>;
+export type PromptPart = Extract<ContentPart, { type: 'text' | 'image_url' | 'video_url' }>;
+
+export type PromptInput = readonly PromptPart[];
+
+export interface PromptSkillActivation {
+  readonly name: string;
+  readonly args?: string;
+}
+
+export interface PromptSubmissionResult {
+  readonly promptId: string;
+  readonly createdAt: string;
+  readonly state: 'running' | 'queued' | 'blocked';
+  readonly turnId?: number;
+  readonly steered: boolean;
+}
+
+export interface NightHawkHarnessOptions {
+  readonly identity?: NightHawkHostIdentity | undefined;
+  readonly homeDir?: string | undefined;
+  readonly configPath?: string | undefined;
+  readonly autoLoadConfig?: boolean | undefined;
+  readonly uiMode?: string;
+  readonly skillDirs?: readonly string[];
+  /**
+   * UI surfaces this host can render, declared once per process and passed
+   * into the engine through `BootstrapInput.args.uiCapabilities`. Engine
+   * features gate on them at tool-table build time; nothing is persisted, so
+   * a session opened later by a host without the capability simply does not
+   * offer the dependent tool.
+   */
+  readonly uiCapabilities?: readonly HostUiCapability[];
+  readonly telemetry?: TelemetryClient | undefined;
+  readonly onOAuthRefresh?: ((outcome: OAuthRefreshOutcome) => void) | undefined;
+  /**
+   * Opt into the interactive SSH password retry. `askpassCommand` must
+   * re-enter a process whose entry runs `runSshAskpass` from the
+   * `./ssh-askpass` subpath when `isSshAskpassEnvironment()` holds.
+   */
+  readonly sshPassword?: NightHawkSshPasswordOptions;
+  readonly sessionStartedProperties?: TelemetryProperties;
+}
+
+export interface NightHawkSshPasswordOptions {
+  readonly prompt: (environmentId: string) => Promise<string | undefined>;
+  readonly askpassCommand: readonly [string, ...string[]];
+}
+
+export interface CreateSessionOptions {
+  readonly id?: string | undefined;
+  readonly workDir: string;
+  readonly model?: string | undefined;
+  readonly thinking?: string | undefined;
+  readonly permission?: PermissionMode | undefined;
+  readonly planMode?: boolean;
+  readonly metadata?: JsonObject | undefined;
+  readonly additionalDirs?: readonly string[];
+  /**
+   * Main-agent profile name (`--agent`): a builtin profile or one defined by
+   * an agentfile discovered from the user/project agent directories.
+   */
+  readonly agentProfile?: string;
+  /**
+   * Explicit agentfiles (`--agent-file`) loaded for this session with the
+   * highest precedence; an invalid file fails session creation.
+   */
+  readonly agentFiles?: readonly string[];
+  readonly sessionStartedProperties?: TelemetryProperties;
+  /**
+   * Print-mode (`nighthawk -p`) only: when the main agent ends a turn while
+   * background subagents (`kind === 'agent'`) are still running, hold the turn
+   * open and idle-wait until they all finish, flushing their completions into
+   * the turn so the model can react before the run exits. Ignored by
+   * interactive / SDK sessions.
+   */
+  readonly drainAgentTasksOnStop?: boolean;
+  /**
+   * Initial environment binding for the main agent. An id declared in
+   * `[environments]`, or one already registered in this process (a temporary
+   * `connect` environment). Omit to start on the local environment, or the
+   * configured default when one is set. A registered environment that is not
+   * declared requires `environmentCwd`.
+   */
+  readonly environmentId?: string;
+  /**
+   * Working directory on the target environment for the initial binding.
+   * For a declared environment, defaults to that entry's `defaultCwd`.
+   * Required when the id is registered in this process but not declared.
+   */
+  readonly environmentCwd?: string;
+}
+
+export interface RenameSessionInput {
+  readonly id: string;
+  readonly title: string;
+}
+
+export interface GenerateSessionTitleInput {
+  readonly id: string;
+  /** Regenerate even when the session already has a generated/custom title. */
+  readonly force?: boolean;
+  /** Conversation excerpt to generate from (default `user_prompts`). */
+  readonly source?: 'user_prompts' | 'first_turn' | 'digest';
+}
+
+export interface ResumeSessionInput {
+  readonly id: string;
+  readonly additionalDirs?: readonly string[];
+  /** Re-select the session's already-bound main profile; a different name fails. */
+  readonly agentProfile?: string;
+  /** Include persisted subagent states in the returned replay snapshot. */
+  readonly includeSubagents?: boolean;
+  /**
+   * Limit each returned agent replay to the most recent N user turns. Omit to
+   * return the full replay. Lets UI callers that only render the tail avoid
+   * transferring the entire history over the RPC boundary.
+   */
+  readonly replayTurnLimit?: number;
+  readonly sessionStartedProperties?: TelemetryProperties;
+}
+
+export interface ReloadSessionInput extends ResumeSessionInput {
+  readonly forcePluginSessionStartReminder?: boolean;
+}
+
+export interface AddAdditionalDirInput {
+  readonly id: string;
+  readonly path: string;
+  readonly persist: boolean;
+}
+
+export interface AddAdditionalDirOptions {
+  /** When true, remember the directory in the workspace registry. When false,
+   * keep it scoped to this session while still restoring it on session resume. */
+  readonly persist: boolean;
+}
+
+export interface ForkSessionInput {
+  readonly id: string;
+  readonly forkId?: string;
+  readonly title?: string;
+  readonly metadata?: JsonObject;
+  /**
+   * Persistent engine turnId to retain through; gaps are allowed. Omit it to
+   * preserve the existing full-session fork behavior.
+   */
+  readonly turnIndex?: number;
+}
+
+export interface ExportSessionInput {
+  readonly id: string;
+  readonly outputPath?: string | undefined;
+  readonly includeGlobalLog?: boolean | undefined;
+  /** Host version to record in the export manifest. */
+  readonly version: string;
+  /** How the CLI was installed (e.g. 'npm-global', 'native'). */
+  readonly installSource?: string | undefined;
+  readonly shellEnv?: ShellEnvironment | undefined;
+}
+
+export interface ExportSessionResult {
+  readonly zipPath: string;
+  readonly entries: readonly string[];
+  readonly sessionDir: string;
+  readonly manifest: ExportSessionManifest;
+}
+
+export interface ListSessionsOptions {
+  readonly workDir?: string;
+  readonly sessionId?: string;
+  /**
+   * Include archived sessions in the listing. Defaults to non-archived only.
+   */
+  readonly includeArchived?: boolean;
+  /**
+   * Maximum number of summaries in one page. Only consulted by
+   * `listSessionsPage`; plain `listSessions` always returns the whole
+   * filtered set.
+   */
+  readonly limit?: number;
+  /** Keyset cursor: return the page strictly older than this session id. */
+  readonly before?: string;
+}
+
+export interface SessionSummaryPage {
+  readonly items: readonly SessionSummary[];
+  /** Pass as `before` for the next older page; absent when the listing is exhausted. */
+  readonly nextCursor?: string;
+}
+
+export interface GetConfigOptions {
+  readonly reload?: boolean | undefined;
+}
+
+export interface AuthenticateMcpServerOptions {
+  readonly onAuthorizationUrl: (
+    url: string,
+  ) => void | boolean | PromiseLike<void | boolean>;
+  readonly signal?: AbortSignal;
+  readonly timeoutMs?: number;
+  readonly cwd?: string;
+}
+
+export interface TestMcpServerOptions {
+  readonly cwd?: string;
+}
+
+export interface CompactOptions {
+  readonly instruction?: string | undefined;
+}
+
+export interface ReloadSessionOptions {
+  readonly forcePluginSessionStartReminder?: boolean;
+}
+
+export interface PlanInfo {
+  readonly id: string;
+  readonly content: string;
+  readonly path: string | null;
+}
+
+export type SessionPlan = PlanInfo | null;
+
+export type SessionTodoStatus = 'pending' | 'in_progress' | 'done';
+
+export interface SessionTodoItem {
+  readonly title: string;
+  readonly status: SessionTodoStatus;
+}
+
+export interface TokenUsage {
+  readonly inputOther: number;
+  readonly output: number;
+  readonly inputCacheRead?: number;
+  readonly inputCacheCreation: number;
+}
+
+export interface SessionUsage {
+  readonly byModel?: Record<string, TokenUsage> | undefined;
+  readonly currentTurn?: TokenUsage | undefined;
+  readonly total?: TokenUsage | undefined;
+}
+
+export interface SessionStatus {
+  readonly model?: string;
+  readonly thinkingEffort: string;
+  readonly permission: PermissionMode;
+  readonly planMode: boolean;
+  readonly swarmMode?: boolean;
+  readonly towerMode?: boolean;
+  readonly contextTokens: number;
+  readonly maxContextTokens: number;
+  readonly contextUsage: number;
+  readonly usage?: SessionUsage;
+}
+
+/**
+ * The engine's canonical title state: `replaceable` (a prompt-derived easy
+ * title auto generation may overwrite), `generated` (an auto-generated title
+ * already landed), `custom` (a user-set title that is never overwritten).
+ * Only populated by the v2 engine on live / resumed sessions (read off the
+ * metadata document); v1 backends leave it undefined, and the v2 list path
+ * does not project it.
+ */
+export type SessionTitleKind = 'replaceable' | 'generated' | 'custom';
+
+export interface SessionSummary {
+  readonly id: string;
+  readonly title?: string | undefined;
+  readonly titleKind?: SessionTitleKind;
+  readonly lastPrompt?: string;
+  readonly workDir: string;
+  readonly sessionDir: string;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+  readonly archived?: boolean | undefined;
+  readonly metadata?: JsonObject | undefined;
+  readonly additionalDirs?: readonly string[];
+  /** Terminal outcome of the session's latest main turn, when one ended. */
+  readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed';
+}
+
+export interface AddAdditionalDirResult {
+  readonly additionalDirs: readonly string[];
+  readonly persisted: boolean;
+}
+
+export type ResumedSessionState = Pick<ResumeSessionResult, 'sessionMetadata' | 'agents' | 'warning'>;
+
+export interface ResumedSessionSummary extends SessionSummary, ResumedSessionState { }

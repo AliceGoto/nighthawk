@@ -1,0 +1,195 @@
+import type { NightHawkConfig, ModelAlias, ProviderType } from '#/config/index';
+import {
+  modelsDevBaseUrl,
+  modelsDevProviderModels,
+  resolveModelsDevImport,
+  type ModelCapability,
+} from '@nighthawk/agent-core-v2';
+import type {
+  ModelsDevCatalog as Catalog,
+  ModelsDevImportInvalidReason as CatalogImportInvalidReason,
+  ModelsDevModel as CatalogModel,
+  ModelsDevProviderEntry as CatalogProviderEntry,
+} from '@nighthawk/agent-core-v2';
+
+export { modelsDevProviderModels as catalogProviderModels };
+export type { Catalog, CatalogImportInvalidReason, CatalogModel, CatalogProviderEntry };
+
+export function catalogBaseUrl(entry: CatalogProviderEntry, wire: ProviderType): string | undefined {
+  return modelsDevBaseUrl(entry, wire);
+}
+
+export type CatalogImportResolution =
+  | {
+      readonly kind: 'ok';
+      readonly wire: ProviderType;
+      readonly guessed: boolean;
+      readonly baseUrl?: string;
+    }
+  | {
+      readonly kind: 'needs-base-url';
+      readonly wire: ProviderType;
+      readonly guessed: boolean;
+    }
+  | {
+      readonly kind: 'invalid';
+      readonly reason: CatalogImportInvalidReason;
+    };
+
+export function resolveCatalogImport(
+  entry: CatalogProviderEntry,
+  userBaseUrl?: string,
+): CatalogImportResolution {
+  return resolveModelsDevImport(entry, userBaseUrl) as CatalogImportResolution;
+}
+
+export function inferWireType(entry: CatalogProviderEntry): ProviderType | undefined {
+  const resolution = resolveModelsDevImport(entry);
+  return resolution.kind === 'invalid' ? undefined : (resolution.wire as ProviderType);
+}
+
+export const DEFAULT_CATALOG_URL = 'https://models.dev/api.json';
+
+export class RegistryImportError extends Error {
+  constructor(
+    message: string,
+    readonly phase: 'fetch' | 'empty' | 'apply',
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'RegistryImportError';
+  }
+}
+
+export class CatalogFetchError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export interface FetchCatalogOptions {
+  readonly signal?: AbortSignal;
+  readonly fetchImpl?: typeof fetch;
+  readonly userAgent?: string;
+}
+
+/**
+ * Fetches a models.dev-style catalog. Public endpoint, no credentials needed.
+ * `userAgent` identifies the host product (e.g. `nighthawk-cli/1.2.3`); when
+ * omitted the request falls back to the runtime default (`User-Agent: node`).
+ */
+export async function fetchCatalog(
+  url: string,
+  options: FetchCatalogOptions = {},
+): Promise<Catalog> {
+  const { signal, fetchImpl = fetch, userAgent } = options;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (userAgent !== undefined) headers['User-Agent'] = userAgent;
+  const res = await fetchImpl(url, { headers, signal });
+  if (!res.ok) {
+    throw new CatalogFetchError(`Failed to fetch catalog (HTTP ${res.status}).`, res.status);
+  }
+  const payload: unknown = await res.json();
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    throw new Error(`Unexpected catalog response from ${url}.`);
+  }
+  return payload as Catalog;
+}
+
+function capabilityToStrings(capability: ModelCapability): string[] | undefined {
+  const caps: string[] = [];
+  if (capability.image_in) caps.push('image_in');
+  if (capability.video_in) caps.push('video_in');
+  if (capability.audio_in) caps.push('audio_in');
+  if (capability.thinking) caps.push('thinking');
+  if (capability.tool_use) caps.push('tool_use');
+  if (capability.dynamically_loaded_tools === true) caps.push('dynamically_loaded_tools');
+  return caps.length > 0 ? caps : undefined;
+}
+
+/** Builds a nighthawk model alias from a normalized catalog model. */
+export function catalogModelToAlias(providerId: string, model: CatalogModel): ModelAlias {
+  const caps = capabilityToStrings(model.capability);
+  return {
+    provider: providerId,
+    model: model.id,
+    maxContextSize: model.capability.max_context_tokens,
+    maxInputSize: model.capability.max_input_tokens,
+    maxOutputSize: model.maxOutputSize,
+    // A model that always reasons advertises `always_thinking` instead of
+    // `thinking`, so the UI locks thinking on and offers no off option.
+    capabilities:
+      model.alwaysThinking === true
+        ? caps?.map((cap) => (cap === 'thinking' ? 'always_thinking' : cap))
+        : caps,
+    displayName: model.name,
+    reasoningKey: model.reasoningKey,
+    supportEfforts: model.supportEfforts === undefined ? undefined : [...model.supportEfforts],
+    offEffort: model.offEffort,
+    protocol: model.protocol,
+    baseUrl: model.baseUrl,
+  };
+}
+
+export interface ApplyCatalogProviderOptions {
+  readonly providerId: string;
+  readonly wire: ProviderType;
+  readonly baseUrl?: string;
+  readonly apiKey: string;
+  readonly models: readonly CatalogModel[];
+  readonly selectedModelId: string;
+  readonly thinking: boolean;
+}
+
+/**
+ * Parses an optional pruned models.dev catalog string — typically the
+ * `__NIGHTHAWK_BUILT_IN_CATALOG__` constant injected by tsdown at build
+ * time. Returns `undefined` when the argument is missing or invalid.
+ */
+export function loadBuiltInCatalog(text?: string): Catalog | undefined {
+  if (typeof text !== 'string' || text.length === 0) return undefined;
+  try {
+    return JSON.parse(text) as Catalog;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Writes a catalog-selected provider and its model aliases into `config` and
+ * marks it the default. Model metadata (context, output limit, capabilities)
+ * comes from the catalog, so the user does not hand-write it. Returns the
+ * default model key.
+ *
+ * NOTE: the same-provider cleanup below mutates the passed-in `config` only.
+ * It clears stale aliases on disk solely when the caller overwrites the whole
+ * config. Callers persisting via `setConfig` — a deep-merge patch that cannot
+ * delete keys — must call `removeProvider` first, or removed aliases reappear
+ * after the merge.
+ */
+export function applyCatalogProvider(
+  config: NightHawkConfig,
+  options: ApplyCatalogProviderOptions,
+): { defaultModel: string } {
+  config.providers[options.providerId] = {
+    type: options.wire,
+    baseUrl: options.baseUrl,
+    apiKey: options.apiKey,
+  };
+
+  const models = config.models ?? {};
+  for (const [key, alias] of Object.entries(models)) {
+    if (alias.provider === options.providerId) delete models[key];
+  }
+  for (const model of options.models) {
+    models[`${options.providerId}/${model.id}`] = catalogModelToAlias(options.providerId, model);
+  }
+  config.models = models;
+
+  const defaultModel = `${options.providerId}/${options.selectedModelId}`;
+  config.defaultModel = defaultModel;
+  config.thinking = { ...config.thinking, enabled: options.thinking };
+  return { defaultModel };
+}
