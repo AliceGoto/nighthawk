@@ -16,7 +16,7 @@ export interface Session {
   pending_interaction: 'none' | 'approval' | 'question';
   last_prompt: string;
   metadata: { cwd?: string; [key: string]: unknown };
-  agent_config?: { model?: string };
+  agent_config?: { model?: string; thinking?: string };
 }
 
 export interface ContentBlock {
@@ -92,10 +92,13 @@ export function getConfig(): Promise<Config> {
   return request('/api/v1/config');
 }
 
-export function setSessionModel(sessionId: string, model: string): Promise<Session> {
+export function setSessionConfig(
+  sessionId: string,
+  patch: { model?: string; thinking?: string },
+): Promise<Session> {
   return request(`/api/v1/sessions/${sessionId}/profile`, {
     method: 'POST',
-    body: JSON.stringify({ agent_config: { model } }),
+    body: JSON.stringify({ agent_config: patch }),
   });
 }
 
@@ -104,6 +107,8 @@ export interface ModelEntry {
   model: string;
   display_name?: string;
   max_context_size?: number;
+  support_efforts?: string[];
+  default_effort?: string;
 }
 
 export function listModels(): Promise<{ items: ModelEntry[] }> {

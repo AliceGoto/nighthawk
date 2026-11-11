@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from 'react';
 
 import {
   ApiError,
@@ -12,9 +12,8 @@ import {
   listSessions,
   loadToken,
   sendPrompt,
-  setSessionModel,
+  setSessionConfig,
   setToken,
-  type Config,
   type ModelEntry,
   type Message,
   type Session,
@@ -37,6 +36,20 @@ interface Item {
   text: string;
   thinking: string;
   tools: ToolCall[];
+}
+
+const EFFORT_LABELS: Record<string, string> = {
+  off: '关闭',
+  minimal: '最低',
+  low: '低',
+  medium: '中',
+  high: '高',
+  xhigh: '极高',
+  max: '最高',
+};
+
+function effortLabel(value: string): string {
+  return EFFORT_LABELS[value] ?? value;
 }
 
 function str(value: unknown, fallback = ''): string {
@@ -185,9 +198,12 @@ export function App(): ReactElement {
   const [tokenDraft, setTokenDraft] = useState('');
   const [composer, setComposer] = useState('');
   const [meta, setMeta] = useState<Record<string, unknown>>();
-  const [config, setConfig] = useState<Config>();
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [model, setModel] = useState('');
+  const [effort, setEffort] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(
+    () => new URLSearchParams(location.search).get('picker') === '1',
+  );
   const [currentId, setCurrentId] = useState<string | undefined>(
     () => new URLSearchParams(location.search).get('session') ?? undefined,
   );
@@ -199,6 +215,7 @@ export function App(): ReactElement {
   const [cwd, setCwd] = useState('/Users/zhuyao/project/nighthawk');
   const socketRef = useRef<Socket | undefined>(undefined);
   const framesRef = useRef<Record<string, FrameState>>({});
+  const effortTimer = useRef<number | undefined>(undefined);
   const currentIdRef = useRef<string | undefined>(undefined);
   const { sessions, reload } = useSessions();
 
@@ -326,9 +343,12 @@ export function App(): ReactElement {
         const configData = await getConfig();
         const modelPage = await listModels();
         if (!cancelled) {
-          setConfig(configData);
           setModels(modelPage.items);
-          setModel(configData.default_model ?? modelPage.items[0]?.model ?? '');
+          const initial = configData.default_model ?? modelPage.items[0]?.model ?? '';
+          setModel(initial);
+          const entry = modelPage.items.find((item) => item.model === initial);
+          const levels = entry?.support_efforts ?? [];
+          setEffort(entry?.default_effort ?? levels[Math.floor(levels.length / 2)] ?? '');
         }
         await reload();
       } catch (error) {
@@ -358,12 +378,23 @@ export function App(): ReactElement {
   }, [token, handleEvent]);
 
   useEffect(() => {
+    if (!pickerOpen) return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setPickerOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pickerOpen]);
+
+  useEffect(() => {
     if (currentId === undefined) return;
     void refreshMessages(currentId);
     void getSnapshot(currentId)
       .then((snapshot) => {
         const sessionModel = snapshot.session.agent_config?.model;
         if (typeof sessionModel === 'string' && sessionModel.length > 0) setModel(sessionModel);
+        const sessionThinking = snapshot.session.agent_config?.thinking;
+        if (typeof sessionThinking === 'string' && sessionThinking.length > 0) setEffort(sessionThinking);
       })
       .catch(() => undefined);
     socketRef.current?.subscribe(currentId);
@@ -401,7 +432,9 @@ export function App(): ReactElement {
   const newSession = useCallback(async () => {
     try {
       const session = await createSession(cwd);
-      if (model.length > 0) await setSessionModel(session.id, model);
+      if (model.length > 0) {
+        await setSessionConfig(session.id, effort.length > 0 ? { model, thinking: effort } : { model });
+      }
       await reload();
       setCurrentId(session.id);
     } catch (error) {
@@ -418,6 +451,46 @@ export function App(): ReactElement {
     }
     return [...groups.entries()].toSorted(([a], [b]) => a.localeCompare(b));
   }, [models]);
+
+  const selectedEntry = useMemo(
+    () => models.find((entry) => entry.model === model),
+    [models, model],
+  );
+  const efforts = useMemo(() => selectedEntry?.support_efforts ?? [], [selectedEntry]);
+  const effortIndex = Math.max(0, efforts.indexOf(effort));
+  const effortText = effort.length > 0 ? effortLabel(effort) : '';
+
+  const applyConfig = useCallback(
+    (patch: { model?: string; thinking?: string }) => {
+      const sessionId = currentIdRef.current;
+      if (sessionId === undefined) return;
+      void setSessionConfig(sessionId, patch).catch((error) => {
+        setError(error instanceof Error ? error.message : String(error));
+      });
+    },
+    [],
+  );
+
+  const selectModel = useCallback(
+    (entry: ModelEntry) => {
+      const list = entry.support_efforts ?? [];
+      const nextEffort = entry.default_effort ?? list[Math.floor(list.length / 2)] ?? '';
+      setModel(entry.model);
+      setEffort(nextEffort);
+      applyConfig({ model: entry.model, ...(nextEffort.length > 0 ? { thinking: nextEffort } : {}) });
+      setPickerOpen(false);
+    },
+    [applyConfig],
+  );
+
+  const changeEffort = useCallback(
+    (value: string) => {
+      setEffort(value);
+      if (effortTimer.current !== undefined) window.clearTimeout(effortTimer.current);
+      effortTimer.current = window.setTimeout(() => applyConfig({ thinking: value }), 350);
+    },
+    [applyConfig],
+  );
 
   const visibleItems = useMemo(() => {
     if (live === undefined) return items;
@@ -503,27 +576,6 @@ export function App(): ReactElement {
                 <span className="cwd">{current.metadata.cwd ?? ''}</span>
               </div>
               <div className="header-right">
-                <select
-                  className="model-select"
-                  value={model}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    setModel(next);
-                    void setSessionModel(current.id, next).then(() => setModel(next));
-                  }}
-                >
-                  <option value="">选择模型</option>
-                  {groupedModels.map(([provider, entries]) => (
-                    <optgroup key={provider} label={provider}>
-                      {entries.map((entry) => (
-                        <option key={entry.model} value={entry.model}>
-                          {entry.display_name ?? entry.model}
-                          {entry.model === config?.default_model ? '（默认）' : ''}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
                 <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
               </div>
             </header>
@@ -558,26 +610,111 @@ export function App(): ReactElement {
 
             <footer className="composer">
               <div className="composer-inner">
+                {pickerOpen && (
+                  <div className="picker-backdrop" onClick={() => setPickerOpen(false)} />
+                )}
+                {pickerOpen && (
+                  <div className="model-picker">
+                    <div className="picker-head">
+                      <span className="picker-title">模型</span>
+                      <span className="picker-scope">{selectedEntry?.provider ?? ''}</span>
+                      <button type="button" className="picker-close" onClick={() => setPickerOpen(false)}>
+                        ×
+                      </button>
+                    </div>
+                    {efforts.length > 0 && (
+                      <div className="effort-card">
+                        <div className="effort-head">
+                          <span>推理等级</span>
+                          <span className="effort-value">{effortText}</span>
+                        </div>
+                        <input
+                          className="effort-slider"
+                          type="range"
+                          min={0}
+                          max={Math.max(efforts.length - 1, 0)}
+                          step={1}
+                          value={effortIndex}
+                          style={
+                            {
+                              '--fill':
+                                efforts.length > 1
+                                  ? `${String((effortIndex / (efforts.length - 1)) * 100)}%`
+                                  : '0%',
+                            } as CSSProperties
+                          }
+                          onChange={(event) => {
+                            const next = efforts[Number(event.target.value)];
+                            if (next !== undefined) changeEffort(next);
+                          }}
+                        />
+                        <div className="effort-ticks">
+                          {efforts.map((value) => (
+                            <span key={value} className={value === effort ? 'effort-tick active' : 'effort-tick'}>
+                              {effortLabel(value)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {groupedModels.map(([provider, entries]) => (
+                      <div className="picker-group" key={provider}>
+                        <div className="picker-group-title">{provider}</div>
+                        {entries.map((entry) => (
+                          <button
+                            type="button"
+                            key={entry.model}
+                            className={entry.model === model ? 'picker-item active' : 'picker-item'}
+                            onClick={() => selectModel(entry)}
+                          >
+                            <span className="picker-item-name">{entry.display_name ?? entry.model}</span>
+                            <span className="picker-item-meta">
+                              {entry.support_efforts !== undefined && entry.support_efforts.length > 0
+                                ? `${String(entry.support_efforts.length)} 档`
+                                : '不支持档位'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <textarea
-                value={composer}
-                onChange={(event) => setComposer(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    void submit();
-                  }
-                }}
+                  value={composer}
+                  onChange={(event) => setComposer(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      void submit();
+                    }
+                  }}
                   placeholder="问点什么，Enter 发送，Shift+Enter 换行"
                   rows={2}
                 />
-                <div className="composer-actions">
+                <div className="composer-bar">
+                  <button
+                    type="button"
+                    className="model-pill"
+                    aria-expanded={pickerOpen}
+                    onClick={() => setPickerOpen((open) => !open)}
+                  >
+                    <span className="model-pill-name">{selectedEntry?.display_name ?? model ?? '选择模型'}</span>
+                    {effortText.length > 0 && <span className="model-pill-effort">{effortText}</span>}
+                    <span className="model-pill-chev">⌄</span>
+                  </button>
                   {busy ? (
-                    <button type="button" className="stop" onClick={() => void stop()}>
-                      停止
+                    <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
+                      <span className="send-stop" />
                     </button>
                   ) : (
-                    <button type="button" disabled={composer.trim().length === 0} onClick={() => void submit()}>
-                      发送
+                    <button
+                      type="button"
+                      className="send-btn"
+                      aria-label="发送"
+                      disabled={composer.trim().length === 0}
+                      onClick={() => void submit()}
+                    >
+                      ↑
                     </button>
                   )}
                 </div>
