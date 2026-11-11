@@ -897,6 +897,105 @@ body::after {
   border-top: 1px solid var(--line);
 }
 
+.bar-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  color: var(--text-2);
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+
+.bar-icon:hover {
+  color: var(--gold-2);
+  background: rgba(176, 138, 69, 0.08);
+  border-color: var(--line);
+}
+
+.composer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 4px 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--text-2);
+  border-radius: 2px;
+}
+
+.model-trigger:hover {
+  color: var(--gold-2);
+  background: rgba(176, 138, 69, 0.08);
+}
+
+.model-trigger-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-trigger-tier {
+  color: var(--gold-2);
+}
+
+.chev {
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.picker-list {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.tier-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(140, 105, 45, 0.35);
+}
+
+.tier-label {
+  margin-right: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #7a5e2e;
+  text-transform: uppercase;
+}
+
+.tier-chip {
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #5b3f18;
+  background: transparent;
+  border: 1px solid rgba(140, 105, 45, 0.45);
+  border-radius: 2px;
+}
+
+.tier-chip:hover {
+  background: rgba(90, 66, 30, 0.08);
+}
+
+.tier-chip.active {
+  color: #f3e5c8;
+  background: #5b3f18;
+  border-color: #5b3f18;
+}
+
 .model-pill {
   display: inline-flex;
   align-items: center;
@@ -979,10 +1078,11 @@ body::after {
   position: absolute;
   right: 0;
   bottom: calc(100% + 10px);
-  left: 0;
+  left: auto;
   z-index: 6;
-  max-height: min(520px, 70vh);
-  padding: 10px;
+  width: 340px;
+  max-height: min(430px, 62vh);
+  padding: 8px;
   overflow: auto;
   color: var(--ink);
   background:

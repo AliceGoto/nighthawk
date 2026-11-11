@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 
 import {
   ApiError,
@@ -492,7 +492,6 @@ export function App(): ReactElement {
     [models, model],
   );
   const efforts = useMemo(() => selectedEntry?.support_efforts ?? [], [selectedEntry]);
-  const effortIndex = Math.max(0, efforts.indexOf(effort));
   const effortText = effort.length > 0 ? effortLabel(effort) : '';
 
   const applyConfig = useCallback(
@@ -599,60 +598,42 @@ export function App(): ReactElement {
                     </button>
                   </div>
                   {efforts.length > 0 && (
-                    <div className="effort-card">
-                      <div className="effort-head">
-                        <span>推理等级</span>
-                        <span className="effort-value">{effortText}</span>
-                      </div>
-                      <input
-                        className="effort-slider"
-                        type="range"
-                        min={0}
-                        max={Math.max(efforts.length - 1, 0)}
-                        step={1}
-                        value={effortIndex}
-                        style={
-                          {
-                            '--fill':
-                              efforts.length > 1
-                                ? `${String((effortIndex / (efforts.length - 1)) * 100)}%`
-                                : '0%',
-                          } as CSSProperties
-                        }
-                        onChange={(event) => {
-                          const next = efforts[Number(event.target.value)];
-                          if (next !== undefined) changeEffort(next);
-                        }}
-                      />
-                      <div className="effort-ticks">
-                        {efforts.map((value) => (
-                          <span key={value} className={value === effort ? 'effort-tick active' : 'effort-tick'}>
-                            {effortLabel(value)}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {groupedModels.map(([provider, entries]) => (
-                    <div className="picker-group" key={provider}>
-                      <div className="picker-group-title">{provider}</div>
-                      {entries.map((entry) => (
+                    <div className="tier-row">
+                      <span className="tier-label">强度</span>
+                      {efforts.map((value) => (
                         <button
+                          key={value}
                           type="button"
-                          key={entry.model}
-                          className={entry.model === model ? 'picker-item active' : 'picker-item'}
-                          onClick={() => selectModel(entry)}
+                          className={value === effort ? 'tier-chip active' : 'tier-chip'}
+                          onClick={() => changeEffort(value)}
                         >
-                          <span className="picker-item-name">{entry.display_name ?? entry.model}</span>
-                          <span className="picker-item-meta">
-                            {entry.support_efforts !== undefined && entry.support_efforts.length > 0
-                              ? `${String(entry.support_efforts.length)} 档`
-                              : '不支持档位'}
-                          </span>
+                          {effortLabel(value)}
                         </button>
                       ))}
                     </div>
-                  ))}
+                  )}
+                  <div className="picker-list">
+                    {groupedModels.map(([provider, entries]) => (
+                      <div className="picker-group" key={provider}>
+                        <div className="picker-group-title">{provider}</div>
+                        {entries.map((entry) => (
+                          <button
+                            type="button"
+                            key={entry.model}
+                            className={entry.model === model ? 'picker-item active' : 'picker-item'}
+                            onClick={() => selectModel(entry)}
+                          >
+                            <span className="picker-item-name">{entry.display_name ?? entry.model}</span>
+                            <span className="picker-item-meta">
+                              {entry.support_efforts !== undefined && entry.support_efforts.length > 0
+                                ? `${String(entry.support_efforts.length)} 档`
+                                : '—'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <textarea
@@ -670,29 +651,41 @@ export function App(): ReactElement {
               <div className="composer-bar">
                 <button
                   type="button"
-                  className="model-pill"
-                  aria-expanded={pickerOpen}
-                  onClick={() => setPickerOpen((open) => !open)}
+                  className="bar-icon"
+                  title="在当前目录新建会话"
+                  onClick={() => void newSession()}
                 >
-                  <span className="model-pill-name">{selectedEntry?.display_name ?? model ?? '选择模型'}</span>
-                  {effortText.length > 0 && <span className="model-pill-effort">{effortText}</span>}
-                  <span className="model-pill-chev">⌄</span>
+                  ＋
                 </button>
-                {busy ? (
-                  <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
-                    <span className="send-stop" />
-                  </button>
-                ) : (
+                <div className="composer-right">
                   <button
                     type="button"
-                    className="send-btn"
-                    aria-label="发送"
-                    disabled={composer.trim().length === 0}
-                    onClick={() => void submit()}
+                    className="model-trigger"
+                    aria-expanded={pickerOpen}
+                    onClick={() => setPickerOpen((open) => !open)}
                   >
-                    ↑
+                    <span className="model-trigger-name">
+                      {selectedEntry?.display_name ?? model ?? '选择模型'}
+                    </span>
+                    {effortText.length > 0 && <span className="model-trigger-tier">· {effortText}</span>}
+                    <span className="chev">⌄</span>
                   </button>
-                )}
+                  {busy ? (
+                    <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
+                      <span className="send-stop" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="send-btn"
+                      aria-label="发送"
+                      disabled={composer.trim().length === 0}
+                      onClick={() => void submit()}
+                    >
+                      ↑
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </footer>
