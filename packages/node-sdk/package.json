@@ -70,9 +70,9 @@
     "@anthropic-ai/sdk": "^0.95.2",
     "@google/genai": "^1.49.0",
     "@nighthawk/agent-core-v2": "workspace:^",
+    "@nighthawk/klient": "workspace:^",
     "@nighthawk/nighthawk-oauth": "workspace:^",
     "@nighthawk/nighthawk-product": "workspace:^",
-    "@nighthawk/klient": "workspace:^",
     "@types/yazl": "^2.4.6",
     "jimp": "^1.6.1",
     "openai": "^6.34.0"
