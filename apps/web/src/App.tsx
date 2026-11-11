@@ -13,13 +13,21 @@ import {
   listSessions,
   loadToken,
   sendPrompt,
+  respondInteraction,
   setSessionConfig,
   setToken,
   type ModelEntry,
+  type QuestionItem,
   type Message,
   type Session,
 } from './api';
 import { Markdown } from './Markdown';
+import {
+  ApprovalCard,
+  QuestionCard,
+  type ApprovalItem,
+  type QuestionPrompt,
+} from './Pending';
 import { Socket, type WireEvent } from './ws';
 
 interface ToolCall {
@@ -212,6 +220,9 @@ export function App(): ReactElement {
     () => new URLSearchParams(location.search).get('picker') === '1',
   );
   const [query, setQuery] = useState('');
+  const [pending, setPending] = useState<
+    ({ kind: 'approval'; item: ApprovalItem } | { kind: 'question'; item: QuestionPrompt })[]
+  >([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string>();
   const [currentId, setCurrentId] = useState<string | undefined>(
     () => new URLSearchParams(location.search).get('session') ?? undefined,
@@ -293,6 +304,45 @@ export function App(): ReactElement {
               ),
             };
           });
+          break;
+        }
+        case 'interaction': {
+          const frame = event as unknown as Record<string, unknown>;
+          const status = str(frame['status']);
+          const id = str(frame['interaction_id']);
+          if (id.length === 0) break;
+          if (status === 'ended') {
+            setPending((previous) => previous.filter((entry) => entry.item.id !== id));
+            break;
+          }
+          if (status !== 'pending') break;
+          const request = frame['request'];
+          if (typeof request !== 'object' || request === null) break;
+          const body = request as Record<string, unknown>;
+          const sessionId = str(frame['session_id']) || currentIdRef.current || '';
+          if (frame['kind'] === 'approval') {
+            setPending((previous) => [
+              ...previous.filter((entry) => entry.item.id !== id),
+              {
+                kind: 'approval',
+                item: {
+                  id,
+                  sessionId,
+                  toolName: str(body['tool_name'], 'tool'),
+                  action: str(body['action']),
+                  display: body['tool_input_display'],
+                },
+              },
+            ]);
+          } else if (frame['kind'] === 'question' && Array.isArray(body['questions'])) {
+            setPending((previous) => [
+              ...previous.filter((entry) => entry.item.id !== id),
+              {
+                kind: 'question',
+                item: { id, sessionId, questions: body['questions'] as QuestionItem[] },
+              },
+            ]);
+          }
           break;
         }
         case 'transcript.reset':
@@ -487,6 +537,17 @@ export function App(): ReactElement {
     return [...groups.entries()].toSorted(([a], [b]) => a.localeCompare(b));
   }, [models]);
 
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        void newSession();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [newSession]);
+
   const selectedEntry = useMemo(
     () => models.find((entry) => entry.model === model),
     [models, model],
@@ -540,6 +601,32 @@ export function App(): ReactElement {
     [reload],
   );
 
+  const resolveApproval = useCallback(
+    (item: ApprovalItem, decision: 'approved' | 'rejected', scope?: 'session') => {
+      setPending((previous) => previous.filter((entry) => entry.item.id !== item.id));
+      void respondInteraction(
+        item.sessionId,
+        item.id,
+        scope === undefined ? { kind: 'approval', decision } : { kind: 'approval', decision, scope },
+      ).catch((error) => {
+        setError(error instanceof Error ? error.message : String(error));
+      });
+    },
+    [],
+  );
+
+  const answerQuestion = useCallback((item: QuestionPrompt, answers: Record<string, unknown>) => {
+    setPending((previous) => previous.filter((entry) => entry.item.id !== item.id));
+    void respondInteraction(item.sessionId, item.id, { kind: 'question', answers }).catch((error) => {
+      setError(error instanceof Error ? error.message : String(error));
+    });
+  }, []);
+
+  const dismissPendingQuestion = useCallback((item: QuestionPrompt) => {
+    setPending((previous) => previous.filter((entry) => entry.item.id !== item.id));
+    void respondInteraction(item.sessionId, item.id, { kind: 'question', dismissed: true }).catch(() => undefined);
+  }, []);
+
   const visibleSessions = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (needle.length === 0) return sessions;
@@ -586,6 +673,26 @@ export function App(): ReactElement {
 
   const composerNode = (
           <footer className={`composer${current === undefined ? ' composer-inline' : ''}`}>
+            {pending.length > 0 && (
+              <div className="pending-stack">
+                {pending.map((entry) =>
+                  entry.kind === 'approval' ? (
+                    <ApprovalCard
+                      key={entry.item.id}
+                      item={entry.item}
+                      onResolve={(decision, scope) => resolveApproval(entry.item, decision, scope)}
+                    />
+                  ) : (
+                    <QuestionCard
+                      key={entry.item.id}
+                      item={entry.item}
+                      onAnswer={(answers) => answerQuestion(entry.item, answers)}
+                      onDismiss={() => dismissPendingQuestion(entry.item)}
+                    />
+                  ),
+                )}
+              </div>
+            )}
             <div className="composer-inner">
               {pickerOpen && <div className="picker-backdrop" onClick={() => setPickerOpen(false)} />}
               {pickerOpen && (
@@ -700,6 +807,10 @@ export function App(): ReactElement {
           <span className="brand-tag">codex</span>
           <span className={`dot ${status}`} title={status} />
         </div>
+        <button type="button" className="new-chat" onClick={() => void newSession()}>
+          <span className="new-chat-label">＋　新建会话</span>
+          <kbd>⌘K</kbd>
+        </button>
         <div className="new-session">
           <input
             value={cwd}
@@ -707,9 +818,6 @@ export function App(): ReactElement {
             placeholder="工作目录"
             spellCheck={false}
           />
-          <button type="button" title="新建会话" className="new-session-add" onClick={() => void newSession()}>
-            ＋
-          </button>
         </div>
         <div className="session-search">
           <input

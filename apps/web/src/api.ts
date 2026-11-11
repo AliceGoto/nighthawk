@@ -145,6 +145,54 @@ export function sendPrompt(sessionId: string, text: string): Promise<unknown> {
   });
 }
 
+export interface ApprovalWire {
+  approval_id: string;
+  session_id: string;
+  agent_id: string;
+  tool_call_id: string;
+  tool_name: string;
+  action: string;
+  tool_input_display?: unknown;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface QuestionOption {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export interface QuestionItem {
+  id: string;
+  question: string;
+  header?: string;
+  body?: string;
+  options: QuestionOption[];
+  multi_select?: boolean;
+  allow_other?: boolean;
+  other_label?: string;
+}
+
+export interface QuestionWire {
+  question_id: string;
+  session_id: string;
+  agent_id?: string;
+  questions: QuestionItem[];
+  created_at: string;
+}
+
+export function respondInteraction(
+  sessionId: string,
+  interactionId: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  return request(`/api/v1/sessions/${sessionId}/interactions/${interactionId}`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export function deleteSession(sessionId: string): Promise<unknown> {
   return request(`/api/v1/sessions/${sessionId}:delete`, { method: 'POST', body: '{}' });
 }

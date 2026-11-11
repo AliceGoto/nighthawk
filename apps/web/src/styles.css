@@ -172,6 +172,33 @@ body::after {
   background: #b04a3a;
 }
 
+.new-chat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--leather-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.new-chat:hover {
+  background: rgba(176, 138, 69, 0.1);
+  border-color: var(--gold);
+}
+
+.new-chat kbd {
+  padding: 2px 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
 .new-session {
   display: flex;
   gap: 6px;
@@ -1269,6 +1296,172 @@ body::after {
   font-size: 9.5px;
   letter-spacing: 0.08em;
   color: #7a5e2e;
+}
+
+/* ---------- pending interactions ---------- */
+
+.pending-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: var(--chat-width);
+  margin: 0 auto 10px;
+}
+
+.pending-card {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #17130d 0%, #100d08 100%);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.pending-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pending-kind {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--gold-2);
+  text-transform: uppercase;
+}
+
+.pending-tool {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.pending-action {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.pending-toggle {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.pending-toggle:hover {
+  color: var(--gold-2);
+}
+
+.pending-input {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  max-height: 160px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-2);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+}
+
+.pending-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pending-actions button {
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.pending-actions button:hover:not(:disabled) {
+  color: var(--gold-2);
+  border-color: var(--gold);
+}
+
+.pending-actions .approve {
+  color: #f3e5c8;
+  background: var(--blood);
+  border-color: var(--gold);
+}
+
+.pending-actions .reject {
+  color: #e0a094;
+  border-color: rgba(176, 74, 58, 0.6);
+}
+
+.pending-actions button:disabled {
+  opacity: 0.4;
+}
+
+.question {
+  margin-top: 10px;
+}
+
+.question-header {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.question-text {
+  margin-top: 4px;
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.question-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.question-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 11px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.question-option:hover {
+  border-color: var(--gold);
+}
+
+.question-option.active {
+  background: rgba(176, 138, 69, 0.14);
+  border-color: var(--gold);
+}
+
+.question-option span:first-child {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.question-option-desc {
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+.question-other {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 12px;
 }
 
 /* ---------- gate and banner ---------- */
