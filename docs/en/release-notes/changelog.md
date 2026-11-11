@@ -38,7 +38,7 @@ This page documents the changes in each NightHawk CLI release.
 ### Bug Fixes
 
 - Reconnect workspace MCP servers automatically with backoff when the initial connection fails or the connection drops; tune the interval with `[mcp] reconnect_initial_delay_ms` and `reconnect_max_delay_ms`.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 2.3.3 (2026-10-26)
 
@@ -95,7 +95,7 @@ This page documents the changes in each NightHawk CLI release.
 ### Bug Fixes
 
 - Hooks now run in the session's project directory instead of the server startup directory.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 2.2.0 (2026-10-14)
 
@@ -116,7 +116,7 @@ This page documents the changes in each NightHawk CLI release.
 - Fix shifted turns, lost replies, and out-of-place rendering in sessions where a UserPromptSubmit hook injects text; hook JSON output without a "message" field is no longer added to the conversation.
 - Remove the never-implemented `executor = "kaos"` option from MCP stdio server configuration; configs using it now fail validation at load time.
 - Cron tasks from the source session no longer fire inside a forked session.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 2.1.1 (2026-09-24)
 
@@ -144,7 +144,7 @@ This page documents the changes in each NightHawk CLI release.
 ### Bug Fixes
 
 - Harden workspace security: block file tools from accessing files outside the working directory through symlinks, apply project-local configuration only after the workspace is trusted, block repository git configuration from executing commands during background git operations, and reject additional directories that resolve to the home directory or filesystem root.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 2.0.2 (2026-09-19)
 
@@ -171,7 +171,7 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Bug Fixes
 
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 2.0.0 (2026-09-17)
 
@@ -186,7 +186,7 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Bug Fixes
 
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.43.1 (2026-09-15)
 
@@ -225,13 +225,13 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Bug Fixes
 
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.42.0 (2026-09-09)
 
 ### Features
 
-- Remote Control is now always on; the experimental `NIGHTHAWK_EXPERIMENTAL_REMOTE_CONTROL` flag has been removed. See [Remote Control](https://moonshotai.github.io/nighthawk/guides/remote-control.html) for details.
+- Remote Control is now always on; the experimental `NIGHTHAWK_EXPERIMENTAL_REMOTE_CONTROL` flag has been removed. See [Remote Control](https://alicegoto.github.io/nighthawk/guides/remote-control.html) for details.
 - web: Support permanently deleting sessions from the session row context menu, with a confirmation prompt.
 - Add read-only tools to the `/btw` side agent.
 - web: Preview images and videos in a reorderable media rail in the composer, mention them in the text on demand, and keep the previews after queueing and sending.
@@ -242,12 +242,12 @@ This page documents the changes in each NightHawk CLI release.
 - Collapse finished tool calls in the transcript to a header plus one marked outcome row: short output is shown whole, hidden output is counted (`N more lines`, `+N more`) and revealed by `Ctrl-O`, which the footer advertises while it is available.
 - Upgrade the default thinking effort to the recommended level for eligible users.
 - The subagent model pool (`[secondary_model]`) is now always on; the experimental secondary-model flag and the `NIGHTHAWK_EXPERIMENTAL_SECONDARY_MODEL` opt-out have been removed.
-- Add configurable character limits and resumable long-line file reads without repeated output truncation; see [`read`](https://moonshotai.github.io/nighthawk/configuration/config-files.html#read) for details.
-- The minidb session-index read model and global search worker are now always on; the experimental flags have been replaced by the `[database]` config section and the `NIGHTHAWK_PERSISTENCE_MINIDB_READMODEL` / `NIGHTHAWK_SEARCH_WORKER` env vars; see [`database`](https://moonshotai.github.io/nighthawk/configuration/config-files.html#database) for details.
+- Add configurable character limits and resumable long-line file reads without repeated output truncation; see [`read`](https://alicegoto.github.io/nighthawk/configuration/config-files.html#read) for details.
+- The minidb session-index read model and global search worker are now always on; the experimental flags have been replaced by the `[database]` config section and the `NIGHTHAWK_PERSISTENCE_MINIDB_READMODEL` / `NIGHTHAWK_SEARCH_WORKER` env vars; see [`database`](https://alicegoto.github.io/nighthawk/configuration/config-files.html#database) for details.
 
 ### Bug Fixes
 
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.41.0 (2026-09-04)
 
@@ -276,7 +276,7 @@ This page documents the changes in each NightHawk CLI release.
 - Fix resuming a subagent by its agent id after the session is reopened in a new process; the resumed subagent follows the current permission mode and is matched by its own profile in permission rules.
 - web: Fix per-turn file change previews showing added/removed lines that never existed and inaccurate line counts when the same file is edited multiple times in one turn; change cards now show only exact line statistics.
 - web: Fix the default thinking effort in settings not being settable to the highest level (Max).
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.40.1 (2026-09-02)
 
@@ -306,7 +306,7 @@ This page documents the changes in each NightHawk CLI release.
 ### Bug Fixes
 
 - Honor explicit `[experimental]` config entries over the `NIGHTHAWK_EXPERIMENTAL_FLAG` master switch, so a flag set to `false` in config.toml stays off; per-feature `NIGHTHAWK_EXPERIMENTAL_<NAME>` variables still override both.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.39.1 (2026-08-28)
 
@@ -316,7 +316,7 @@ This page documents the changes in each NightHawk CLI release.
 - web: Fix signed-in users without a usable model being wrongly asked to sign in (and getting stuck there on web); the send gate now offers picking or configuring a model instead.
 - web: Fix the first IME (or keyboard) character being silently swallowed after clicking the composer placeholder.
 - web: Fix attachments in a newly created session still showing as uploading after the upload has finished.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.39.0 (2026-08-27)
 
@@ -339,7 +339,7 @@ This page documents the changes in each NightHawk CLI release.
 ### Bug Fixes
 
 - Fix file tools and shell working directories failing to resolve Git Bash paths such as /c/Users or /tmp on Windows.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.38.0 (2026-08-20)
 
@@ -359,14 +359,14 @@ This page documents the changes in each NightHawk CLI release.
 ### Bug Fixes
 
 - Fix config.toml entries being lost when the file had a syntax error or was edited outside the app.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.37.2 (2026-08-19)
 
 ### Polish
 
 - web: Settings gains a Lab tab with a new multi-tab sidebar toggle; when enabled, the sidebar shows the Open / Done / Workspaces tabs.
-- Make several refinements and internal improvements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Make several refinements and internal improvements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.37.1 (2026-08-18)
 
@@ -398,7 +398,7 @@ This page documents the changes in each NightHawk CLI release.
 - web: Fix Ctrl+K in the composer opening session search on macOS — session search now only answers to Cmd+K.
 - web: Fix the Background Agent panel showing incorrect task counts and statuses.
 - web: Fix pasting a copied folder into the composer failing the upload with a connection error — folders are now skipped instead.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.36.1 (2026-08-14)
 
@@ -412,7 +412,7 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Bug Fixes
 
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.36.0 (2026-08-13)
 
@@ -435,7 +435,7 @@ This page documents the changes in each NightHawk CLI release.
     "nighthawk/k3" = "Strong at complex reasoning and deep debugging — pick it for hard problems."
     ```
 
-  See the [subagent model pool docs](https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#subagent-model-pool) for details.
+  See the [subagent model pool docs](https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#subagent-model-pool) for details.
 - Add an experimental fullscreen TUI mode. Set the `NIGHTHAWK_TUI_FULL_SCREEN=1` environment variable to enable it.
 - Support rendering LaTeX math formulas (`$…$` / `$$…$$`) in TUI messages as Unicode formulas.
 
@@ -444,7 +444,7 @@ This page documents the changes in each NightHawk CLI release.
 - Show project MCP launch targets in the workspace trust prompt, default to declining trust, and resolve `fd` and `stty` binaries to absolute paths so untrusted workspaces cannot plant bare-name executables before confirmation.
 - Fix sessions failing with a provider 400 error on every follow-up request after a turn is interrupted while the model is still thinking, on strict OpenAI-compatible providers (e.g. DeepSeek).
 - Fix Ctrl+C being ignored during automatic retries of failed API requests.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.35.0 (2026-08-12)
 
@@ -458,7 +458,7 @@ This page documents the changes in each NightHawk CLI release.
 - Fix coder subagents spawning further subagents by default.
 - Fix the token counts reported after compaction reading far below the real context size; they now match the numbers shown while the session runs.
 - Fix two binary-planting risks on Windows.
-- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
+- Fix several known issues and make various refinements. See the [changelog on GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md) for more technical entries.
 
 ## 0.34.0 (2026-08-06)
 
@@ -466,7 +466,7 @@ This page documents the changes in each NightHawk CLI release.
 
 - web: Add a flat view to the sidebar session list.
 - The NightHawk Computer Use plugin now supports Windows x64 — install it from `/plugins`.
-- Show a cache-expiry reminder when resuming or sending after a long idle. Set [`cache_expiry_hint`](https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#tui-toml) to `false` to disable it.
+- Show a cache-expiry reminder when resuming or sending after a long idle. Set [`cache_expiry_hint`](https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#tui-toml) to `false` to disable it.
 
 ### Polish
 
@@ -528,12 +528,12 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Features
 
-- Add four hook events: `TurnStarted`, `UserPromptQueued`, `TaskStarted`, and `SessionHeartbeat`. Configure them under `[[hooks]]` in `config.toml` — see [Hooks](https://moonshotai.github.io/nighthawk/en/customization/hooks.html) for details.
+- Add four hook events: `TurnStarted`, `UserPromptQueued`, `TaskStarted`, and `SessionHeartbeat`. Configure them under `[[hooks]]` in `config.toml` — see [Hooks](https://alicegoto.github.io/nighthawk/en/customization/hooks.html) for details.
 
 ### Polish
 
-- Rename two `[loop_control]` keys: `max_retries_per_step` → `max_attempts_per_step` and `max_steps_per_run` → `max_steps_per_turn`; the old keys stop working with a rename warning at startup — see [loop_control](https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#loop-control).
-- Add a `[token_counting]` config section: when a provider doesn't report token usage, switch the context-size display to local estimates — see [token_counting](https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#token-counting).
+- Rename two `[loop_control]` keys: `max_retries_per_step` → `max_attempts_per_step` and `max_steps_per_run` → `max_steps_per_turn`; the old keys stop working with a rename warning at startup — see [loop_control](https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#loop-control).
+- Add a `[token_counting]` config section: when a provider doesn't report token usage, switch the context-size display to local estimates — see [token_counting](https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#token-counting).
 
 ### Bug Fixes
 
@@ -618,9 +618,9 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Features
 
-- web: Support defining agents in Markdown files, declaring system prompt, name, description, and tool permissions. [Details](https://moonshotai.github.io/nighthawk/en/customization/agents.html#agent-file-format)
-- web: Permanently override the main agent's system prompt with SYSTEM.md. [Details](https://moonshotai.github.io/nighthawk/en/customization/agents.html#overriding-the-main-agent-s-system-prompt-with-system-md)
-- web: Globally enable or disable tools across all sessions via config.toml. [Details](https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#tools)
+- web: Support defining agents in Markdown files, declaring system prompt, name, description, and tool permissions. [Details](https://alicegoto.github.io/nighthawk/en/customization/agents.html#agent-file-format)
+- web: Permanently override the main agent's system prompt with SYSTEM.md. [Details](https://alicegoto.github.io/nighthawk/en/customization/agents.html#overriding-the-main-agent-s-system-prompt-with-system-md)
+- web: Globally enable or disable tools across all sessions via config.toml. [Details](https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#tools)
 - Videos attached to a prompt now reach the model together with the prompt, with no extra tool round trip.
 - Support selecting a thinking effort level from ACP clients.
 - Add environment variable overrides for agent loop and background task limits.
@@ -1650,7 +1650,7 @@ This page documents the changes in each NightHawk CLI release.
 
 ### Features
 
-- Add the `nighthawk acp` subcommand: nighthawk now speaks [Agent Client Protocol 0.23](https://agentclientprotocol.com/) over stdio so IDEs (Zed, JetBrains AI Chat, custom clients) can drive sessions directly — coverage matrix, Zed configuration and breaking pre-release notes are in [nighthawk acp Subcommand Page](https://moonshotai.github.io/nighthawk/en/reference/kimi-acp.html).
+- Add the `nighthawk acp` subcommand: nighthawk now speaks [Agent Client Protocol 0.23](https://agentclientprotocol.com/) over stdio so IDEs (Zed, JetBrains AI Chat, custom clients) can drive sessions directly — coverage matrix, Zed configuration and breaking pre-release notes are in [nighthawk acp Subcommand Page](https://alicegoto.github.io/nighthawk/en/reference/kimi-acp.html).
 - Add `/btw` for side-channel conversations without steering the active main turn, and allow `/btw` to open the side-channel panel before entering a question.
 
 ### Bug Fixes

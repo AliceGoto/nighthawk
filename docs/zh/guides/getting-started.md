@@ -10,53 +10,52 @@ NightHawk CLI 是一个运行在终端中的 AI Agent，帮助你完成软件开
 - **理解项目**：探索陌生的代码库，解答架构和实现层面的问题
 - **自动化任务**：批量处理文件、运行构建与测试、串联多个脚本
 
-整套 CLI 以 TypeScript 编写，通过 npm 分发，运行在 Node.js 之上。
+整套 CLI 以 TypeScript 编写，发布产物是单文件原生可执行文件，装好之后不需要额外安装 Node.js。
 
 ## 安装
 
-提供两种安装方式：官方安装脚本（推荐，无需预装 Node.js）和 npm 全局安装。
+目前提供三种方式：Homebrew、直接下载发布产物、从源码构建。当前发布的产物只有 macOS Apple silicon 一个平台。
 
 ::: tip 安装之前
 NightHawk CLI 为全交互式 TUI 应用，推荐在支持真彩色与连字的现代终端中运行以获得最佳体验，例如 [Kitty](https://sw.kovidgoyal.net/kitty/) 或 [Ghostty](https://ghostty.org/)。
 :::
 
-### 脚本安装（推荐）
-
-::: code-group
-
-```sh [macOS / Linux]
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
-```
-
-```powershell [Windows (PowerShell)]
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
-```
-
-:::
-
-> Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，NightHawk CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `NIGHTHAWK_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
-
-脚本会自动下载最新版本、校验 checksum，并把 `nighthawk` 可执行文件放到你的 `PATH` 中。
-
-### npm 安装
-
-需要 Node.js 22.19.0 或更高版本：
+### Homebrew（macOS Apple silicon，推荐）
 
 ```sh
-node --version
+brew install AliceGoto/nighthawk/nighthawk
 ```
 
-::: code-group
+### 下载发布产物
 
-```sh [npm]
-npm install -g @nighthawk/nighthawk
+到 [Releases](https://github.com/AliceGoto/nighthawk/releases) 下载 `nighthawk-darwin-arm64.zip`，解压后把 `nighthawk` 放到 `PATH` 里的目录：
+
+```sh
+unzip nighthawk-darwin-arm64.zip -d ~/.local/bin
+chmod +x ~/.local/bin/nighthawk
 ```
 
-```sh [pnpm]
-pnpm add -g @nighthawk/nighthawk
+压缩包旁边有 `.sha256` 文件，下载后可以先校验：
+
+```sh
+shasum -a 256 -c nighthawk-darwin-arm64.zip.sha256
 ```
 
-:::
+### 从源码构建
+
+需要 Node.js 24.15.0 或更高版本，以及 pnpm 10：
+
+```sh
+git clone https://github.com/AliceGoto/nighthawk.git
+cd nighthawk
+pnpm install
+pnpm --filter @nighthawk/nighthawk run build
+cd apps/nighthawk && pnpm link --global
+```
+
+`pnpm link --global` 会把 `nighthawk` 命令挂到全局。不想动全局环境的话，构建完成后直接跑 `node apps/nighthawk/dist/main.mjs` 也可以。
+
+> Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，NightHawk CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `NIGHTHAWK_SHELL_PATH` 设为 `bash.exe` 的绝对路径。目前 Windows 没有现成产物，需要按上面的源码方式构建。
 
 ## 第一次启动
 
@@ -156,17 +155,19 @@ NightHawk CLI 的本地数据默认保存在 `~/.nighthawk/` 下，包含配置�
 nighthawk --version
 ```
 
-**升级**：运行 `nighthawk upgrade`，CLI 会检查最新版本并展示更新选项。选择 `Install update now` 后根据当前安装来源执行升级；也可以直接用包管理器：
+**升级**：运行 `nighthawk upgrade`，CLI 会检查最新版本并展示更新选项。Homebrew 安装的用户也可以直接升级：
 
 ```sh
-npm install -g @nighthawk/nighthawk@latest
+brew upgrade AliceGoto/nighthawk/nighthawk
 ```
 
-**卸载**：脚本安装的用户删除 `nighthawk` 可执行文件即可；npm 安装的用户：
+从源码构建的用户更新仓库后重新构建：
 
 ```sh
-npm uninstall -g @nighthawk/nighthawk
+git pull && pnpm install && pnpm --filter @nighthawk/nighthawk run build
 ```
+
+**卸载**：Homebrew 安装的用户跑 `brew uninstall nighthawk`，手动安装的删掉 `nighthawk` 可执行文件即可。
 
 ## 下一步
 

@@ -198,7 +198,7 @@ const config = withMermaid(defineConfig({
     outline: [2, 3],
     search: { provider: 'local' },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/NightHawkOrg/nighthawk' },
+      { icon: 'github', link: 'https://github.com/AliceGoto/nighthawk' },
     ],
   },
 

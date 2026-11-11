@@ -2,7 +2,7 @@
 
 > The Starting Point for Next-Gen Agents
 
-[![npm](https://img.shields.io/npm/v/@nighthawk/nighthawk)](https://www.npmjs.com/package/@nighthawk/nighthawk) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/nighthawk/en/)
+[![npm](https://img.shields.io/npm/v/@nighthawk/nighthawk)](https://www.npmjs.com/package/@nighthawk/nighthawk) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://alicegoto.github.io/nighthawk/en/)
 
 ## What is NightHawk CLI
 
@@ -46,7 +46,7 @@ Or with pnpm:
 pnpm add -g @nighthawk/nighthawk
 ```
 
-For upgrade and uninstall instructions, see the [Getting Started guide](https://moonshotai.github.io/nighthawk/en/guides/getting-started).
+For upgrade and uninstall instructions, see the [Getting Started guide](https://alicegoto.github.io/nighthawk/en/guides/getting-started).
 
 ## Quick Start
 
@@ -75,14 +75,14 @@ Take a look at this project and explain the main directories.
 
 ## Documentation
 
-- Full docs: https://moonshotai.github.io/nighthawk/en/
-- 中文文档: https://moonshotai.github.io/nighthawk/zh/
-- Getting Started: https://moonshotai.github.io/nighthawk/en/guides/getting-started
+- Full docs: https://alicegoto.github.io/nighthawk/en/
+- 中文文档: https://alicegoto.github.io/nighthawk/zh/
+- Getting Started: https://alicegoto.github.io/nighthawk/en/guides/getting-started
 
 ## Repository & Issues
 
-- Source: https://github.com/NightHawkOrg/nighthawk
-- Issues: https://github.com/NightHawkOrg/nighthawk/issues
+- Source: https://github.com/AliceGoto/nighthawk
+- Issues: https://github.com/AliceGoto/nighthawk/issues
 - Security: see SECURITY.md in the main repository
 
 ## License

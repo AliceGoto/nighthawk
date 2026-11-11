@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Updated dependencies [[`e2ad1dc`](https://github.com/NightHawkOrg/nighthawk/commit/e2ad1dcf214337ecfb5ca160fa36d5ef73560ab6), [`1853dae`](https://github.com/NightHawkOrg/nighthawk/commit/1853dae4ff54b36da878a08c86a7088bde0114a8), [`8019337`](https://github.com/NightHawkOrg/nighthawk/commit/80193374ebb47973a97d21d0b4ce4c27128eee82)]:
+- Updated dependencies [[`e2ad1dc`](https://github.com/AliceGoto/nighthawk/commit/e2ad1dcf214337ecfb5ca160fa36d5ef73560ab6), [`1853dae`](https://github.com/AliceGoto/nighthawk/commit/1853dae4ff54b36da878a08c86a7088bde0114a8), [`8019337`](https://github.com/AliceGoto/nighthawk/commit/80193374ebb47973a97d21d0b4ce4c27128eee82)]:
   - @nighthawk/agent-core-v2@0.6.0
   - @nighthawk/klient@0.1.4
 
@@ -12,7 +12,7 @@
 
 ### Patch Changes
 
-- Updated dependencies [[`5b93669`](https://github.com/NightHawkOrg/nighthawk/commit/5b936697670ed15444bcb4720bd91e6ee776a941), [`5b93669`](https://github.com/NightHawkOrg/nighthawk/commit/5b936697670ed15444bcb4720bd91e6ee776a941)]:
+- Updated dependencies [[`5b93669`](https://github.com/AliceGoto/nighthawk/commit/5b936697670ed15444bcb4720bd91e6ee776a941), [`5b93669`](https://github.com/AliceGoto/nighthawk/commit/5b936697670ed15444bcb4720bd91e6ee776a941)]:
   - @nighthawk/agent-core-v2@0.5.0
   - @nighthawk/klient@0.1.3
 
@@ -20,6 +20,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [[`6be2697`](https://github.com/NightHawkOrg/nighthawk/commit/6be26978b123bacf1c5ebce52bbeb6f7b7ff0629), [`6be2697`](https://github.com/NightHawkOrg/nighthawk/commit/6be26978b123bacf1c5ebce52bbeb6f7b7ff0629), [`249d8fa`](https://github.com/NightHawkOrg/nighthawk/commit/249d8faa3447427665185a900926d048213d2ac7)]:
+- Updated dependencies [[`6be2697`](https://github.com/AliceGoto/nighthawk/commit/6be26978b123bacf1c5ebce52bbeb6f7b7ff0629), [`6be2697`](https://github.com/AliceGoto/nighthawk/commit/6be26978b123bacf1c5ebce52bbeb6f7b7ff0629), [`249d8fa`](https://github.com/AliceGoto/nighthawk/commit/249d8faa3447427665185a900926d048213d2ac7)]:
   - @nighthawk/agent-core-v2@0.4.0
   - @nighthawk/klient@0.1.2

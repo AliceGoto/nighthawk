@@ -5,14 +5,14 @@
   "description": "NightHawk OAuth toolkit for managed NightHawk authentication",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/packages/oauth#readme",
+  "homepage": "https://github.com/AliceGoto/nighthawk/tree/main/packages/oauth#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "url": "git+https://github.com/AliceGoto/nighthawk.git",
     "directory": "packages/oauth"
   },
   "bugs": {
-    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+    "url": "https://github.com/AliceGoto/nighthawk/issues"
   },
   "keywords": [
     "nighthawk",

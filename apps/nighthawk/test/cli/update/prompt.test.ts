@@ -50,7 +50,7 @@ describe('install prompt helpers', () => {
 
 describe('promptForInstallChoice', () => {
   it('renders the changelog, source channel, target channel, and versions', async () => {
-    const CHANGELOG_URL = 'https://moonshotai.github.io/nighthawk/en/release-notes/changelog.html';
+    const CHANGELOG_URL = 'https://alicegoto.github.io/nighthawk/en/release-notes/changelog.html';
 
     const input = Object.assign(new EventEmitter(), {
       isRaw: false,

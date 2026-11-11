@@ -15,7 +15,7 @@ jobs:
   publish:
     name: Publish NightHawk preview
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'NightHawkOrg' && github.event.pull_request.draft == false
+    if: github.repository_owner == 'AliceGoto' && github.event.pull_request.draft == false
 
     steps:
       - name: Checkout

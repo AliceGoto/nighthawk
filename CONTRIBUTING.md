@@ -40,7 +40,7 @@ For the full project map, see [AGENTS.md](AGENTS.md).
 Prerequisites: Node.js >= 24.15.0, pnpm 10.33.0, Git.
 
 ```sh
-git clone https://github.com/NightHawkOrg/nighthawk.git
+git clone https://github.com/AliceGoto/nighthawk.git
 cd nighthawk
 pnpm install
 ```

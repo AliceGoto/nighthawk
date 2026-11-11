@@ -191,7 +191,7 @@ const IMAGE_FORMAT_STATUS_MESSAGE_PATTERNS = [
 const MEDIA_TYPE_FIELD_PATTERN = /(?:media|mime)_?type/;
 
 const THINKING_EFFORT_CONFIG_DOCS_URL =
-  'https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#thinking';
+  'https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#thinking';
 
 const THINKING_EFFORT_STATUS_MESSAGE_PATTERNS = [
   /reasoning[_ .-]?effort/,

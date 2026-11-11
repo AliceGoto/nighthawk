@@ -38,7 +38,7 @@ outline: 2
 ### 修复
 
 - 工作区 MCP 断线后自动退避重连，可用 `[mcp] reconnect_initial_delay_ms` 和 `reconnect_max_delay_ms` 调整间隔。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 2.3.3（2026-10-26）
 
@@ -95,7 +95,7 @@ outline: 2
 ### 修复
 
 - hooks 改为在会话项目目录下运行，不再使用 server 启动目录。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 2.2.0（2026-10-14）
 
@@ -116,7 +116,7 @@ outline: 2
 - 修复 UserPromptSubmit hook 注入文本时对话错位、回复丢失与渲染乱序的问题；不含「message」字段的 hook JSON 输出不再加入对话。
 - 移除 MCP stdio 服务器配置中从未实现的 `executor = "kaos"` 选项；仍在使用该选项的配置会在加载时校验失败。
 - 修复 fork 出的会话会重复触发源会话 cron 任务的问题。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 2.1.1（2026-09-24）
 
@@ -144,7 +144,7 @@ outline: 2
 ### 修复
 
 - 加强工作区安全限制：文件工具无法再通过符号链接访问工作目录外的文件，项目本地配置仅在工作区受信任后生效，后台 git 操作不再执行仓库 git 配置中的命令，并拒绝解析结果为 home 目录或文件系统根目录的附加目录。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 2.0.2（2026-09-19）
 
@@ -171,7 +171,7 @@ outline: 2
 
 ### 修复
 
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 2.0.0（2026-09-17）
 
@@ -186,7 +186,7 @@ outline: 2
 
 ### 修复
 
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.43.1（2026-09-15）
 
@@ -225,13 +225,13 @@ outline: 2
 
 ### 修复
 
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.42.0（2026-09-09）
 
 ### 新功能
 
-- Remote Control 由实验性转为正式，无需再设置 `NIGHTHAWK_EXPERIMENTAL_REMOTE_CONTROL` 实验开关。详见 [Remote Control](https://moonshotai.github.io/nighthawk/zh/guides/remote-control.html)。
+- Remote Control 由实验性转为正式，无需再设置 `NIGHTHAWK_EXPERIMENTAL_REMOTE_CONTROL` 实验开关。详见 [Remote Control](https://alicegoto.github.io/nighthawk/zh/guides/remote-control.html)。
 - Web 版支持从会话行的右键菜单永久删除会话，删除前会要求确认。
 - `/btw` 侧边聊天的 subagent 新增只读工具。
 - Web 版输入框新增可排序的媒体预览栏，可在文本中按需引用图片和视频，排队与发送后预览仍然保留。
@@ -242,12 +242,12 @@ outline: 2
 - 消息记录中已完成的工具调用现折叠为标题加一行结果摘要：短输出完整展示，隐藏内容以 `N more lines`、`+N more` 计数并按 `Ctrl-O` 展开，页脚会在可用时提示。
 - 符合条件的用户的默认思考强度升级为推荐级别。
 - 子 Agent 模型池（`[secondary_model]`）现已始终开启，实验开关与 `NIGHTHAWK_EXPERIMENTAL_SECONDARY_MODEL` 退出选项已移除。
-- `Read` 新增可配置的字符上限，长行文件可续读，输出不再被反复截断。详见 [`read`](https://moonshotai.github.io/nighthawk/zh/configuration/config-files.html#read)。
-- minidb 会话索引读模型与全局搜索 worker 现已始终开启，实验开关由 `[database]` 配置段与 `NIGHTHAWK_PERSISTENCE_MINIDB_READMODEL` / `NIGHTHAWK_SEARCH_WORKER` 环境变量取代。详见 [`database`](https://moonshotai.github.io/nighthawk/zh/configuration/config-files.html#database)。
+- `Read` 新增可配置的字符上限，长行文件可续读，输出不再被反复截断。详见 [`read`](https://alicegoto.github.io/nighthawk/zh/configuration/config-files.html#read)。
+- minidb 会话索引读模型与全局搜索 worker 现已始终开启，实验开关由 `[database]` 配置段与 `NIGHTHAWK_PERSISTENCE_MINIDB_READMODEL` / `NIGHTHAWK_SEARCH_WORKER` 环境变量取代。详见 [`database`](https://alicegoto.github.io/nighthawk/zh/configuration/config-files.html#database)。
 
 ### 修复
 
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.41.0（2026-09-04）
 
@@ -276,7 +276,7 @@ outline: 2
 - 修复会话在新进程重开后无法按 agent id 恢复子 Agent 的问题；恢复的子 Agent 遵循当前权限模式。
 - 修复一轮中多次编辑同一文件时，每轮改动预览出现从未真实存在的增删行且行数统计不准的问题；改动卡片现只展示精确统计。
 - 修复设置中默认思考强度无法设为最高档（Max）的问题。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.40.1（2026-09-02）
 
@@ -306,7 +306,7 @@ outline: 2
 ### 修复
 
 - 修复实验开关优先级：config.toml 中显式设为 `false` 的 `[experimental]` 条目现在稳定优先于 `NIGHTHAWK_EXPERIMENTAL_FLAG` 总开关（单项 `NIGHTHAWK_EXPERIMENTAL_<NAME>` 变量仍覆盖两者）。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.39.1（2026-08-28）
 
@@ -316,7 +316,7 @@ outline: 2
 - 修复登录相关问题
 - 修复点击输入框占位提示后，输入法或键盘首个字符被吞的问题
 - 修复新会话中附件上传完成后仍显示"上传中"的问题
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.39.0（2026-08-27）
 
@@ -339,7 +339,7 @@ outline: 2
 ### 修复
 
 - 修复 Windows 上文件工具与 Shell 工作目录无法解析 Git Bash 路径（如 /c/Users、/tmp）的问题。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.38.0（2026-08-20）
 
@@ -359,14 +359,14 @@ outline: 2
 ### 修复
 
 - 修复 config.toml 在存在语法错误或在应用外被编辑时条目丢失的问题。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.37.2（2026-08-19）
 
 ### 优化
 
 - web: 设置页新增 「实验室」标签页，上线「多标签侧边栏开关」功能；开启后侧边栏显示 Open / Done / Workspaces 标签页。
-- 做了若干细节优化和内部改进。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 做了若干细节优化和内部改进。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.37.1（2026-08-18）
 
@@ -398,7 +398,7 @@ outline: 2
 - web: 修复 macOS 上输入框中 Ctrl+K 误打开会话搜索的问题，会话搜索现仅响应 Cmd+K。
 - web: 修复 Background Agent 面板显示数量和状态不对的问题。
 - web: 修复把复制的文件夹粘贴进输入框会导致上传报连接错误的问题，现在文件夹会被直接跳过。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.36.1（2026-08-14）
 
@@ -412,7 +412,7 @@ outline: 2
 
 ### 修复
 
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.36.0（2026-08-13）
 
@@ -435,7 +435,7 @@ outline: 2
     "nighthawk/k3" = "擅长复杂推理与深度调试，难题选它。"
     ```
 
-  详见 [子 Agent 模型池文档](https://moonshotai.github.io/nighthawk/zh/configuration/config-files.html#subagent-模型池)。
+  详见 [子 Agent 模型池文档](https://alicegoto.github.io/nighthawk/zh/configuration/config-files.html#subagent-模型池)。
 - 新增实验性全屏 TUI 模式，设置 `NIGHTHAWK_TUI_FULL_SCREEN=1` 环境变量即可启用。
 - TUI 支持渲染 LaTeX 数学公式（`$…$` 与 `$$…$$`），消息中的公式会显示为 Unicode 公式。
 
@@ -444,7 +444,7 @@ outline: 2
 - 修复未信任工作区可在信任确认前植入同名 `fd`/`stty` 可执行文件的风险；信任提示现在展示项目 MCP 的启动目标，并默认拒绝信任。
 - 修复在严格的 OpenAI 兼容供应商（如 DeepSeek）下，模型思考阶段打断轮次后，后续每轮请求都报 400 错误的问题。
 - 修复 API 请求失败自动重试期间按 Ctrl+C 无反应的问题。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.35.0（2026-08-12）
 
@@ -458,7 +458,7 @@ outline: 2
 - 修复 coder 子 Agent 默认可继续派生子 Agent 的问题。
 - 修复压缩后 token 数显示偏低的问题，现在与会话中看到的数字一致。
 - 修复 Windows 上的两处二进制植入风险。
-- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/NightHawkOrg/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
+- 修复了一些已知问题，并做了若干细节优化。更详细的变更记录见 [GitHub](https://github.com/AliceGoto/nighthawk/blob/main/apps/nighthawk/CHANGELOG.md)。
 
 ## 0.34.0（2026-08-06）
 
@@ -466,7 +466,7 @@ outline: 2
 
 - web: 侧边栏会话列表新增平铺视图。
 - NightHawk Computer Use 插件新增 Windows x64 支持，通过 `/plugins` 安装。
-- 会话空闲过久后恢复或发送消息时，现将会弹出缓存过期提醒。将 [cache_expiry_hint](https://moonshotai.github.io/nighthawk/zh/configuration/config-files.html#tui-toml) 设为 `false` 可关闭。
+- 会话空闲过久后恢复或发送消息时，现将会弹出缓存过期提醒。将 [cache_expiry_hint](https://alicegoto.github.io/nighthawk/zh/configuration/config-files.html#tui-toml) 设为 `false` 可关闭。
 
 ### 优化
 
@@ -528,12 +528,12 @@ outline: 2
 
 ### 新功能
 
-- 新增四个 hook 事件：`TurnStarted`、`UserPromptQueued`、`TaskStarted` 和 `SessionHeartbeat`。在 `config.toml` 的 `[[hooks]]` 下配置，详见 [Hooks](https://moonshotai.github.io/nighthawk/zh/customization/hooks.html)。
+- 新增四个 hook 事件：`TurnStarted`、`UserPromptQueued`、`TaskStarted` 和 `SessionHeartbeat`。在 `config.toml` 的 `[[hooks]]` 下配置，详见 [Hooks](https://alicegoto.github.io/nighthawk/zh/customization/hooks.html)。
 
 ### 优化
 
-- `[loop_control]` 两个配置键改名：`max_retries_per_step` → `max_attempts_per_step`、`max_steps_per_run` → `max_steps_per_turn`；旧键不再生效，启动时会有改名警告，详见 [loop_control](https://moonshotai.github.io/nighthawk/zh/configuration/config-files.html#loop-control)。
-- 新增 `[token_counting]` 配置节：供应商不上报 token 用量时，可将上下文大小显示切换为本地估算，详见 [token_counting](https://moonshotai.github.io/nighthawk/zh/configuration/config-files.html#token-counting)。
+- `[loop_control]` 两个配置键改名：`max_retries_per_step` → `max_attempts_per_step`、`max_steps_per_run` → `max_steps_per_turn`；旧键不再生效，启动时会有改名警告，详见 [loop_control](https://alicegoto.github.io/nighthawk/zh/configuration/config-files.html#loop-control)。
+- 新增 `[token_counting]` 配置节：供应商不上报 token 用量时，可将上下文大小显示切换为本地估算，详见 [token_counting](https://alicegoto.github.io/nighthawk/zh/configuration/config-files.html#token-counting)。
 
 ### 修复
 
@@ -618,9 +618,9 @@ outline: 2
 
 ### 新功能
 
-- web: 支持 Markdown 文件定义 agent，声明 system prompt、名称、描述和工具权限。[查看文档](https://moonshotai.github.io/nighthawk/en/customization/agents.html#agent-file-format)
-- web: 可通过 SYSTEM.md 永久覆盖主 agent 的系统提示。[查看文档](https://moonshotai.github.io/nighthawk/en/customization/agents.html#overriding-the-main-agent-s-system-prompt-with-system-md)
-- web: 可通过 config.toml 在所有会话中统一启用/禁用工具。[查看文档](https://moonshotai.github.io/nighthawk/en/configuration/config-files.html#tools)
+- web: 支持 Markdown 文件定义 agent，声明 system prompt、名称、描述和工具权限。[查看文档](https://alicegoto.github.io/nighthawk/en/customization/agents.html#agent-file-format)
+- web: 可通过 SYSTEM.md 永久覆盖主 agent 的系统提示。[查看文档](https://alicegoto.github.io/nighthawk/en/customization/agents.html#overriding-the-main-agent-s-system-prompt-with-system-md)
+- web: 可通过 config.toml 在所有会话中统一启用/禁用工具。[查看文档](https://alicegoto.github.io/nighthawk/en/configuration/config-files.html#tools)
 - 附加到提示词的视频现在会随提示词一起送达模型，无需额外的工具轮次。
 - ACP 客户端现支持选择思考强度。
 - 新增 Agent 循环与后台任务限制的环境变量覆盖：`NIGHTHAWK_LOOP_MAX_STEPS_PER_TURN`、`NIGHTHAWK_LOOP_MAX_RETRIES_PER_STEP` 和 `NIGHTHAWK_BACKGROUND_MAX_RUNNING_TASKS`。
@@ -1649,7 +1649,7 @@ outline: 2
 
 ### 新功能
 
-- 支持 `nighthawk acp` 子命令：nighthawk 现在可通过 stdio 使用 [Agent Client Protocol 0.23](https://agentclientprotocol.com/)，因此 IDE（Zed、JetBrains AI Chat、自定义客户端）可以直接驱动会话；覆盖矩阵、Zed 配置和破坏性预发布说明见 [nighthawk acp 子命令页面](https://moonshotai.github.io/nighthawk/zh/reference/kimi-acp.html)。
+- 支持 `nighthawk acp` 子命令：nighthawk 现在可通过 stdio 使用 [Agent Client Protocol 0.23](https://agentclientprotocol.com/)，因此 IDE（Zed、JetBrains AI Chat、自定义客户端）可以直接驱动会话；覆盖矩阵、Zed 配置和破坏性预发布说明见 [nighthawk acp 子命令页面](https://alicegoto.github.io/nighthawk/zh/reference/kimi-acp.html)。
 - 新增 `/btw`，用于进行不会引导当前主轮次的侧通道对话，并允许 `/btw` 在输入问题前打开侧通道面板。
 
 ### 修复

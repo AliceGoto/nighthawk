@@ -14,7 +14,7 @@ import {
 
 import { type ActionableUpdatePlan, type InstallSource } from './types';
 
-export const CHANGELOG_URL = 'https://moonshotai.github.io/nighthawk/en/release-notes/changelog.html';
+export const CHANGELOG_URL = 'https://alicegoto.github.io/nighthawk/en/release-notes/changelog.html';
 
 export type InstallPromptChoiceValue = 'install' | 'skip';
 

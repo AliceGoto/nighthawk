@@ -2700,7 +2700,7 @@ command = "vim"
     const transcript = stripSgr(renderTranscript(driver));
     expect(transcript).toContain("You're not signed in");
     expect(transcript).toContain('https://www.kimi.com/code');
-    expect(transcript).toContain('https://github.com/NightHawkOrg/nighthawk/issues');
+    expect(transcript).toContain('https://github.com/AliceGoto/nighthawk/issues');
   });
 
   it('falls back to GitHub Issues when the sign-in status cannot be read', async () => {
@@ -2713,7 +2713,7 @@ command = "vim"
     await handleFeedbackCommand(feedbackDriver as any);
 
     expect(openUrl).toHaveBeenCalledTimes(1);
-    expect(openUrl).toHaveBeenCalledWith('https://github.com/NightHawkOrg/nighthawk/issues');
+    expect(openUrl).toHaveBeenCalledWith('https://github.com/AliceGoto/nighthawk/issues');
     expect(promptFeedbackInput).not.toHaveBeenCalled();
     expect(harness.auth.submitFeedback).not.toHaveBeenCalled();
     const transcript = stripSgr(renderTranscript(driver));
@@ -3065,7 +3065,7 @@ command = "vim"
 
     await expect(handleFeedbackCommand(feedbackDriver as any)).rejects.toThrow('socket hangup');
 
-    expect(openUrl).toHaveBeenCalledWith('https://github.com/NightHawkOrg/nighthawk/issues');
+    expect(openUrl).toHaveBeenCalledWith('https://github.com/AliceGoto/nighthawk/issues');
     const transcript = stripSgr(renderTranscript(driver));
     expect(transcript).toContain('Opening GitHub Issues as fallback');
   });

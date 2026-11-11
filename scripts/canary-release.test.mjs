@@ -187,7 +187,7 @@ await test('canary release accepts only the latest main commit with successful C
 
 await test('CI selection asks gh to return only successful main head SHAs', () => {
   let invocation;
-  const shas = listSuccessfulMainCiShas('NightHawkOrg/nighthawk', (command, args, options) => {
+  const shas = listSuccessfulMainCiShas('AliceGoto/nighthawk', (command, args, options) => {
     invocation = { command, args, options };
     return 'a\n\nb\n';
   });
@@ -195,7 +195,7 @@ await test('CI selection asks gh to return only successful main head SHAs', () =
   assert.equal(invocation.command, 'gh');
   assert.equal(
     invocation.args[1],
-    'repos/NightHawkOrg/nighthawk/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=100',
+    'repos/AliceGoto/nighthawk/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=100',
   );
   assert.deepEqual(invocation.args.slice(2), ['--jq', '.workflow_runs[].head_sha']);
   assert.deepEqual(invocation.options, { encoding: 'utf8' });

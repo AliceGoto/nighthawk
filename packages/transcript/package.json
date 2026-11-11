@@ -7,11 +7,11 @@
   "author": "Moonshot AI",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "url": "git+https://github.com/AliceGoto/nighthawk.git",
     "directory": "packages/transcript"
   },
   "bugs": {
-    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+    "url": "https://github.com/AliceGoto/nighthawk/issues"
   },
   "type": "module",
   "imports": {

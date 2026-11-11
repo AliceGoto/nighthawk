@@ -4,14 +4,14 @@
   "description": "The Starting Point for Next-Gen Agents",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/apps/nighthawk#readme",
+  "homepage": "https://github.com/AliceGoto/nighthawk/tree/main/apps/nighthawk#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "url": "git+https://github.com/AliceGoto/nighthawk.git",
     "directory": "apps/nighthawk"
   },
   "bugs": {
-    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+    "url": "https://github.com/AliceGoto/nighthawk/issues"
   },
   "keywords": [
     "nighthawk",

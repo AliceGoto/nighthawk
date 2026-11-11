@@ -9,5 +9,5 @@ hero:
       link: guides/getting-started
     - theme: alt
       text: GitHub
-      link: https://github.com/NightHawkOrg/nighthawk
+      link: https://github.com/AliceGoto/nighthawk
 ---

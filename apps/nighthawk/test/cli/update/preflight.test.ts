@@ -1015,7 +1015,7 @@ describe('runUpdatePreflight', () => {
     const rendered = stdout.join('');
     expect(rendered).toContain('NightHawk updated to v0.5.0');
     expect(rendered).toContain(
-      'https://moonshotai.github.io/nighthawk/en/release-notes/changelog.html',
+      'https://alicegoto.github.io/nighthawk/en/release-notes/changelog.html',
     );
     expect(track).toHaveBeenCalledWith('update_success_notice_shown', expect.objectContaining({
       version: '0.5.0',

@@ -206,7 +206,7 @@ git push -q "$url" HEAD:refs/heads/pr-assets/<number>
 git rev-parse HEAD  # 链接里的 <sha>
 ```
 
-引用写成 `![说明](https://github.com/NightHawkOrg/nighthawk/blob/<sha>/<file>?raw=true)`。
+引用写成 `![说明](https://github.com/AliceGoto/nighthawk/blob/<sha>/<file>?raw=true)`。
 
 - 链接用 `<sha>`，不要用分支名：追加的提交只含新文件，按分支名引用会让旧图失效。
 - 只推 `pr-assets/` 分支，不建 release。CI 只在 `main` 和 `release/*` 的 push 上触发，这类分支不会跑 CI。

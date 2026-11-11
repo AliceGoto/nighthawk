@@ -47,7 +47,7 @@ export function createProgram(
     .configureHelp({ helpWidth: 100 })
     .helpOption('-h, --help', 'Show help.')
     .usage('[options] [command]')
-    .addHelpText('after', '\nDocumentation:        https://moonshotai.github.io/nighthawk/\n');
+    .addHelpText('after', '\nDocumentation:        https://alicegoto.github.io/nighthawk/\n');
 
   program
     .addOption(

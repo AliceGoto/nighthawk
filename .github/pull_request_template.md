@@ -3,7 +3,7 @@ Thank you for your contribution to NightHawk!
 External PRs are accepted for approved bug fixes only: link an issue that a maintainer has approved (an `/approve` comment). External feature PRs are not accepted.
 外部 PR 仅接受获批准的 bug 修复：请链接维护者已批准（`/approve` 评论）的 issue；不接受外部 feature PR。
 
-See https://github.com/NightHawkOrg/nighthawk/blob/main/CONTRIBUTING.md for more.
+See https://github.com/AliceGoto/nighthawk/blob/main/CONTRIBUTING.md for more.
 -->
 
 ## Requirement or Bug
@@ -41,7 +41,7 @@ See https://github.com/NightHawkOrg/nighthawk/blob/main/CONTRIBUTING.md for more
 
 ## Checklist
 
-- [ ] I have read the [CONTRIBUTING](https://github.com/NightHawkOrg/nighthawk/blob/main/CONTRIBUTING.md) document.
+- [ ] I have read the [CONTRIBUTING](https://github.com/AliceGoto/nighthawk/blob/main/CONTRIBUTING.md) document.
 - [ ] I have linked a related issue (external PRs: issue must have a maintainer's `/approve`).
 - [ ] I have added tests that prove my feature works.
 - [ ] The behavior-change table above is complete, and every removed behavior or flipped default is named in the changeset and either has an escape hatch or was explicitly approved by a maintainer in this PR.

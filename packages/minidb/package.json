@@ -5,14 +5,14 @@
   "description": "A pure-Node.js embedded key-value database mixing Redis-style in-memory KV with SQLite-style durable persistence (WAL + snapshot).",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/packages/minidb#readme",
+  "homepage": "https://github.com/AliceGoto/nighthawk/tree/main/packages/minidb#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "url": "git+https://github.com/AliceGoto/nighthawk.git",
     "directory": "packages/minidb"
   },
   "bugs": {
-    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+    "url": "https://github.com/AliceGoto/nighthawk/issues"
   },
   "keywords": [
     "nighthawk",

@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   version:
-    if: github.repository_owner == 'NightHawkOrg' && startsWith(github.ref, 'refs/heads/release/')
+    if: github.repository_owner == 'AliceGoto' && startsWith(github.ref, 'refs/heads/release/')
     concurrency:
       group: release-version-${{ github.ref }}
       cancel-in-progress: false
@@ -46,7 +46,7 @@ jobs:
         run: gh workflow run ci.yml --ref "$VERSION_BRANCH"
 
   candidate:
-    if: github.repository_owner == 'NightHawkOrg' && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
+    if: github.repository_owner == 'AliceGoto' && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:

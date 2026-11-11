@@ -19,7 +19,7 @@ jobs:
   publish:
     name: Publish VSIX to marketplaces
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'NightHawkOrg' && startsWith(github.ref, 'refs/heads/release/')
+    if: github.repository_owner == 'AliceGoto' && startsWith(github.ref, 'refs/heads/release/')
     timeout-minutes: 90
     steps:
       - name: Checkout

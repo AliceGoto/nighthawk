@@ -5,16 +5,16 @@ import { computed, ref } from 'vue'
 const { lang } = useData()
 const isZh = computed(() => lang.value.startsWith('zh'))
 
-const installMacCommand = 'curl -fsSL https://code.kimi.com/nighthawk/install.sh | bash'
-const installWinCommand = 'irm https://code.kimi.com/nighthawk/install.ps1 | iex'
-const runCommand = 'kimi'
+const installMacCommand = 'brew install AliceGoto/nighthawk/nighthawk'
+const installWinCommand = 'https://github.com/AliceGoto/nighthawk/releases'
+const runCommand = 'nighthawk'
 
 const copy = computed(() => isZh.value
   ? {
-      title: '一行命令开始',
+      title: '两步开始',
       lede: '装好之后跑 nighthawk，立刻在你当前的项目里开聊。',
-      macLabel: 'macOS / Linux',
-      winLabel: 'Windows (PowerShell)',
+      macLabel: 'macOS（Apple silicon）',
+      winLabel: '其他平台下载发布产物',
       runLabel: '在任意目录运行',
       copyHint: '复制',
       copiedHint: '已复制',
@@ -22,10 +22,10 @@ const copy = computed(() => isZh.value
       ctaHref: '/zh/guides/getting-started',
     }
   : {
-      title: 'Get started in one line',
+      title: 'Get started in two steps',
       lede: 'Once installed, run nighthawk inside any project to start a conversation.',
-      macLabel: 'macOS / Linux',
-      winLabel: 'Windows (PowerShell)',
+      macLabel: 'macOS (Apple silicon)',
+      winLabel: 'Other platforms: download a release',
       runLabel: 'Run anywhere',
       copyHint: 'Copy',
       copiedHint: 'Copied',

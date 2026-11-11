@@ -5,14 +5,14 @@
   "description": "NightHawk Remote Control tunnel client: registers this machine with the relay and forwards HTTP/WebSocket traffic to the local server.",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/packages/remote-control#readme",
+  "homepage": "https://github.com/AliceGoto/nighthawk/tree/main/packages/remote-control#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "url": "git+https://github.com/AliceGoto/nighthawk.git",
     "directory": "packages/remote-control"
   },
   "bugs": {
-    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+    "url": "https://github.com/AliceGoto/nighthawk/issues"
   },
   "keywords": [
     "nighthawk",

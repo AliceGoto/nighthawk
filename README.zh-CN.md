@@ -1,8 +1,8 @@
 # NightHawk CLI
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/nighthawk/zh/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://alicegoto.github.io/nighthawk/zh/)
 
-[Documentation](https://moonshotai.github.io/nighthawk/zh/) · [Issues](https://github.com/NightHawkOrg/nighthawk/issues) · [English](README.md)
+[Documentation](https://alicegoto.github.io/nighthawk/zh/) · [Issues](https://github.com/AliceGoto/nighthawk/issues) · [English](README.md)
 
 
 ![NightHawk 的使用演示](./docs/media/intro.gif)
@@ -36,7 +36,7 @@ irm https://code.kimi.com/kimi-code/install.ps1 | iex
 nighthawk --version
 ```
 
-npm 安装、升级、卸载方式，见[快速上手](https://moonshotai.github.io/nighthawk/zh/guides/getting-started)。
+npm 安装、升级、卸载方式，见[快速上手](https://alicegoto.github.io/nighthawk/zh/guides/getting-started)。
 
 ## 快速开始
 
@@ -85,23 +85,23 @@ NightHawk CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)�
 }
 ```
 
-随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://moonshotai.github.io/nighthawk/zh/guides/ides)，完整能力矩阵见 [`nighthawk acp` 参考](https://moonshotai.github.io/nighthawk/zh/reference/kimi-acp)。
+随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://alicegoto.github.io/nighthawk/zh/guides/ides)，完整能力矩阵见 [`nighthawk acp` 参考](https://alicegoto.github.io/nighthawk/zh/reference/kimi-acp)。
 
 ## 文档
 
-- [快速上手](https://moonshotai.github.io/nighthawk/zh/guides/getting-started)
-- [交互与审批](https://moonshotai.github.io/nighthawk/zh/guides/interaction)
-- [会话](https://moonshotai.github.io/nighthawk/zh/guides/sessions)
-- [在 IDE 中使用（ACP）](https://moonshotai.github.io/nighthawk/zh/guides/ides)
-- [配置](https://moonshotai.github.io/nighthawk/zh/configuration/config-files)
-- [命令参考](https://moonshotai.github.io/nighthawk/zh/reference/kimi-command)
+- [快速上手](https://alicegoto.github.io/nighthawk/zh/guides/getting-started)
+- [交互与审批](https://alicegoto.github.io/nighthawk/zh/guides/interaction)
+- [会话](https://alicegoto.github.io/nighthawk/zh/guides/sessions)
+- [在 IDE 中使用（ACP）](https://alicegoto.github.io/nighthawk/zh/guides/ides)
+- [配置](https://alicegoto.github.io/nighthawk/zh/configuration/config-files)
+- [命令参考](https://alicegoto.github.io/nighthawk/zh/reference/kimi-command)
 
 ## 本地开发
 
 环境要求：Node.js ≥ 24.15.0，pnpm 10.33.0。
 
 ```sh
-git clone https://github.com/NightHawkOrg/nighthawk.git
+git clone https://github.com/AliceGoto/nighthawk.git
 cd nighthawk
 pnpm install
 ```
@@ -118,7 +118,7 @@ pnpm build      # 构建所有包
 
 ## 社区
 
-- [Issues](https://github.com/NightHawkOrg/nighthawk/issues)
+- [Issues](https://github.com/AliceGoto/nighthawk/issues)
 - 安全漏洞反馈，请见 [SECURITY.md](SECURITY.md)。
 
 ## 致谢

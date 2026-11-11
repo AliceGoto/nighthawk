@@ -1,7 +1,7 @@
 # NightHawk CLI
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/nighthawk/en/) <br>
-[Documentation](https://moonshotai.github.io/nighthawk/en/) · [Issues](https://github.com/NightHawkOrg/nighthawk/issues) · [中文](README.zh-CN.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://alicegoto.github.io/nighthawk/en/) <br>
+[Documentation](https://alicegoto.github.io/nighthawk/en/) · [Issues](https://github.com/AliceGoto/nighthawk/issues) · [中文](README.zh-CN.md)
 
 ![Demo of using NightHawk](./docs/media/intro.gif)
 
@@ -33,7 +33,7 @@ Then, run it with a new shell session:
 nighthawk --version
 ```
 
-For npm install, upgrade, uninstall, see [Getting Started](https://moonshotai.github.io/nighthawk/en/guides/getting-started).
+For npm install, upgrade, uninstall, see [Getting Started](https://alicegoto.github.io/nighthawk/en/guides/getting-started).
 
 ## Quick Start
 
@@ -81,23 +81,23 @@ For Zed, add this to `~/.config/zed/settings.json`:
 }
 ```
 
-Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://moonshotai.github.io/nighthawk/en/guides/ides) for JetBrains setup and troubleshooting, and the [`nighthawk acp` reference](https://moonshotai.github.io/nighthawk/en/reference/kimi-acp) for the full capability matrix.
+Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://alicegoto.github.io/nighthawk/en/guides/ides) for JetBrains setup and troubleshooting, and the [`nighthawk acp` reference](https://alicegoto.github.io/nighthawk/en/reference/kimi-acp) for the full capability matrix.
 
 ## Docs
 
-- [Getting Started](https://moonshotai.github.io/nighthawk/en/guides/getting-started)
-- [Interaction and approvals](https://moonshotai.github.io/nighthawk/en/guides/interaction)
-- [Sessions](https://moonshotai.github.io/nighthawk/en/guides/sessions)
-- [Using in IDEs (ACP)](https://moonshotai.github.io/nighthawk/en/guides/ides)
-- [Configuration](https://moonshotai.github.io/nighthawk/en/configuration/config-files)
-- [Command reference](https://moonshotai.github.io/nighthawk/en/reference/kimi-command)
+- [Getting Started](https://alicegoto.github.io/nighthawk/en/guides/getting-started)
+- [Interaction and approvals](https://alicegoto.github.io/nighthawk/en/guides/interaction)
+- [Sessions](https://alicegoto.github.io/nighthawk/en/guides/sessions)
+- [Using in IDEs (ACP)](https://alicegoto.github.io/nighthawk/en/guides/ides)
+- [Configuration](https://alicegoto.github.io/nighthawk/en/configuration/config-files)
+- [Command reference](https://alicegoto.github.io/nighthawk/en/reference/kimi-command)
 
 ## Develop
 
 Requirements: Node.js ≥ 24.15.0, pnpm 10.33.0.
 
 ```sh
-git clone https://github.com/NightHawkOrg/nighthawk.git
+git clone https://github.com/AliceGoto/nighthawk.git
 cd nighthawk
 pnpm install
 ```
@@ -114,7 +114,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
 
 ## Community
 
-- [Issues](https://github.com/NightHawkOrg/nighthawk/issues)
+- [Issues](https://github.com/AliceGoto/nighthawk/issues)
 - For security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 ## Acknowledgements

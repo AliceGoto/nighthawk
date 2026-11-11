@@ -40,7 +40,7 @@ NightHawk 对 CLI/TUI 行为、agent 工作流和公开 API 已有自己的主�
 前置要求：Node.js >= 24.15.0、pnpm 10.33.0、Git。
 
 ```sh
-git clone https://github.com/NightHawkOrg/nighthawk.git
+git clone https://github.com/AliceGoto/nighthawk.git
 cd nighthawk
 pnpm install
 ```

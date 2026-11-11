@@ -10,53 +10,52 @@ It fits scenarios such as:
 - **Understanding a project**: exploring an unfamiliar codebase and answering questions about architecture and implementation
 - **Automating tasks**: batch-processing files, running builds and tests, chaining multiple scripts together
 
-The CLI is written in TypeScript, distributed via npm, and runs on Node.js.
+The CLI is written in TypeScript. Release artifacts are single-file native executables, so an installed binary does not need Node.js.
 
 ## Installation
 
-Two installation options are available: the official install script (recommended, no pre-installed Node.js required) and a global npm install.
+Three options are available: Homebrew, downloading a release artifact, or building from source. The current release ships for macOS on Apple silicon only.
 
 ::: tip Before you install
 NightHawk CLI is a fully interactive TUI application. For the best visual experience, run it in a terminal with true-color and ligature support, such as [Kitty](https://sw.kovidgoyal.net/kitty/) or [Ghostty](https://ghostty.org/).
 :::
 
-### Install script (recommended)
-
-::: code-group
-
-```sh [macOS / Linux]
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
-```
-
-```powershell [Windows (PowerShell)]
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
-```
-
-:::
-
-> On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch. NightHawk CLI uses the bundled Git Bash as its shell environment; if Git Bash is installed in a custom location, set `NIGHTHAWK_SHELL_PATH` to the absolute path of `bash.exe`.
-
-The script automatically downloads the latest release, verifies the checksum, and places the `nighthawk` executable on your `PATH`.
-
-### npm installation
-
-Requires Node.js 22.19.0 or later:
+### Homebrew (macOS Apple silicon, recommended)
 
 ```sh
-node --version
+brew install AliceGoto/nighthawk/nighthawk
 ```
 
-::: code-group
+### Download a release
 
-```sh [npm]
-npm install -g @nighthawk/nighthawk
+Download `nighthawk-darwin-arm64.zip` from [Releases](https://github.com/AliceGoto/nighthawk/releases) and put the binary on your `PATH`:
+
+```sh
+unzip nighthawk-darwin-arm64.zip -d ~/.local/bin
+chmod +x ~/.local/bin/nighthawk
 ```
 
-```sh [pnpm]
-pnpm add -g @nighthawk/nighthawk
+A `.sha256` sidecar sits next to the archive if you want to verify it first:
+
+```sh
+shasum -a 256 -c nighthawk-darwin-arm64.zip.sha256
 ```
 
-:::
+### Build from source
+
+Requires Node.js 24.15.0 or later and pnpm 10:
+
+```sh
+git clone https://github.com/AliceGoto/nighthawk.git
+cd nighthawk
+pnpm install
+pnpm --filter @nighthawk/nighthawk run build
+cd apps/nighthawk && pnpm link --global
+```
+
+`pnpm link --global` exposes the `nighthawk` command globally. If you would rather not touch the global environment, run `node apps/nighthawk/dist/main.mjs` after building.
+
+> On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch. NightHawk CLI uses the bundled Git Bash as its shell environment; if Git Bash is installed in a custom location, set `NIGHTHAWK_SHELL_PATH` to the absolute path of `bash.exe`. There is no Windows artifact yet; build from source as described above.
 
 ## First launch
 
@@ -156,17 +155,19 @@ After installation, verify that the executable is ready:
 nighthawk --version
 ```
 
-**Upgrade**: run `nighthawk upgrade` — the CLI checks for the latest version and presents update options. Choose `Install update now` to upgrade based on your current install source. You can also upgrade directly via the package manager:
+**Upgrade**: run `nighthawk upgrade` — the CLI checks for the latest version and presents update options. Homebrew users can also upgrade directly:
 
 ```sh
-npm install -g @nighthawk/nighthawk@latest
+brew upgrade AliceGoto/nighthawk/nighthawk
 ```
 
-**Uninstall**: if you installed via the script, delete the `nighthawk` executable. If you installed via npm:
+Source builds update with:
 
 ```sh
-npm uninstall -g @nighthawk/nighthawk
+git pull && pnpm install && pnpm --filter @nighthawk/nighthawk run build
 ```
+
+**Uninstall**: Homebrew users run `brew uninstall nighthawk`; manual installs just delete the `nighthawk` executable.
 
 ## Next steps
 

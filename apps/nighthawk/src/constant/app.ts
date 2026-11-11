@@ -79,7 +79,7 @@ export const DEFAULT_OAUTH_PROVIDER_NAME = 'managed:nighthawk';
 // auto-propagates instead of silently breaking the startup recovery path.
 export const OAUTH_LOGIN_REQUIRED_CODE = ErrorCodes.AUTH_LOGIN_REQUIRED;
 
-export const FEEDBACK_ISSUE_URL = 'https://github.com/NightHawkOrg/nighthawk/issues';
+export const FEEDBACK_ISSUE_URL = 'https://github.com/AliceGoto/nighthawk/issues';
 // Sign-up / sign-in page offered to signed-out users so they can create an
 // account and submit feedback through the authenticated channel next time.
 export function nighthawkCodeSignupUrl(): string {

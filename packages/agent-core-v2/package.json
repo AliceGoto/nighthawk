@@ -5,14 +5,14 @@
   "description": "The unified agent engine for NightHawk (v2 — DI Scope architecture)",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/NightHawkOrg/nighthawk/tree/main/packages/agent-core-v2#readme",
+  "homepage": "https://github.com/AliceGoto/nighthawk/tree/main/packages/agent-core-v2#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NightHawkOrg/nighthawk.git",
+    "url": "git+https://github.com/AliceGoto/nighthawk.git",
     "directory": "packages/agent-core-v2"
   },
   "bugs": {
-    "url": "https://github.com/NightHawkOrg/nighthawk/issues"
+    "url": "https://github.com/AliceGoto/nighthawk/issues"
   },
   "keywords": [
     "nighthawk",

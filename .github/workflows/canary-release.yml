@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   prepare:
-    if: github.repository_owner == 'NightHawkOrg'
+    if: github.repository_owner == 'AliceGoto'
     runs-on: ubuntu-latest
     permissions:
       contents: read
