@@ -16,6 +16,7 @@ export interface Session {
   pending_interaction: 'none' | 'approval' | 'question';
   last_prompt: string;
   metadata: { cwd?: string; [key: string]: unknown };
+  agent_config?: { model?: string };
 }
 
 export interface ContentBlock {
@@ -95,6 +96,21 @@ export function setSessionModel(sessionId: string, model: string): Promise<Sessi
     method: 'POST',
     body: JSON.stringify({ agent_config: { model } }),
   });
+}
+
+export interface ModelEntry {
+  provider: string;
+  model: string;
+  display_name?: string;
+  max_context_size?: number;
+}
+
+export function listModels(): Promise<{ items: ModelEntry[] }> {
+  return request('/api/v1/models');
+}
+
+export function getSnapshot(sessionId: string): Promise<{ session: Session }> {
+  return request(`/api/v1/sessions/${sessionId}/snapshot`);
 }
 
 export function getMeta(): Promise<Record<string, unknown>> {

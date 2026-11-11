@@ -6,6 +6,8 @@ import {
   createSession,
   getConfig,
   getMeta,
+  getSnapshot,
+  listModels,
   listMessages,
   listSessions,
   loadToken,
@@ -13,6 +15,7 @@ import {
   setSessionModel,
   setToken,
   type Config,
+  type ModelEntry,
   type Message,
   type Session,
 } from './api';
@@ -180,6 +183,7 @@ export function App(): ReactElement {
   const [composer, setComposer] = useState('');
   const [meta, setMeta] = useState<Record<string, unknown>>();
   const [config, setConfig] = useState<Config>();
+  const [models, setModels] = useState<ModelEntry[]>([]);
   const [model, setModel] = useState('');
   const [currentId, setCurrentId] = useState<string>();
   const [items, setItems] = useState<Item[]>([]);
@@ -315,9 +319,11 @@ export function App(): ReactElement {
         const metaData = await getMeta();
         if (!cancelled) setMeta(metaData);
         const configData = await getConfig();
+        const modelPage = await listModels();
         if (!cancelled) {
           setConfig(configData);
-          setModel(configData.default_model ?? '');
+          setModels(modelPage.items);
+          setModel(configData.default_model ?? modelPage.items[0]?.model ?? '');
         }
         await reload();
       } catch (error) {
@@ -349,6 +355,12 @@ export function App(): ReactElement {
   useEffect(() => {
     if (currentId === undefined) return;
     void refreshMessages(currentId);
+    void getSnapshot(currentId)
+      .then((snapshot) => {
+        const sessionModel = snapshot.session.agent_config?.model;
+        if (typeof sessionModel === 'string' && sessionModel.length > 0) setModel(sessionModel);
+      })
+      .catch(() => undefined);
     socketRef.current?.subscribe(currentId);
     framesRef.current = {};
     setLive(undefined);
@@ -391,6 +403,16 @@ export function App(): ReactElement {
       setError(error instanceof Error ? error.message : String(error));
     }
   }, [cwd, model, reload]);
+
+  const groupedModels = useMemo(() => {
+    const groups = new Map<string, ModelEntry[]>();
+    for (const entry of models) {
+      const list = groups.get(entry.provider) ?? [];
+      list.push(entry);
+      groups.set(entry.provider, list);
+    }
+    return [...groups.entries()].toSorted(([a], [b]) => a.localeCompare(b));
+  }, [models]);
 
   const visibleItems = useMemo(() => {
     if (live === undefined) return items;
@@ -486,10 +508,15 @@ export function App(): ReactElement {
                   }}
                 >
                   <option value="">选择模型</option>
-                  {Object.keys(config?.models ?? {}).map((alias) => (
-                    <option key={alias} value={alias}>
-                      {alias}
-                    </option>
+                  {groupedModels.map(([provider, entries]) => (
+                    <optgroup key={provider} label={provider}>
+                      {entries.map((entry) => (
+                        <option key={entry.model} value={entry.model}>
+                          {entry.display_name ?? entry.model}
+                          {entry.model === config?.default_model ? '（默认）' : ''}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>

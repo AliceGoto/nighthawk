@@ -27,7 +27,10 @@ For a non-loopback or trusted-network setup the server can be started with
 ## What works today
 
 - token gate, session list, new session with a working directory
-- model selection (the server requires an explicit model per session)
+- model selection grouped by provider, defaulting to `config.toml`'s
+  `default_model` (DeepSeek in the current setup); the server requires an
+  explicit model per session, so the client writes `agent_config.model` after
+  creating one and reflects each session's own model on open
 - message history over REST
 - live streaming over `transcript.reset` / `transcript.ops`
 - tool calls are shown from history after the turn completes
