@@ -783,6 +783,13 @@ describe('server web asset directory resolution', () => {
     expect(resolveServerWebAssetsDir('/cache/kimi/dist-web')).toBe('/cache/kimi/dist-web');
   });
 
+  it('honours an explicit NIGHTHAWK_WEB_ASSETS_DIR override', async () => {
+    const { resolveServerWebAssetsDir } = await import('#/cli/sub/web/run');
+    expect(
+      resolveServerWebAssetsDir(null, { NIGHTHAWK_WEB_ASSETS_DIR: '/tmp/custom-web-build' }),
+    ).toBe('/tmp/custom-web-build');
+  });
+
   it('falls back to package dist-web outside SEA mode', async () => {
     const { resolveServerWebAssetsDir } = await import('#/cli/sub/web/run');
     expect(resolveServerWebAssetsDir(null)).toMatch(/[/\\]dist-web$/);

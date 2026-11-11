@@ -450,7 +450,7 @@ export function serverWebAssetsDir(
   env: NodeJS.ProcessEnv = process.env,
   nativeWebAssetsDir: string | null = getNativeWebAssetsDir(),
 ): string | undefined {
-  const dir = resolveServerWebAssetsDir(nativeWebAssetsDir);
+  const dir = resolveServerWebAssetsDir(nativeWebAssetsDir, env);
   if (env['NIGHTHAWK_DEV_SERVER'] === '1' && !existsSync(join(dir, 'index.html'))) {
     return undefined;
   }
@@ -459,7 +459,10 @@ export function serverWebAssetsDir(
 
 export function resolveServerWebAssetsDir(
   nativeWebAssetsDir: string | null = getNativeWebAssetsDir(),
+  env: NodeJS.ProcessEnv = process.env,
 ): string {
+  const override = env['NIGHTHAWK_WEB_ASSETS_DIR'];
+  if (override !== undefined && override.trim().length > 0) return override;
   return nativeWebAssetsDir ?? join(getHostPackageRoot(), WEB_ASSETS_DIR);
 }
 

@@ -49,8 +49,17 @@ For a non-loopback or trusted-network setup the server can be started with
 - A new session has no model; call `POST /api/v1/sessions/{id}/profile` with
   `{ agent_config: { model } }` before the first prompt.
 
-## Not wired into the CLI yet
+## Serve this build from `nighthawk web`
 
-`nighthawk web` still serves the upstream bundle from `apps/nighthawk/dist-web`.
-Serving this build instead is a follow-up: point the server's asset root at
-`apps/web/dist` once the client covers approvals and questions.
+By default `nighthawk web` serves the upstream bundle in
+`apps/nighthawk/dist-web`. Point the server at this app instead:
+
+```sh
+pnpm --filter @nighthawk/web run build
+NIGHTHAWK_WEB_ASSETS_DIR="$PWD/apps/web/dist" nighthawk web --no-open
+```
+
+The override is honoured over both the package `dist-web` and the SEA cache, so
+it works with the packaged binary too. It is not the default yet: approvals and
+questions are not implemented in this client, so turns that need confirmation
+stall here while the upstream bundle can still answer them.
