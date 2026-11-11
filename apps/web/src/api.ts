@@ -89,6 +89,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   headers.set('Authorization', `Bearer ${getToken()}`);
   const res = await fetch(path, { ...init, headers });
   if (res.status === 401) throw new ApiError(40101, 'unauthorized');
+  if (res.status === 204) return undefined as T;
   const envelope = (await res.json()) as Envelope<T>;
   if (envelope.code !== 0) throw new ApiError(envelope.code, envelope.msg);
   return envelope.data;
@@ -125,6 +126,13 @@ export interface ModelEntry {
 
 export function listModels(): Promise<{ items: ModelEntry[] }> {
   return request('/api/v1/models');
+}
+
+export function setDefaultModel(modelAlias: string): Promise<unknown> {
+  return request(`/api/v1/models/${encodeURIComponent(modelAlias)}:set_default`, {
+    method: 'POST',
+    body: '{}',
+  });
 }
 
 export function getSnapshot(sessionId: string): Promise<{ session: Session }> {
@@ -255,6 +263,71 @@ export function listMcpServers(): Promise<Record<string, unknown>[]> {
   return request('/api/v2/mcp/servers');
 }
 
+export interface ProviderItem {
+  id: string;
+  type?: string;
+  base_url?: string;
+  has_api_key?: boolean;
+  model_count?: number;
+  default_model?: string;
+  models?: string[];
+  status?: string;
+  api_key_env?: string;
+}
+
+export interface SkillItem {
+  name: string;
+  description?: string;
+  source?: string;
+  path?: string;
+}
+
+export function listProviders(): Promise<{ items: ProviderItem[] }> {
+  return request('/api/v1/providers');
+}
+
+export function createProvider(body: {
+  id: string;
+  type: string;
+  base_url?: string;
+  api_key?: string;
+  models: { model: string; max_context_size: number }[];
+}): Promise<unknown> {
+  return request('/api/v1/providers', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export function deleteProvider(providerId: string): Promise<void> {
+  return request(`/api/v1/providers/${encodeURIComponent(providerId)}`, { method: 'DELETE' });
+}
+
+export function listSkills(sessionId: string): Promise<{ skills: SkillItem[] }> {
+  return request(`/api/v1/sessions/${sessionId}/skills`);
+}
+
+export function activateSkill(
+  sessionId: string,
+  name: string,
+  args?: string,
+): Promise<{ activated: true; skill_name: string }> {
+  return request(`/api/v1/sessions/${sessionId}/skills/${encodeURIComponent(name)}:activate`, {
+    method: 'POST',
+    body: JSON.stringify({ args }),
+  });
+}
+
+export async function exportSession(sessionId: string): Promise<Blob> {
+  const response = await fetch(`/api/v1/sessions/${sessionId}/export`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  });
+  if (!response.ok) throw new ApiError(response.status, 'export failed');
+  return response.blob();
+}
+
 export function respondInteraction(
   sessionId: string,
   interactionId: string,
@@ -272,4 +345,18 @@ export function deleteSession(sessionId: string): Promise<unknown> {
 
 export function abortSession(sessionId: string): Promise<unknown> {
   return request(`/api/v1/sessions/${sessionId}:abort`, { method: 'POST' });
+}
+
+export interface CronTaskItem {
+  id: string;
+  cron: string;
+  prompt: string;
+  created_at: number;
+  recurring: boolean;
+  next_fire_at: number | null;
+  stale: boolean;
+}
+
+export function listCronTasks(sessionId: string): Promise<{ items: CronTaskItem[] }> {
+  return request(`/api/v1/sessions/${sessionId}/cron`);
 }

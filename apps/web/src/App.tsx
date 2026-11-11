@@ -3,13 +3,20 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import {
   ApiError,
   abortSession,
+  activateSkill,
+  createProvider,
   createSession,
+  deleteProvider,
   deleteSession,
+  exportSession,
   getConfig,
   getMeta,
   getSnapshot,
+  listCronTasks,
   listModels,
   listMcpServers,
+  listProviders,
+  listSkills,
   listMessages,
   listPlugins,
   listSessions,
@@ -17,12 +24,16 @@ import {
   sendPrompt,
   renameSession,
   respondInteraction,
+  setDefaultModel,
   setSessionConfig,
   setToken,
   uploadFile,
+  type CronTaskItem,
   type FileMeta,
   type ModelEntry,
   type PluginSummary,
+  type ProviderItem,
+  type SkillItem,
   type QuestionItem,
   type Message,
   type Session,
@@ -78,6 +89,29 @@ const EFFORT_LABELS: Record<string, string> = {
 
 function effortLabel(value: string): string {
   return EFFORT_LABELS[value] ?? value;
+}
+
+const PROVIDER_STATUS_LABELS: Record<string, string> = {
+  connected: '已连接',
+  error: '异常',
+  unconfigured: '未配置',
+};
+
+function providerStatusLabel(value: string): string {
+  return PROVIDER_STATUS_LABELS[value] ?? value;
+}
+
+function formatLocalTime(ms: number): string {
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function modelAliasesOf(provider: ProviderItem): string[] {
+  const aliases = provider.models ?? [];
+  const fallback = provider.default_model;
+  if (fallback !== undefined && !aliases.includes(fallback)) return [fallback, ...aliases];
+  return aliases;
 }
 
 function imageRefOf(block: {
@@ -333,12 +367,35 @@ export function App(): ReactElement {
     if (fromUrl === 'light' || fromUrl === 'dark') return fromUrl;
     return localStorage.getItem('nighthawk.theme') === 'light' ? 'light' : 'dark';
   });
-  const [panel, setPanel] = useState<'none' | 'plugins' | 'mcp'>(() => {
+  const [panel, setPanel] = useState<'none' | 'plugins' | 'mcp' | 'providers' | 'skills' | 'cron'>(() => {
     const fromUrl = new URLSearchParams(location.search).get('panel');
-    return fromUrl === 'plugins' || fromUrl === 'mcp' ? fromUrl : 'none';
+    return fromUrl === 'plugins' ||
+      fromUrl === 'mcp' ||
+      fromUrl === 'providers' ||
+      fromUrl === 'skills' ||
+      fromUrl === 'cron'
+      ? fromUrl
+      : 'none';
   });
   const [plugins, setPlugins] = useState<PluginSummary[]>([]);
   const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
+  const [providers, setProviders] = useState<ProviderItem[]>([]);
+  const [skills, setSkills] = useState<SkillItem[]>([]);
+  const [skillsSessionId, setSkillsSessionId] = useState('');
+  const [skillsLoading, setSkillsLoading] = useState(false);
+  const [cronSessionId, setCronSessionId] = useState('');
+  const [cronTasks, setCronTasks] = useState<CronTaskItem[]>([]);
+  const [cronLoading, setCronLoading] = useState(false);
+  const [activatedSkills, setActivatedSkills] = useState<Record<string, boolean>>({});
+  const [activatingSkill, setActivatingSkill] = useState<string>();
+  const [defaultingModel, setDefaultingModel] = useState<string>();
+  const [providerId, setProviderId] = useState('');
+  const [providerType, setProviderType] = useState('openai');
+  const [providerBaseUrl, setProviderBaseUrl] = useState('');
+  const [providerKey, setProviderKey] = useState('');
+  const [providerModel, setProviderModel] = useState('');
+  const [providerContext, setProviderContext] = useState('131072');
+  const [providerBusy, setProviderBusy] = useState(false);
   const [pending, setPending] = useState<
     ({ kind: 'approval'; item: ApprovalItem } | { kind: 'question'; item: QuestionPrompt })[]
   >([]);
@@ -357,6 +414,8 @@ export function App(): ReactElement {
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const effortTimer = useRef<number | undefined>(undefined);
   const currentIdRef = useRef<string | undefined>(undefined);
+  const skillsSessionIdRef = useRef('');
+  const cronSessionIdRef = useRef('');
   const { sessions, reload } = useSessions();
 
   currentIdRef.current = currentId;
@@ -613,16 +672,153 @@ export function App(): ReactElement {
     [renameValue, reload],
   );
 
-  const loadPanels = useCallback(async (which: 'plugins' | 'mcp') => {
-    setPanel(which);
+  const loadSkills = useCallback(async (sessionId: string) => {
+    skillsSessionIdRef.current = sessionId;
+    setSkillsSessionId(sessionId);
+    setSkills([]);
+    if (sessionId.length === 0) {
+      setSkillsLoading(false);
+      return;
+    }
+    setSkillsLoading(true);
     try {
-      if (which === 'plugins') {
-        const result = await listPlugins();
-        setPlugins(result.plugins);
-      } else {
-        const result = await listMcpServers();
-        setMcpServers(result);
+      const result = await listSkills(sessionId);
+      if (skillsSessionIdRef.current !== sessionId) return;
+      setSkills(result.skills);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (skillsSessionIdRef.current === sessionId) setSkillsLoading(false);
+    }
+  }, []);
+
+  const loadCron = useCallback(async (sessionId: string) => {
+    cronSessionIdRef.current = sessionId;
+    setCronSessionId(sessionId);
+    setCronTasks([]);
+    if (sessionId.length === 0) {
+      setCronLoading(false);
+      return;
+    }
+    setCronLoading(true);
+    try {
+      const result = await listCronTasks(sessionId);
+      if (cronSessionIdRef.current !== sessionId) return;
+      setCronTasks(result.items);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (cronSessionIdRef.current === sessionId) setCronLoading(false);
+    }
+  }, []);
+
+  const loadPanels = useCallback(
+    async (which: 'plugins' | 'mcp' | 'providers' | 'skills' | 'cron') => {
+      setPanel(which);
+      try {
+        if (which === 'plugins') {
+          const result = await listPlugins();
+          setPlugins(result.plugins);
+        } else if (which === 'mcp') {
+          const result = await listMcpServers();
+          setMcpServers(result);
+        } else if (which === 'providers') {
+          const result = await listProviders();
+          setProviders(result.items);
+        } else if (which === 'cron') {
+          await loadCron(currentIdRef.current ?? cronSessionIdRef.current ?? '');
+        } else {
+          await loadSkills(currentIdRef.current ?? skillsSessionIdRef.current ?? '');
+        }
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error));
       }
+    },
+    [loadCron, loadSkills],
+  );
+
+  const submitProvider = useCallback(async () => {
+    const id = providerId.trim();
+    const model = providerModel.trim();
+    if (id.length === 0 || model.length === 0) {
+      setError('供应商 id 和模型 id 必填');
+      return;
+    }
+    setProviderBusy(true);
+    try {
+      await createProvider({
+        id,
+        type: providerType,
+        ...(providerBaseUrl.trim().length > 0 ? { base_url: providerBaseUrl.trim() } : {}),
+        ...(providerKey.trim().length > 0 ? { api_key: providerKey.trim() } : {}),
+        models: [{ model, max_context_size: Number(providerContext) || 131072 }],
+      });
+      setProviderId('');
+      setProviderKey('');
+      setProviderModel('');
+      await loadPanels('providers');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setProviderBusy(false);
+    }
+  }, [providerId, providerType, providerBaseUrl, providerKey, providerModel, providerContext, loadPanels]);
+
+  const removeProvider = useCallback(
+    async (id: string) => {
+      if (!window.confirm(`删除供应商「${id}」？它的模型别名也会一并删除。`)) return;
+      try {
+        await deleteProvider(id);
+        await loadPanels('providers');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [loadPanels],
+  );
+
+  const makeDefaultModel = useCallback(
+    async (alias: string) => {
+      setDefaultingModel(alias);
+      try {
+        await setDefaultModel(alias);
+        await loadPanels('providers');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error));
+      } finally {
+        setDefaultingModel(undefined);
+      }
+    },
+    [loadPanels],
+  );
+
+  const activateSessionSkill = useCallback(async (sessionId: string, name: string) => {
+    setActivatingSkill(name);
+    try {
+      const result = await activateSkill(sessionId, name);
+      setActivatedSkills((previous) => ({
+        ...previous,
+        [`${sessionId}:${name}`]: true,
+        [`${sessionId}:${result.skill_name}`]: true,
+      }));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setActivatingSkill(undefined);
+    }
+  }, []);
+
+  const downloadExport = useCallback(async () => {
+    const sessionId = currentIdRef.current;
+    if (sessionId === undefined) return;
+    try {
+      const blob = await exportSession(sessionId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${sessionId}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
       setError(error instanceof Error ? error.message : String(error));
     }
@@ -1159,6 +1355,9 @@ export function App(): ReactElement {
           <button type="button" className="footer-btn" onClick={() => void loadPanels('mcp')}>
             MCP
           </button>
+          <button type="button" className="footer-btn" onClick={() => void loadPanels('cron')}>
+            定时
+          </button>
           <button
             type="button"
             className="footer-btn"
@@ -1179,7 +1378,12 @@ export function App(): ReactElement {
               <strong>{current.title.length > 0 ? current.title : '未命名会话'}</strong>
               <span className="cwd">{current.metadata.cwd ?? ''}</span>
             </div>
-            <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
+            <div className="header-right">
+              <button type="button" className="header-btn" onClick={() => void downloadExport()}>
+                导出
+              </button>
+              <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
+            </div>
           </header>
         )}
 
@@ -1287,27 +1491,31 @@ export function App(): ReactElement {
           <div className="sheet-backdrop" onClick={() => setPanel('none')} />
           <aside className="sheet">
             <div className="sheet-head">
-              <button
-                type="button"
-                className={panel === 'plugins' ? 'sheet-tab active' : 'sheet-tab'}
-                onClick={() => void loadPanels('plugins')}
-              >
-                插件
-              </button>
-              <button
-                type="button"
-                className={panel === 'mcp' ? 'sheet-tab active' : 'sheet-tab'}
-                onClick={() => void loadPanels('mcp')}
-              >
-                MCP
-              </button>
+              {(
+                [
+                  ['plugins', '插件'],
+                  ['providers', '供应商'],
+                  ['skills', 'Skills'],
+                  ['mcp', 'MCP'],
+                  ['cron', '定时'],
+                ] as const
+              ).map(([tab, label]) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={panel === tab ? 'sheet-tab active' : 'sheet-tab'}
+                  onClick={() => void loadPanels(tab)}
+                >
+                  {label}
+                </button>
+              ))}
               <button type="button" className="sheet-close" onClick={() => setPanel('none')}>
                 ×
               </button>
             </div>
             <div className="sheet-body">
-              {panel === 'plugins' ? (
-                plugins.length === 0 ? (
+              {panel === 'plugins' &&
+                (plugins.length === 0 ? (
                   <div className="sheet-empty">没有已安装的插件</div>
                 ) : (
                   plugins.map((plugin) => (
@@ -1326,28 +1534,249 @@ export function App(): ReactElement {
                       </div>
                     </div>
                   ))
-                )
-              ) : mcpServers.length === 0 ? (
-                <div className="sheet-empty">没有 MCP 服务</div>
-              ) : (
-                mcpServers.map((server, index) => {
-                  const name = str(server['name'], `server ${String(index)}`);
-                  const enabled = server['enabled'] === true;
-                  const where = str(server['url']) || str(server['command']);
-                  return (
-                    <div className="sheet-item" key={name}>
-                      <div className="sheet-item-head">
-                        <span className="sheet-item-name">{name}</span>
-                        <span className={enabled ? 'sheet-badge on' : 'sheet-badge'}>
-                          {enabled ? '已启用' : '已停用'}
-                        </span>
+                ))}
+
+              {panel === 'mcp' &&
+                (mcpServers.length === 0 ? (
+                  <div className="sheet-empty">没有 MCP 服务</div>
+                ) : (
+                  mcpServers.map((server, index) => {
+                    const name = str(server['name'], `server ${String(index)}`);
+                    const enabled = server['enabled'] === true;
+                    const where = str(server['url']) || str(server['command']);
+                    return (
+                      <div className="sheet-item" key={name}>
+                        <div className="sheet-item-head">
+                          <span className="sheet-item-name">{name}</span>
+                          <span className={enabled ? 'sheet-badge on' : 'sheet-badge'}>
+                            {enabled ? '已启用' : '已停用'}
+                          </span>
+                        </div>
+                        <div className="sheet-item-meta">
+                          {[str(server['transport']), where].filter((part) => part.length > 0).join(' · ')}
+                        </div>
                       </div>
-                      <div className="sheet-item-meta">
-                        {[str(server['transport']), where].filter((part) => part.length > 0).join(' · ')}
-                      </div>
+                    );
+                  })
+                ))}
+
+              {panel === 'providers' && (
+                <>
+                  <div className="sheet-form">
+                    <input
+                      className="sheet-input"
+                      placeholder="供应商 id，例如 deepseek"
+                      value={providerId}
+                      onChange={(event) => setProviderId(event.target.value)}
+                    />
+                    <select
+                      className="sheet-input"
+                      value={providerType}
+                      onChange={(event) => setProviderType(event.target.value)}
+                    >
+                      <option value="openai">openai</option>
+                      <option value="openai_responses">openai_responses</option>
+                      <option value="anthropic">anthropic</option>
+                      <option value="google-genai">google-genai</option>
+                      <option value="vertexai">vertexai</option>
+                    </select>
+                    <input
+                      className="sheet-input"
+                      placeholder="base_url，例如 https://api.deepseek.com"
+                      value={providerBaseUrl}
+                      onChange={(event) => setProviderBaseUrl(event.target.value)}
+                    />
+                    <input
+                      className="sheet-input"
+                      type="password"
+                      placeholder="API key（只写入，不回显）"
+                      value={providerKey}
+                      onChange={(event) => setProviderKey(event.target.value)}
+                    />
+                    <input
+                      className="sheet-input"
+                      placeholder="模型 id，例如 deepseek-chat"
+                      value={providerModel}
+                      onChange={(event) => setProviderModel(event.target.value)}
+                    />
+                    <input
+                      className="sheet-input"
+                      placeholder="上下文长度，默认 131072"
+                      value={providerContext}
+                      onChange={(event) => setProviderContext(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="sheet-submit"
+                      disabled={providerBusy}
+                      onClick={() => void submitProvider()}
+                    >
+                      {providerBusy ? '提交中…' : '添加供应商'}
+                    </button>
+                  </div>
+                  {providers.length === 0 ? (
+                    <div className="sheet-empty">还没有配置供应商</div>
+                  ) : (
+                    providers.map((provider) => {
+                      const aliases = modelAliasesOf(provider);
+                      return (
+                        <div className="sheet-item" key={provider.id}>
+                          <div className="sheet-item-head">
+                            <span className="sheet-item-name">{provider.id}</span>
+                            <span className="sheet-item-tail">
+                              {provider.status !== undefined && provider.status !== 'connected' && (
+                                <span className="sheet-badge warn">
+                                  {providerStatusLabel(provider.status)}
+                                </span>
+                              )}
+                              <span className={provider.has_api_key === true ? 'sheet-badge on' : 'sheet-badge'}>
+                                {provider.has_api_key === true ? '有密钥' : '无密钥'}
+                              </span>
+                              <button
+                                type="button"
+                                className="sheet-action danger"
+                                onClick={() => void removeProvider(provider.id)}
+                              >
+                                删除
+                              </button>
+                            </span>
+                          </div>
+                          <div className="sheet-item-meta">
+                            {[str(provider.type), str(provider.base_url)].filter((part) => part.length > 0).join(' · ')}
+                          </div>
+                          <div className="sheet-item-sub">
+                            {provider.default_model !== undefined
+                              ? `默认模型 ${provider.default_model}`
+                              : '未设置默认模型'}
+                          </div>
+                          {aliases.length > 0 && (
+                            <div className="sheet-chips">
+                              <span className="sheet-chip-label">模型</span>
+                              {aliases.map((alias) => {
+                                const active = alias === provider.default_model;
+                                return (
+                                  <button
+                                    key={alias}
+                                    type="button"
+                                    className={active ? 'sheet-chip active' : 'sheet-chip'}
+                                    title={active ? '当前默认模型' : '设为默认模型'}
+                                    disabled={active || defaultingModel === alias}
+                                    onClick={() => void makeDefaultModel(alias)}
+                                  >
+                                    {alias}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {panel === 'skills' && (
+                <>
+                  <select
+                    className="sheet-input"
+                    value={skillsSessionId}
+                    onChange={(event) => void loadSkills(event.target.value)}
+                  >
+                    <option value="">选择一个会话</option>
+                    {sessions.map((session) => (
+                      <option key={session.id} value={session.id}>
+                        {session.title.length > 0 ? session.title : session.last_prompt || '新会话'}
+                      </option>
+                    ))}
+                  </select>
+                  {skillsSessionId.length === 0 ? (
+                    <div className="sheet-empty">先选择一个会话，再查看它可用的 skill</div>
+                  ) : skillsLoading ? (
+                    <div className="sheet-empty">加载中…</div>
+                  ) : skills.length === 0 ? (
+                    <div className="sheet-empty">这个会话没有可用 skill</div>
+                  ) : (
+                    skills.map((skill) => {
+                      const activated = activatedSkills[`${skillsSessionId}:${skill.name}`] === true;
+                      return (
+                        <div className="sheet-item" key={skill.name}>
+                          <div className="sheet-item-head">
+                            <span className="sheet-item-name">{skill.name}</span>
+                            <span className="sheet-item-tail">
+                              {skill.source !== undefined && (
+                                <span className="sheet-badge">{skill.source}</span>
+                              )}
+                              {activated ? (
+                                <span className="sheet-badge on">已激活</span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="sheet-action"
+                                  disabled={activatingSkill === skill.name}
+                                  onClick={() => void activateSessionSkill(skillsSessionId, skill.name)}
+                                >
+                                  {activatingSkill === skill.name ? '激活中…' : '激活'}
+                                </button>
+                              )}
+                            </span>
+                          </div>
+                          {skill.description !== undefined && (
+                            <div className="sheet-item-meta">{skill.description}</div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {panel === 'cron' && (
+                <>
+                  <select
+                    className="sheet-input"
+                    value={cronSessionId}
+                    onChange={(event) => void loadCron(event.target.value)}
+                  >
+                    <option value="">选择一个会话</option>
+                    {sessions.map((session) => (
+                      <option key={session.id} value={session.id}>
+                        {session.title.length > 0 ? session.title : session.last_prompt || '新会话'}
+                      </option>
+                    ))}
+                  </select>
+                  {cronSessionId.length === 0 ? (
+                    <div className="sheet-empty">
+                      先选择一个会话，再查看它的定时任务。定时任务由 agent 的 CronCreate 工具创建，这里只做查看。
                     </div>
-                  );
-                })
+                  ) : cronLoading ? (
+                    <div className="sheet-empty">加载中…</div>
+                  ) : cronTasks.length === 0 ? (
+                    <div className="sheet-empty">
+                      这个会话没有定时任务。定时任务由 agent 的 CronCreate 工具创建，这里只做查看。
+                    </div>
+                  ) : (
+                    cronTasks.map((task) => (
+                      <div className="sheet-item" key={task.id}>
+                        <div className="sheet-item-head">
+                          <span className="sheet-cron">{task.cron}</span>
+                          <span className="sheet-item-tail">
+                            <span className={task.recurring ? 'sheet-badge on' : 'sheet-badge'}>
+                              {task.recurring ? '周期' : '单次'}
+                            </span>
+                            {task.stale && <span className="sheet-badge warn">已过期</span>}
+                          </span>
+                        </div>
+                        <div className="sheet-prompt">{task.prompt}</div>
+                        <div className="sheet-item-sub">
+                          {task.next_fire_at === null
+                            ? '不再触发'
+                            : `下次触发 ${formatLocalTime(task.next_fire_at)}`}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </>
               )}
             </div>
           </aside>

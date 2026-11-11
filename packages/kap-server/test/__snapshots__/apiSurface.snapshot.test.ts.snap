@@ -202,6 +202,10 @@ exports[`API surface snapshot > matches the documented v2 route table and meta e
     ],
     [
       "GET",
+      "/api/v1/sessions/{session_id}/cron",
+    ],
+    [
+      "GET",
       "/api/v1/sessions/{session_id}/environment",
     ],
     [

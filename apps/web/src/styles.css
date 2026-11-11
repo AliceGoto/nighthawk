@@ -433,6 +433,27 @@ body::after {
   white-space: nowrap;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-btn {
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.header-btn:hover {
+  color: var(--gold-2);
+  border-color: var(--gold);
+}
+
 .pill {
   flex: none;
   padding: 4px 9px;
@@ -1751,7 +1772,7 @@ body::after {
   gap: 2px;
 }
 
-/* ---------- plugin and MCP sheet ---------- */
+/* ---------- plugin, provider, skill and MCP sheet ---------- */
 
 .sheet-backdrop {
   position: fixed;
@@ -1871,6 +1892,149 @@ body::after {
   font-family: var(--mono);
   font-size: 9.5px;
   color: var(--text-3);
+}
+
+.sheet-badge.warn {
+  color: #d98b7d;
+  border-color: rgba(176, 74, 58, 0.6);
+}
+
+.sheet-item-tail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sheet-item-tail .sheet-badge {
+  margin-left: 0;
+}
+
+.sheet-action {
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sheet-action:hover:not(:disabled) {
+  color: var(--gold-2);
+  border-color: var(--gold);
+}
+
+.sheet-action:disabled {
+  opacity: 0.5;
+}
+
+.sheet-action.danger:hover:not(:disabled) {
+  color: #e08b7b;
+  background: rgba(124, 43, 43, 0.22);
+  border-color: rgba(176, 74, 58, 0.6);
+}
+
+.sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.sheet-chip-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.sheet-chip {
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-2);
+  background: rgba(176, 138, 69, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sheet-chip:hover:not(:disabled) {
+  color: var(--gold-2);
+  border-color: var(--gold);
+}
+
+.sheet-chip.active {
+  color: var(--gold-2);
+  background: rgba(176, 138, 69, 0.16);
+  border-color: var(--line-strong);
+}
+
+.sheet-cron {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--gold-2);
+}
+
+.sheet-prompt {
+  display: -webkit-box;
+  margin-top: 6px;
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+}
+
+:root[data-theme='light'] .sheet-badge.warn {
+  color: #8c3a2a;
+  border-color: rgba(124, 43, 43, 0.5);
+}
+
+.sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  margin-bottom: 4px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--leather-2) 70%, transparent);
+}
+
+.sheet-input {
+  width: 100%;
+  padding: 6px 9px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sheet-input:focus {
+  border-color: var(--gold);
+}
+
+.sheet-submit {
+  padding: 7px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #f3e5c8;
+  background: var(--blood);
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+}
+
+.sheet-submit:disabled {
+  opacity: 0.5;
 }
 
 @media (max-width: 860px) {
