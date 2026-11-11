@@ -1,51 +1,30 @@
 :root {
-  --canvas: #f9fafb;
-  --surface: #ffffff;
-  --surface-2: #f3f5f8;
-  --surface-3: #edf1f7;
-  --line: #e9ecf2;
-  --line-strong: #e1e5ee;
-  --text: #0f1115;
-  --text-2: #61666b;
-  --text-3: #979da6;
-  --brand: #4176e6;
-  --primary: #0f1115;
-  --on-primary: #ffffff;
-  --danger: #d92d20;
-  --ok: #12b76a;
-  --code-bg: #f6f7f9;
+  --bg: #000000;
+  --sidebar: #0a0a0b;
+  --surface: #121214;
+  --surface-2: #1c1c1e;
+  --surface-3: #2c2c2e;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --text: #f5f5f7;
+  --text-2: rgba(235, 235, 245, 0.62);
+  --text-3: rgba(235, 235, 245, 0.34);
+  --accent: #0a84ff;
+  --accent-2: #5ac8fa;
+  --danger: #ff453a;
+  --ok: #30d158;
 
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --radius-bubble: 22px;
+  --radius-xl: 24px;
 
-  --chat-width: 736px;
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo, monospace;
+  --chat-width: 720px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --mono: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #1b1b1c;
-    --surface: #232324;
-    --surface-2: #2c2c2e;
-    --surface-3: #353536;
-    --line: #353536;
-    --line-strong: #444446;
-    --text: #f5f5f5;
-    --text-2: #a2a4a6;
-    --text-3: #7f8285;
-    --brand: #6b93f0;
-    --primary: #f5f5f5;
-    --on-primary: #0f1115;
-    --danger: #ff6b6b;
-    --ok: #4ed17e;
-    --code-bg: #1b1b1c;
-  }
+  color-scheme: dark;
 }
 
 * {
@@ -60,31 +39,24 @@ body,
 }
 
 body {
-  background: var(--canvas);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
 button {
   font: inherit;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  padding: 8px 18px;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
-}
-
-button:hover:not(:disabled) {
-  background: var(--surface-2);
 }
 
 button:disabled {
-  opacity: 0.4;
   cursor: default;
 }
 
@@ -93,17 +65,17 @@ textarea {
   font: inherit;
   color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 input:focus,
 textarea:focus {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent);
+  border-color: var(--line-strong);
+  background: var(--surface-2);
 }
 
 input::placeholder,
@@ -113,9 +85,9 @@ textarea::placeholder {
 
 .app {
   display: grid;
-  grid-template-columns: 276px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   height: 100%;
-  background: var(--canvas);
+  background: var(--bg);
 }
 
 /* ---------- sidebar ---------- */
@@ -123,10 +95,10 @@ textarea::placeholder {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-height: 0;
-  padding: 18px 14px;
-  background: var(--surface);
+  padding: 16px 12px;
+  background: var(--sidebar);
   border-right: 1px solid var(--line);
 }
 
@@ -134,10 +106,10 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 2px 6px 6px;
-  font-size: 15px;
+  padding: 2px 6px 8px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .brand img {
@@ -157,7 +129,7 @@ textarea::placeholder {
 }
 
 .dot.connecting {
-  background: #f59e0b;
+  background: #ffd60a;
 }
 
 .dot.closed {
@@ -174,16 +146,46 @@ textarea::placeholder {
   min-width: 0;
   padding: 7px 10px;
   font-size: 12px;
-  border-radius: var(--radius-sm);
 }
 
 .new-session-add {
+  display: grid;
   flex: none;
+  place-items: center;
   width: 34px;
-  padding: 0;
-  font-size: 15px;
-  line-height: 1;
+  height: 34px;
+  font-size: 17px;
   color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.new-session-add:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.session-search input {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.session-search input:focus {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.sidebar-label {
+  padding: 6px 8px 2px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  text-transform: uppercase;
 }
 
 .sessions {
@@ -191,41 +193,42 @@ textarea::placeholder {
   flex: 1;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
   overflow-y: auto;
-  margin: 0 -6px;
-  padding: 0 6px;
 }
 
-.session {
+.session-row {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 9px 10px;
-  text-align: left;
-  background: transparent;
-  border: 1px solid transparent;
+  align-items: center;
   border-radius: var(--radius-sm);
 }
 
-.session:hover {
+.session-row:hover {
   background: var(--surface-2);
 }
 
-.session.active {
+.session-row.active {
   background: var(--surface-3);
-  border-color: var(--line);
+}
+
+.session-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
 }
 
 .session-title {
   overflow: hidden;
   font-size: 13px;
   font-weight: 500;
+  color: var(--text);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.session.active .session-title {
-  color: var(--text);
 }
 
 .session-meta {
@@ -236,8 +239,58 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
+.session-delete {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  color: var(--text-3);
+  border-radius: 7px;
+  opacity: 0;
+}
+
+.session-row:hover .session-delete,
+.session-row.active .session-delete {
+  opacity: 1;
+}
+
+.session-delete:hover {
+  color: var(--danger);
+  background: rgba(255, 69, 58, 0.12);
+}
+
+.session-confirm {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  margin-right: 6px;
+}
+
+.session-confirm button {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.session-confirm .danger {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.sessions-empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
 .version {
-  padding: 0 6px;
+  padding: 0 8px;
   font-size: 11px;
   color: var(--text-3);
 }
@@ -250,7 +303,7 @@ textarea::placeholder {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--canvas);
+  background: var(--bg);
 }
 
 .header {
@@ -258,17 +311,20 @@ textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 28px;
-  background: color-mix(in srgb, var(--canvas) 88%, transparent);
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.72);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(20px) saturate(160%);
+}
+
+.header-title {
+  min-width: 0;
 }
 
 .header strong {
   display: block;
-  max-width: 46vw;
   overflow: hidden;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
@@ -277,7 +333,6 @@ textarea::placeholder {
 
 .header .cwd {
   display: block;
-  max-width: 46vw;
   overflow: hidden;
   font-size: 11px;
   color: var(--text-3);
@@ -285,13 +340,8 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .pill {
+  flex: none;
   padding: 4px 10px;
   font-size: 11px;
   color: var(--text-2);
@@ -301,9 +351,63 @@ textarea::placeholder {
 }
 
 .pill.busy {
-  color: var(--brand);
-  border-color: color-mix(in srgb, var(--brand) 30%, var(--line));
-  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  color: var(--accent);
+  border-color: rgba(10, 132, 255, 0.35);
+  background: rgba(10, 132, 255, 0.12);
+}
+
+/* ---------- welcome ---------- */
+
+.welcome {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 40px 24px 32px;
+  text-align: center;
+}
+
+.welcome-mark {
+  font-size: 46px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.welcome-sub {
+  max-width: 420px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
+.welcome-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.chip {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.chip:hover {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line-strong);
 }
 
 /* ---------- transcript ---------- */
@@ -312,7 +416,7 @@ textarea::placeholder {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 28px 28px 12px;
+  padding: 28px 24px 8px;
   scrollbar-width: thin;
 }
 
@@ -321,7 +425,7 @@ textarea::placeholder {
 }
 
 .transcript::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--text-3) 30%, transparent);
+  background: rgba(255, 255, 255, 0.14);
   border: 3px solid transparent;
   border-radius: 999px;
   background-clip: content-box;
@@ -330,7 +434,7 @@ textarea::placeholder {
 .message {
   width: 100%;
   max-width: var(--chat-width);
-  margin: 0 auto 22px;
+  margin: 0 auto 24px;
 }
 
 .message.user {
@@ -343,7 +447,7 @@ textarea::placeholder {
   margin-bottom: 6px;
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--text-3);
   text-transform: uppercase;
 }
@@ -355,16 +459,16 @@ textarea::placeholder {
 .message.user .text {
   max-width: min(560px, 86%);
   padding: 10px 16px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 24px;
   background: var(--surface-2);
-  border-radius: var(--radius-bubble);
+  border-radius: 20px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .message.assistant .text {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 26px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -376,8 +480,6 @@ textarea::placeholder {
 
 .thinking {
   margin-bottom: 10px;
-  font-size: 13px;
-  color: var(--text-2);
 }
 
 .thinking summary {
@@ -385,7 +487,7 @@ textarea::placeholder {
   align-items: center;
   gap: 6px;
   width: fit-content;
-  padding: 5px 12px;
+  padding: 4px 11px;
   font-size: 12px;
   color: var(--text-2);
   background: var(--surface);
@@ -415,7 +517,7 @@ textarea::placeholder {
   overflow-x: auto;
   font-family: var(--font);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--text-2);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -427,7 +529,7 @@ textarea::placeholder {
 
 .md-text {
   margin: 0 0 12px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 26px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -440,9 +542,9 @@ textarea::placeholder {
 .md code {
   padding: 1px 6px;
   font-family: var(--mono);
-  font-size: 0.875em;
-  background: var(--code-bg);
-  border: 1px solid var(--line);
+  font-size: 0.9em;
+  color: var(--text);
+  background: var(--surface-2);
   border-radius: 6px;
 }
 
@@ -450,7 +552,7 @@ textarea::placeholder {
   margin: 12px 0;
   padding: 14px 16px;
   overflow: auto;
-  background: var(--code-bg);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
 }
@@ -458,7 +560,7 @@ textarea::placeholder {
 .md-code code {
   font-family: var(--mono);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.7;
   white-space: pre;
 }
 
@@ -473,12 +575,8 @@ textarea::placeholder {
   border-radius: var(--radius-md);
 }
 
-.tool[open] {
-  box-shadow: 0 1px 2px rgb(15 17 21 / 4%);
-}
-
 .tool.failed {
-  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+  border-color: rgba(255, 69, 58, 0.5);
 }
 
 .tool summary {
@@ -506,7 +604,6 @@ textarea::placeholder {
 .tool-name {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--text);
 }
 
 .tool-state {
@@ -526,9 +623,9 @@ textarea::placeholder {
   overflow: auto;
   font-family: var(--mono);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--text-2);
-  background: var(--code-bg);
+  background: var(--bg);
   border-radius: var(--radius-sm);
 }
 
@@ -539,27 +636,33 @@ textarea::placeholder {
 /* ---------- composer ---------- */
 
 .composer {
-  padding: 10px 28px 26px;
+  padding: 10px 24px 22px;
+}
+
+.composer-inline {
+  width: 100%;
+  margin-top: 18px;
+  padding: 0;
 }
 
 .composer-inner {
   position: relative;
   max-width: var(--chat-width);
   margin: 0 auto;
-  padding: 12px 14px 10px;
+  padding: 14px 16px 12px;
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 10px rgb(15 17 21 / 5%), 0 12px 32px rgb(15 17 21 / 4%);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .composer textarea {
   display: block;
   width: 100%;
-  min-height: 48px;
+  min-height: 46px;
   max-height: 200px;
   padding: 2px 4px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 24px;
   background: transparent;
   border: none;
@@ -568,48 +671,16 @@ textarea::placeholder {
 }
 
 .composer textarea:focus {
+  background: transparent;
   box-shadow: none;
 }
-
-.composer-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.composer-actions button {
-  padding: 8px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--on-primary);
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.composer-actions button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 88%, var(--canvas));
-}
-
-.composer-actions .stop {
-  color: var(--danger);
-  background: transparent;
-  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
-}
-
-.composer-actions .stop:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
-}
-
-/* ---------- model picker ---------- */
 
 .composer-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .model-pill {
@@ -625,7 +696,7 @@ textarea::placeholder {
   border-radius: 999px;
 }
 
-.model-pill:hover:not(:disabled) {
+.model-pill:hover {
   background: var(--surface-3);
 }
 
@@ -638,7 +709,7 @@ textarea::placeholder {
 
 .model-pill-effort {
   font-weight: 600;
-  color: var(--brand);
+  color: var(--accent);
 }
 
 .model-pill-chev {
@@ -649,14 +720,13 @@ textarea::placeholder {
   display: grid;
   flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  width: 34px;
+  height: 34px;
   font-size: 16px;
-  color: var(--on-primary);
-  background: var(--primary);
-  border: none;
+  color: #fff;
+  background: var(--accent);
   border-radius: 50%;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
 
 .send-btn:disabled {
@@ -664,8 +734,12 @@ textarea::placeholder {
   background: var(--surface-3);
 }
 
+.send-btn:not(:disabled):hover {
+  background: #3395ff;
+}
+
 .send-btn.stop {
-  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  background: rgba(255, 69, 58, 0.16);
 }
 
 .send-stop {
@@ -675,6 +749,8 @@ textarea::placeholder {
   border-radius: 2px;
 }
 
+/* ---------- model picker ---------- */
+
 .picker-backdrop {
   position: fixed;
   inset: 0;
@@ -683,18 +759,18 @@ textarea::placeholder {
 
 .model-picker {
   position: absolute;
-  z-index: 6;
   right: 0;
   bottom: calc(100% + 10px);
   left: 0;
+  z-index: 6;
   max-height: min(520px, 70vh);
   padding: 10px;
   overflow: auto;
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  border: 1px solid var(--line);
+  background: rgba(28, 28, 30, 0.86);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 40px rgb(15 17 21 / 12%);
-  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(30px) saturate(160%);
 }
 
 .picker-head {
@@ -718,17 +794,20 @@ textarea::placeholder {
 .picker-close {
   width: 26px;
   height: 26px;
-  padding: 0;
   font-size: 16px;
   color: var(--text-3);
-  background: transparent;
-  border: none;
+  border-radius: 7px;
+}
+
+.picker-close:hover {
+  color: var(--text);
+  background: var(--surface-2);
 }
 
 .effort-card {
   padding: 12px;
   margin-bottom: 8px;
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
 }
@@ -743,7 +822,7 @@ textarea::placeholder {
 
 .effort-value {
   font-weight: 600;
-  color: var(--brand);
+  color: var(--accent);
 }
 
 .effort-slider {
@@ -757,17 +836,18 @@ textarea::placeholder {
 }
 
 .effort-slider:focus {
+  background: transparent;
   box-shadow: none;
 }
 
 .effort-slider::-webkit-slider-runnable-track {
-  height: 8px;
+  height: 6px;
   background: linear-gradient(
     90deg,
-    #4d93f8 0%,
-    #8b5cf6 var(--fill, 0%),
-    var(--surface-3) var(--fill, 0%),
-    var(--surface-3) 100%
+    var(--accent) 0%,
+    var(--accent-2) var(--fill, 0%),
+    rgba(255, 255, 255, 0.16) var(--fill, 0%),
+    rgba(255, 255, 255, 0.16) 100%
   );
   border-radius: 999px;
 }
@@ -775,23 +855,23 @@ textarea::placeholder {
 .effort-slider::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
-  margin-top: -5px;
+  margin-top: -6px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgb(15 17 21 / 25%);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
   appearance: none;
   -webkit-appearance: none;
 }
 
 .effort-slider::-moz-range-track {
-  height: 8px;
-  background: linear-gradient(
-    90deg,
-    #4d93f8 0%,
-    #8b5cf6 var(--fill, 0%),
-    var(--surface-3) var(--fill, 0%),
-    var(--surface-3) 100%
-  );
+  height: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.effort-slider::-moz-range-progress {
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: 999px;
 }
 
@@ -812,7 +892,7 @@ textarea::placeholder {
 
 .effort-tick.active {
   font-weight: 600;
-  color: var(--brand);
+  color: var(--accent);
 }
 
 .picker-group {
@@ -833,18 +913,15 @@ textarea::placeholder {
   width: 100%;
   padding: 8px 10px;
   text-align: left;
-  background: transparent;
-  border: 1px solid transparent;
   border-radius: var(--radius-sm);
 }
 
 .picker-item:hover {
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .picker-item.active {
-  background: var(--surface-3);
-  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .picker-item-name {
@@ -857,52 +934,32 @@ textarea::placeholder {
   color: var(--text-3);
 }
 
-/* ---------- surfaces ---------- */
-
-.empty {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 40px;
-  text-align: center;
-  color: var(--text-3);
-}
-
-.empty h2 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--text);
-}
+/* ---------- gate and banner ---------- */
 
 .gate {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  background: var(--canvas);
+  background: var(--bg);
 }
 
 .gate-card {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: 380px;
-  padding: 30px;
+  width: 360px;
+  padding: 28px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 24px rgb(15 17 21 / 6%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
 }
 
 .gate-card h1 {
   margin: 0;
   font-size: 22px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -914,9 +971,17 @@ textarea::placeholder {
 }
 
 .gate-card button {
-  color: var(--on-primary);
-  background: var(--primary);
-  border-color: var(--primary);
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.gate-card button:disabled {
+  color: var(--text-3);
+  background: var(--surface-3);
 }
 
 .gate-card .error {
@@ -925,9 +990,9 @@ textarea::placeholder {
 
 .banner {
   position: absolute;
-  right: 28px;
-  bottom: 128px;
-  left: 28px;
+  right: 24px;
+  bottom: 120px;
+  left: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -937,14 +1002,18 @@ textarea::placeholder {
   padding: 10px 14px;
   font-size: 13px;
   color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 6%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line));
+  background: rgba(255, 69, 58, 0.1);
+  border: 1px solid rgba(255, 69, 58, 0.35);
   border-radius: var(--radius-md);
 }
 
 .banner button {
-  padding: 4px 12px;
+  padding: 4px 10px;
   font-size: 12px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 7px;
 }
 
 @media (max-width: 860px) {
@@ -959,7 +1028,7 @@ textarea::placeholder {
   .header,
   .transcript,
   .composer {
-    padding-right: 16px;
-    padding-left: 16px;
+    padding-right: 14px;
+    padding-left: 14px;
   }
 }

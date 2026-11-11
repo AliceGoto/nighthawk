@@ -4,6 +4,7 @@ import {
   ApiError,
   abortSession,
   createSession,
+  deleteSession,
   getConfig,
   getMeta,
   getSnapshot,
@@ -37,6 +38,12 @@ interface Item {
   thinking: string;
   tools: ToolCall[];
 }
+
+const QUICK_PROMPTS = [
+  '介绍一下这个项目的结构',
+  '找出一个值得重构的模块',
+  '给最近改动的文件补一组测试',
+];
 
 const EFFORT_LABELS: Record<string, string> = {
   off: '关闭',
@@ -204,6 +211,8 @@ export function App(): ReactElement {
   const [pickerOpen, setPickerOpen] = useState(
     () => new URLSearchParams(location.search).get('picker') === '1',
   );
+  const [query, setQuery] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string>();
   const [currentId, setCurrentId] = useState<string | undefined>(
     () => new URLSearchParams(location.search).get('session') ?? undefined,
   );
@@ -402,10 +411,36 @@ export function App(): ReactElement {
     setLive(undefined);
   }, [currentId, refreshMessages]);
 
+  const startWithPrompt = useCallback(
+    async (text: string) => {
+      setBusy(true);
+      framesRef.current = {};
+      try {
+        const session = await createSession(cwd);
+        if (model.length > 0) {
+          await setSessionConfig(session.id, effort.length > 0 ? { model, thinking: effort } : { model });
+        }
+        await reload();
+        setCurrentId(session.id);
+        // Let the session subscription attach before the first turn starts.
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        await sendPrompt(session.id, text);
+      } catch (error) {
+        setBusy(false);
+        setError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [cwd, model, effort, reload],
+  );
+
   const submit = useCallback(async () => {
     const text = composer.trim();
-    if (text.length === 0 || currentId === undefined) return;
+    if (text.length === 0) return;
     setComposer('');
+    if (currentId === undefined) {
+      await startWithPrompt(text);
+      return;
+    }
     setItems((previous) => [
       ...previous,
       { id: `local_${crypto.randomUUID()}`, role: 'user', text, thinking: '', tools: [] },
@@ -418,7 +453,7 @@ export function App(): ReactElement {
       setBusy(false);
       setError(error instanceof Error ? error.message : String(error));
     }
-  }, [composer, currentId]);
+  }, [composer, currentId, startWithPrompt]);
 
   const stop = useCallback(async () => {
     if (currentId === undefined) return;
@@ -492,6 +527,28 @@ export function App(): ReactElement {
     [applyConfig],
   );
 
+  const removeSession = useCallback(
+    async (id: string) => {
+      try {
+        await deleteSession(id);
+        setConfirmDeleteId(undefined);
+        if (currentIdRef.current === id) setCurrentId(undefined);
+        await reload();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [reload],
+  );
+
+  const visibleSessions = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (needle.length === 0) return sessions;
+    return sessions.filter((session) =>
+      `${session.title} ${session.last_prompt} ${session.metadata.cwd ?? ''}`.toLowerCase().includes(needle),
+    );
+  }, [sessions, query]);
+
   const visibleItems = useMemo(() => {
     if (live === undefined) return items;
     if (live.text.length === 0 && live.tools.length === 0 && live.thinking.length === 0) return items;
@@ -528,200 +585,263 @@ export function App(): ReactElement {
 
   const current = sessions.find((session) => session.id === currentId);
 
+  const composerNode = (
+          <footer className={`composer${current === undefined ? ' composer-inline' : ''}`}>
+            <div className="composer-inner">
+              {pickerOpen && <div className="picker-backdrop" onClick={() => setPickerOpen(false)} />}
+              {pickerOpen && (
+                <div className="model-picker">
+                  <div className="picker-head">
+                    <span className="picker-title">模型</span>
+                    <span className="picker-scope">{selectedEntry?.provider ?? ''}</span>
+                    <button type="button" className="picker-close" onClick={() => setPickerOpen(false)}>
+                      ×
+                    </button>
+                  </div>
+                  {efforts.length > 0 && (
+                    <div className="effort-card">
+                      <div className="effort-head">
+                        <span>推理等级</span>
+                        <span className="effort-value">{effortText}</span>
+                      </div>
+                      <input
+                        className="effort-slider"
+                        type="range"
+                        min={0}
+                        max={Math.max(efforts.length - 1, 0)}
+                        step={1}
+                        value={effortIndex}
+                        style={
+                          {
+                            '--fill':
+                              efforts.length > 1
+                                ? `${String((effortIndex / (efforts.length - 1)) * 100)}%`
+                                : '0%',
+                          } as CSSProperties
+                        }
+                        onChange={(event) => {
+                          const next = efforts[Number(event.target.value)];
+                          if (next !== undefined) changeEffort(next);
+                        }}
+                      />
+                      <div className="effort-ticks">
+                        {efforts.map((value) => (
+                          <span key={value} className={value === effort ? 'effort-tick active' : 'effort-tick'}>
+                            {effortLabel(value)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {groupedModels.map(([provider, entries]) => (
+                    <div className="picker-group" key={provider}>
+                      <div className="picker-group-title">{provider}</div>
+                      {entries.map((entry) => (
+                        <button
+                          type="button"
+                          key={entry.model}
+                          className={entry.model === model ? 'picker-item active' : 'picker-item'}
+                          onClick={() => selectModel(entry)}
+                        >
+                          <span className="picker-item-name">{entry.display_name ?? entry.model}</span>
+                          <span className="picker-item-meta">
+                            {entry.support_efforts !== undefined && entry.support_efforts.length > 0
+                              ? `${String(entry.support_efforts.length)} 档`
+                              : '不支持档位'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <textarea
+                value={composer}
+                onChange={(event) => setComposer(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void submit();
+                  }
+                }}
+                placeholder="问点什么，Enter 发送，Shift+Enter 换行"
+                rows={2}
+              />
+              <div className="composer-bar">
+                <button
+                  type="button"
+                  className="model-pill"
+                  aria-expanded={pickerOpen}
+                  onClick={() => setPickerOpen((open) => !open)}
+                >
+                  <span className="model-pill-name">{selectedEntry?.display_name ?? model ?? '选择模型'}</span>
+                  {effortText.length > 0 && <span className="model-pill-effort">{effortText}</span>}
+                  <span className="model-pill-chev">⌄</span>
+                </button>
+                {busy ? (
+                  <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
+                    <span className="send-stop" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="send-btn"
+                    aria-label="发送"
+                    disabled={composer.trim().length === 0}
+                    onClick={() => void submit()}
+                  >
+                    ↑
+                  </button>
+                )}
+              </div>
+            </div>
+          </footer>
+  );
+
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <img src="/nighthawk-icon.svg" alt="" width={22} height={22} />
+          <img src="/nighthawk-icon.svg" alt="" width={24} height={24} />
           <span>NightHawk</span>
           <span className={`dot ${status}`} title={status} />
         </div>
         <div className="new-session">
-          <input value={cwd} onChange={(event) => setCwd(event.target.value)} placeholder="工作目录" />
+          <input
+            value={cwd}
+            onChange={(event) => setCwd(event.target.value)}
+            placeholder="工作目录"
+            spellCheck={false}
+          />
           <button type="button" title="新建会话" className="new-session-add" onClick={() => void newSession()}>
             ＋
           </button>
         </div>
+        <div className="session-search">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="搜索会话"
+            spellCheck={false}
+          />
+        </div>
+        <div className="sidebar-label">对话</div>
         <nav className="sessions">
-          {sessions.map((session) => (
-            <button
-              key={session.id}
-              type="button"
-              className={session.id === currentId ? 'session active' : 'session'}
-              onClick={() => setCurrentId(session.id)}
-            >
-              <span className="session-title">{session.title.length > 0 ? session.title : session.last_prompt || session.id}</span>
-              <span className="session-meta">
-                {session.busy ? '运行中' : session.pending_interaction !== 'none' ? '待确认' : session.metadata.cwd ?? ''}
-              </span>
-            </button>
+          {visibleSessions.map((session) => (
+            <div key={session.id} className={session.id === currentId ? 'session-row active' : 'session-row'}>
+              <button type="button" className="session-main" onClick={() => setCurrentId(session.id)}>
+                <span className="session-title">
+                  {session.title.length > 0 ? session.title : session.last_prompt || '新会话'}
+                </span>
+                <span className="session-meta">
+                  {session.busy
+                    ? '运行中'
+                    : session.pending_interaction !== 'none'
+                      ? '待确认'
+                      : (session.metadata.cwd ?? '')}
+                </span>
+              </button>
+              {confirmDeleteId === session.id ? (
+                <span className="session-confirm">
+                  <button type="button" className="danger" onClick={() => void removeSession(session.id)}>
+                    删除
+                  </button>
+                  <button type="button" onClick={() => setConfirmDeleteId(undefined)}>
+                    取消
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="session-delete"
+                  aria-label="删除会话"
+                  onClick={() => setConfirmDeleteId(session.id)}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 4.2h10M6.4 4.2V2.6h3.2v1.6M4.6 4.2l.6 8.4h5.6l.6-8.4" />
+                  </svg>
+                </button>
+              )}
+            </div>
           ))}
+          {visibleSessions.length === 0 && <div className="sessions-empty">没有会话</div>}
         </nav>
-        {meta !== undefined && (
-          <div className="version">{str(meta['version'])}</div>
+        {meta !== undefined && str(meta['version']).length > 0 && (
+          <div className="version">v{str(meta['version'])}</div>
         )}
       </aside>
 
       <main className="main">
-        {current === undefined ? (
-          <div className="empty">
-            <h2>选择或新建一个会话</h2>
-            <p>会话跑在本地服务里，模型和密钥都来自你的 config.toml。</p>
-          </div>
-        ) : (
-          <>
-            <header className="header">
-              <div>
-                <strong>{current.title.length > 0 ? current.title : '未命名会话'}</strong>
-                <span className="cwd">{current.metadata.cwd ?? ''}</span>
-              </div>
-              <div className="header-right">
-                <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
-              </div>
-            </header>
+        {current !== undefined && (
+          <header className="header">
+            <div className="header-title">
+              <strong>{current.title.length > 0 ? current.title : '未命名会话'}</strong>
+              <span className="cwd">{current.metadata.cwd ?? ''}</span>
+            </div>
+            <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
+          </header>
+        )}
 
-            <div className="transcript">
-              {visibleItems.map((item) => (
-                <article key={item.id} className={`message ${item.role}`}>
-                  <div className="role">{item.role === 'user' ? '你' : 'NightHawk'}</div>
-                  {item.thinking.length > 0 && <details className="thinking"><summary>思考</summary><pre>{item.thinking}</pre></details>}
-                  {item.text.length > 0 &&
-                    (item.role === 'assistant' ? (
-                      <Markdown text={item.text} />
-                    ) : (
-                      <div className="text">{item.text}</div>
-                    ))}
-                  {item.tools.map((tool) => (
-                    <details key={tool.id} className={`tool ${tool.isError === true ? 'failed' : ''}`}>
-                      <summary>
-                        <span className="tool-name">{tool.name}</span>
-                        <span className="tool-state">{tool.running ? '运行中' : tool.isError === true ? '失败' : '完成'}</span>
-                      </summary>
-                      <pre>{JSON.stringify(tool.args, null, 2)}</pre>
-                      {tool.output !== undefined && <pre className="tool-output">{tool.output}</pre>}
-                    </details>
-                  ))}
-                  {item.thinking.length === 0 && item.text.length === 0 && item.tools.length === 0 && (
-                    <div className="text muted">…</div>
-                  )}
-                </article>
+        {current === undefined ? (
+          <div className="welcome">
+            <div className="welcome-mark">NIGHTHAWK</div>
+            <p className="welcome-sub">本地运行的编码 agent。模型和密钥都在你自己的 config.toml 里。</p>
+            <div className="welcome-chips">
+              {QUICK_PROMPTS.map((prompt) => (
+                <button key={prompt} type="button" className="chip" onClick={() => void startWithPrompt(prompt)}>
+                  {prompt}
+                </button>
               ))}
             </div>
-
-            <footer className="composer">
-              <div className="composer-inner">
-                {pickerOpen && (
-                  <div className="picker-backdrop" onClick={() => setPickerOpen(false)} />
+            {composerNode}
+          </div>
+        ) : (
+          <div className="transcript">
+            {visibleItems.map((item) => (
+              <article key={item.id} className={`message ${item.role}`}>
+                <div className="role">{item.role === 'user' ? '你' : 'NightHawk'}</div>
+                {item.thinking.length > 0 && (
+                  <details className="thinking">
+                    <summary>思考</summary>
+                    <pre>{item.thinking}</pre>
+                  </details>
                 )}
-                {pickerOpen && (
-                  <div className="model-picker">
-                    <div className="picker-head">
-                      <span className="picker-title">模型</span>
-                      <span className="picker-scope">{selectedEntry?.provider ?? ''}</span>
-                      <button type="button" className="picker-close" onClick={() => setPickerOpen(false)}>
-                        ×
-                      </button>
-                    </div>
-                    {efforts.length > 0 && (
-                      <div className="effort-card">
-                        <div className="effort-head">
-                          <span>推理等级</span>
-                          <span className="effort-value">{effortText}</span>
-                        </div>
-                        <input
-                          className="effort-slider"
-                          type="range"
-                          min={0}
-                          max={Math.max(efforts.length - 1, 0)}
-                          step={1}
-                          value={effortIndex}
-                          style={
-                            {
-                              '--fill':
-                                efforts.length > 1
-                                  ? `${String((effortIndex / (efforts.length - 1)) * 100)}%`
-                                  : '0%',
-                            } as CSSProperties
-                          }
-                          onChange={(event) => {
-                            const next = efforts[Number(event.target.value)];
-                            if (next !== undefined) changeEffort(next);
-                          }}
-                        />
-                        <div className="effort-ticks">
-                          {efforts.map((value) => (
-                            <span key={value} className={value === effort ? 'effort-tick active' : 'effort-tick'}>
-                              {effortLabel(value)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {groupedModels.map(([provider, entries]) => (
-                      <div className="picker-group" key={provider}>
-                        <div className="picker-group-title">{provider}</div>
-                        {entries.map((entry) => (
-                          <button
-                            type="button"
-                            key={entry.model}
-                            className={entry.model === model ? 'picker-item active' : 'picker-item'}
-                            onClick={() => selectModel(entry)}
-                          >
-                            <span className="picker-item-name">{entry.display_name ?? entry.model}</span>
-                            <span className="picker-item-meta">
-                              {entry.support_efforts !== undefined && entry.support_efforts.length > 0
-                                ? `${String(entry.support_efforts.length)} 档`
-                                : '不支持档位'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <textarea
-                  value={composer}
-                  onChange={(event) => setComposer(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault();
-                      void submit();
-                    }
-                  }}
-                  placeholder="问点什么，Enter 发送，Shift+Enter 换行"
-                  rows={2}
-                />
-                <div className="composer-bar">
-                  <button
-                    type="button"
-                    className="model-pill"
-                    aria-expanded={pickerOpen}
-                    onClick={() => setPickerOpen((open) => !open)}
-                  >
-                    <span className="model-pill-name">{selectedEntry?.display_name ?? model ?? '选择模型'}</span>
-                    {effortText.length > 0 && <span className="model-pill-effort">{effortText}</span>}
-                    <span className="model-pill-chev">⌄</span>
-                  </button>
-                  {busy ? (
-                    <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
-                      <span className="send-stop" />
-                    </button>
+                {item.text.length > 0 &&
+                  (item.role === 'assistant' ? (
+                    <Markdown text={item.text} />
                   ) : (
-                    <button
-                      type="button"
-                      className="send-btn"
-                      aria-label="发送"
-                      disabled={composer.trim().length === 0}
-                      onClick={() => void submit()}
-                    >
-                      ↑
-                    </button>
-                  )}
-                </div>
-              </div>
-            </footer>
-          </>
+                    <div className="text">{item.text}</div>
+                  ))}
+                {item.tools.map((tool) => (
+                  <details key={tool.id} className={`tool ${tool.isError === true ? 'failed' : ''}`}>
+                    <summary>
+                      <span className="tool-name">{tool.name}</span>
+                      <span className="tool-state">
+                        {tool.running ? '运行中' : tool.isError === true ? '失败' : '完成'}
+                      </span>
+                    </summary>
+                    <pre>{JSON.stringify(tool.args, null, 2)}</pre>
+                    {tool.output !== undefined && <pre className="tool-output">{tool.output}</pre>}
+                  </details>
+                ))}
+                {item.thinking.length === 0 && item.text.length === 0 && item.tools.length === 0 && (
+                  <div className="text muted">…</div>
+                )}
+              </article>
+            ))}
+          </div>
         )}
+
+
         {error !== undefined && (
           <div className="banner" role="alert">
             {error}

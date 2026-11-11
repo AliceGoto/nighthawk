@@ -145,6 +145,10 @@ export function sendPrompt(sessionId: string, text: string): Promise<unknown> {
   });
 }
 
+export function deleteSession(sessionId: string): Promise<unknown> {
+  return request(`/api/v1/sessions/${sessionId}:delete`, { method: 'POST', body: '{}' });
+}
+
 export function abortSession(sessionId: string): Promise<unknown> {
   return request(`/api/v1/sessions/${sessionId}:abort`, { method: 'POST' });
 }
