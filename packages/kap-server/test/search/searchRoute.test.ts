@@ -306,7 +306,7 @@ describe('server-v2 session routes with the global search DB unavailable', () =>
   });
 });
 
-describe('server-v2 /api/v1/search with global search off by default', () => {
+describe('server-v2 /api/v1/search with global search explicitly disabled', () => {
   let server: RunningServer | undefined;
   let home: string | undefined;
   let base: string;
@@ -319,6 +319,7 @@ describe('server-v2 /api/v1/search with global search off by default', () => {
       port: 0,
       homeDir: home,
       logLevel: 'silent',
+      env: { ...process.env, NIGHTHAWK_GLOBAL_SEARCH: '0' },
     });
     base = `http://127.0.0.1:${server.port}`;
   });
