@@ -75,7 +75,8 @@
 
 .sd-close:focus-visible,
 .sd-hit:focus-visible,
-.sd-retry:focus-visible {
+.sd-retry:focus-visible,
+.sd-more:focus-visible {
   outline: 1px solid var(--gold);
   outline-offset: -1px;
 }
@@ -205,4 +206,42 @@
   color: var(--text-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.sd-more-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px 4px;
+}
+
+.sd-more-error {
+  max-width: 100%;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.sd-more {
+  padding: 5px 18px;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--text-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.sd-more:hover:not(:disabled) {
+  color: var(--gold-2);
+  background: var(--leather-3);
+  border-color: var(--gold);
+}
+
+.sd-more:disabled {
+  color: var(--text-3);
+  border-color: var(--line);
 }

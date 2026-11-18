@@ -290,6 +290,52 @@
   color: var(--lapis);
 }
 
+.sp-goal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.sp-goal-btn {
+  padding: 3px 9px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sp-goal-btn:hover:not(:disabled) {
+  color: var(--gold-2);
+  border-color: var(--gold);
+}
+
+.sp-goal-btn:disabled {
+  opacity: 0.4;
+}
+
+.sp-goal-btn-danger {
+  color: color-mix(in srgb, var(--blood) 58%, var(--parchment));
+  border-color: color-mix(in srgb, var(--blood) 42%, var(--line));
+}
+
+.sp-goal-btn-danger:hover:not(:disabled) {
+  color: color-mix(in srgb, var(--blood) 44%, var(--parchment));
+  border-color: var(--blood);
+}
+
+:root[data-theme='light'] .sp-goal-btn-danger {
+  color: var(--blood);
+}
+
+:root[data-theme='light'] .sp-goal-btn-danger:hover:not(:disabled) {
+  color: var(--blood);
+  border-color: var(--blood);
+}
+
 .sp-warnings {
   display: flex;
   flex-direction: column;

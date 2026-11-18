@@ -3,6 +3,7 @@ import {
   IAgentChangeNotifierService,
   IAgentGoalService,
   IAgentContextMemoryService,
+  IAgentPlanService,
   IAgentProfileService,
   IAgentConversationUndoService,
   IAgentFullCompactionService,
@@ -59,6 +60,7 @@ import {
   editSessionGoalRequestSchema,
   editSessionGoalResponseSchema,
   getSessionGoalResponseSchema,
+  getSessionPlanResponseSchema,
   listSessionChildrenResponseSchema,
   sessionAbortResponseSchema,
   sessionWarningsResponseSchema,
@@ -859,6 +861,41 @@ export function registerSessionsRoutes(app: SessionRouteHost, core: Scope): void
     editGoalRoute.path,
     editGoalRoute.options,
     editGoalRoute.handler as Parameters<SessionRouteHost['patch']>[2],
+  );
+
+  const planRoute = defineRoute(
+    {
+      method: 'GET',
+      path: '/sessions/{session_id}/plan',
+      params: sessionIdParamSchema,
+      success: { data: getSessionPlanResponseSchema },
+      errors: {
+        [ErrorCode.VALIDATION_FAILED]: { detailsSchema },
+        [ErrorCode.SESSION_NOT_FOUND]: {},
+      },
+      description:
+        'Get the current session plan (active=false and plan=null when plan mode is off)',
+      tags: ['sessions'],
+    },
+    async (req, reply) => {
+      try {
+        const { session_id } = req.params;
+        const session = await resumeSessionById(core.accessor, session_id);
+        if (session === undefined) {
+          throw new Error2(ErrorCodes.SESSION_NOT_FOUND, `session ${session_id} does not exist`);
+        }
+        const agent = await ensureMainAgent(session);
+        const plan = await agent.accessor.get(IAgentPlanService).status();
+        reply.send(okEnvelope({ active: plan !== null, plan }, req.id));
+      } catch (error) {
+        sendMappedError(reply, req, error);
+      }
+    },
+  );
+  app.get(
+    planRoute.path,
+    planRoute.options,
+    planRoute.handler as Parameters<SessionRouteHost['get']>[2],
   );
 
   const sessionWarningsRoute = defineRoute(

@@ -35,6 +35,29 @@ function displayTitle(title: string): string {
   return title.trim().length > 0 ? title : '未命名会话';
 }
 
+function hitKey(hit: SearchHit): string {
+  return JSON.stringify([
+    hit.session_id,
+    hit.agent_id,
+    hit.role,
+    hit.time,
+    hit.turn ?? null,
+    hit.snippet,
+  ]);
+}
+
+function appendHits(previous: SearchHit[], next: SearchHit[]): SearchHit[] {
+  const seen = new Set(previous.map(hitKey));
+  const merged = [...previous];
+  for (const hit of next) {
+    const key = hitKey(hit);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(hit);
+  }
+  return merged.length === previous.length ? previous : merged;
+}
+
 export interface SearchDialogProps {
   open: boolean;
   onClose: () => void;
@@ -52,6 +75,10 @@ export function SearchDialog({
   const [error, setError] = useState('');
   const [indexBuilding, setIndexBuilding] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [pageToken, setPageToken] = useState('');
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState('');
   const [retryTick, setRetryTick] = useState(0);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -61,6 +88,7 @@ export function SearchDialog({
   const requestSeqRef = useRef(0);
 
   const trimmed = query.trim();
+  const hasNextPage = hasMore && pageToken.length > 0;
 
   useEffect(() => {
     if (open) {
@@ -81,6 +109,10 @@ export function SearchDialog({
     setError('');
     setIndexBuilding(false);
     setHighlight(0);
+    setPageToken('');
+    setHasMore(false);
+    setLoadingMore(false);
+    setMoreError('');
   }, [open]);
 
   useEffect(() => {
@@ -93,6 +125,10 @@ export function SearchDialog({
       setError('');
       setIndexBuilding(false);
       setHighlight(0);
+      setPageToken('');
+      setHasMore(false);
+      setLoadingMore(false);
+      setMoreError('');
       return;
     }
     setHits([]);
@@ -100,6 +136,10 @@ export function SearchDialog({
     setError('');
     setIndexBuilding(false);
     setHighlight(0);
+    setPageToken('');
+    setHasMore(false);
+    setLoadingMore(false);
+    setMoreError('');
     const timer = window.setTimeout(() => {
       void searchMessages(trimmed)
         .then((result) => {
@@ -107,6 +147,8 @@ export function SearchDialog({
           setHits(result.items);
           setStatus(result.items.length === 0 ? 'empty' : 'results');
           setIndexBuilding(result.index_state.state === 'building');
+          setPageToken(result.page_token ?? '');
+          setHasMore(result.has_more);
         })
         .catch((error: unknown) => {
           if (requestSeqRef.current !== seq) return;
@@ -114,6 +156,8 @@ export function SearchDialog({
           setStatus('error');
           setError(error instanceof Error ? error.message : String(error));
           setIndexBuilding(false);
+          setPageToken('');
+          setHasMore(false);
         });
     }, DEBOUNCE_MS);
     return () => {
@@ -150,6 +194,26 @@ export function SearchDialog({
     });
   };
 
+  const loadMore = (): void => {
+    if (loadingMore || !hasMore || pageToken.length === 0) return;
+    const seq = requestSeqRef.current;
+    setLoadingMore(true);
+    setMoreError('');
+    void searchMessages(trimmed, undefined, pageToken)
+      .then((result) => {
+        if (requestSeqRef.current !== seq) return;
+        setHits((previous) => appendHits(previous, result.items));
+        setPageToken(result.page_token ?? '');
+        setHasMore(result.has_more);
+        setLoadingMore(false);
+      })
+      .catch((error: unknown) => {
+        if (requestSeqRef.current !== seq) return;
+        setLoadingMore(false);
+        setMoreError(error instanceof Error ? error.message : String(error));
+      });
+  };
+
   const openHit = (hit: SearchHit): void => {
     onOpenSession(hit.session_id);
     onClose();
@@ -164,7 +228,12 @@ export function SearchDialog({
     }
     if (event.key !== 'Enter') return;
     const target = event.target;
-    if (target instanceof HTMLElement && target.closest('[data-sd-index]') !== null) return;
+    if (
+      target instanceof HTMLElement &&
+      target.closest('[data-sd-index], .sd-more') !== null
+    ) {
+      return;
+    }
     const hit = hits[highlight];
     if (hit === undefined) return;
     event.preventDefault();
@@ -244,6 +313,25 @@ export function SearchDialog({
                   </button>
                 );
               })}
+              {(hasNextPage || moreError.length > 0) && (
+                <div className="sd-more-box">
+                  {moreError.length > 0 && (
+                    <span className="sd-more-error" role="alert">
+                      {moreError}
+                    </span>
+                  )}
+                  {hasNextPage && (
+                    <button
+                      type="button"
+                      className="sd-more"
+                      disabled={loadingMore}
+                      onClick={loadMore}
+                    >
+                      {loadingMore ? '加载中…' : '加载更多'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

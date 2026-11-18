@@ -133,6 +133,19 @@ export type EditSessionGoalRequest = z.infer<typeof editSessionGoalRequestSchema
 export const editSessionGoalResponseSchema = goalSnapshotSchema;
 export type EditSessionGoalResponse = z.infer<typeof editSessionGoalResponseSchema>;
 
+export const sessionPlanSchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  path: z.string().nullable(),
+});
+export type SessionPlan = z.infer<typeof sessionPlanSchema>;
+
+export const getSessionPlanResponseSchema = z.object({
+  active: z.boolean(),
+  plan: sessionPlanSchema.nullable(),
+});
+export type GetSessionPlanResponse = z.infer<typeof getSessionPlanResponseSchema>;
+
 export const compactSessionRequestSchema = z.preprocess(
   (value) => value === undefined ? {} : value,
   z.object({

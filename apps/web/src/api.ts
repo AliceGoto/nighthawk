@@ -446,10 +446,18 @@ export interface SearchResult {
   source: 'live' | 'index';
 }
 
-export function searchMessages(query: string, pageSize = 20): Promise<SearchResult> {
+export function searchMessages(
+  query: string,
+  pageSize = 20,
+  pageToken?: string,
+): Promise<SearchResult> {
   return request('/api/v1/search', {
     method: 'POST',
-    body: JSON.stringify({ query, page_size: pageSize }),
+    body: JSON.stringify({
+      query,
+      page_size: pageSize,
+      ...(pageToken === undefined ? {} : { page_token: pageToken }),
+    }),
   });
 }
 
@@ -509,4 +517,14 @@ export function getSessionEnvironments(
 
 export function compactSession(sessionId: string): Promise<unknown> {
   return request(`/api/v1/sessions/${sessionId}:compact`, { method: 'POST', body: '{}' });
+}
+
+
+export interface PlanSnapshot {
+  active: boolean;
+  plan: { id: string; content: string; path: string | null } | null;
+}
+
+export function getSessionPlan(sessionId: string): Promise<PlanSnapshot> {
+  return request(`/api/v1/sessions/${sessionId}/plan`);
 }

@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import {
   getFileHistoryChanges,
   getSessionEnvironments,
   getSessionGoal,
   getSessionWarnings,
+  setSessionConfig,
   type FileChange,
   type GoalSnapshot,
   type Session,
@@ -60,6 +61,31 @@ const GOAL_STATUS_LABELS: Record<string, string> = {
   complete: '已完成',
 };
 
+type GoalControl = 'pause' | 'resume' | 'cancel';
+
+interface GoalAction {
+  control: GoalControl;
+  label: string;
+}
+
+function goalActionsFor(status: string): GoalAction[] {
+  switch (status) {
+    case 'active':
+      return [
+        { control: 'pause', label: '暂停' },
+        { control: 'cancel', label: '取消' },
+      ];
+    case 'paused':
+    case 'blocked':
+      return [
+        { control: 'resume', label: '继续' },
+        { control: 'cancel', label: '取消' },
+      ];
+    default:
+      return [];
+  }
+}
+
 const WARNING_SEVERITY_LABELS: Record<SessionWarning['severity'], string> = {
   info: '提示',
   warning: '警告',
@@ -102,19 +128,25 @@ export function SessionPanel({ session }: SessionPanelProps): ReactElement {
   const [fileChangesError, setFileChangesError] = useState<string | undefined>(undefined);
   const [goal, setGoal] = useState<GoalSnapshot | null | undefined>(undefined);
   const [goalError, setGoalError] = useState<string | undefined>(undefined);
+  const [goalActionError, setGoalActionError] = useState<string | undefined>(undefined);
+  const [goalActionPending, setGoalActionPending] = useState(false);
   const [warnings, setWarnings] = useState<SessionWarning[] | undefined>(undefined);
   const [warningsError, setWarningsError] = useState<string | undefined>(undefined);
+  const sessionIdRef = useRef(session.id);
 
   useEffect(() => {
     const sessionId = session.id;
     let cancelled = false;
 
+    sessionIdRef.current = sessionId;
     setEnvironments(undefined);
     setEnvironmentsError(undefined);
     setFileChanges(undefined);
     setFileChangesError(undefined);
     setGoal(undefined);
     setGoalError(undefined);
+    setGoalActionError(undefined);
+    setGoalActionPending(false);
     setWarnings(undefined);
     setWarningsError(undefined);
 
@@ -160,6 +192,25 @@ export function SessionPanel({ session }: SessionPanelProps): ReactElement {
     };
   }, [session.id]);
 
+  const applyGoalControl = (control: GoalControl): void => {
+    const sessionId = session.id;
+    setGoalActionPending(true);
+    setGoalActionError(undefined);
+    void setSessionConfig(sessionId, { goal_control: control })
+      .then(() => getSessionGoal(sessionId))
+      .then((result) => {
+        if (sessionIdRef.current !== sessionId) return;
+        setGoal(result);
+      })
+      .catch((error: unknown) => {
+        if (sessionIdRef.current !== sessionId) return;
+        setGoalActionError(errorText(error));
+      })
+      .finally(() => {
+        if (sessionIdRef.current === sessionId) setGoalActionPending(false);
+      });
+  };
+
   const usage = readUsage(session);
   const contextLimit = usage?.context_limit ?? 0;
   const contextTokens = usage?.context_tokens ?? 0;
@@ -176,6 +227,7 @@ export function SessionPanel({ session }: SessionPanelProps): ReactElement {
   ];
 
   const showGoalSection = goal !== null || goalError !== undefined;
+  const goalActions = goal === undefined || goal === null ? [] : goalActionsFor(goal.status);
   const showWarningsSection =
     warnings === undefined || warnings.length > 0 || warningsError !== undefined;
 
@@ -305,6 +357,29 @@ export function SessionPanel({ session }: SessionPanelProps): ReactElement {
                 <span className="sp-label">Token</span>
                 <span className="sp-value">{countText(goal.tokensUsed)}</span>
               </div>
+              {goalActions.length > 0 && (
+                <div className="sp-goal-actions">
+                  {goalActions.map((action) => (
+                    <button
+                      className={
+                        action.control === 'cancel'
+                          ? 'sp-goal-btn sp-goal-btn-danger'
+                          : 'sp-goal-btn'
+                      }
+                      disabled={goalActionPending}
+                      key={action.control}
+                      onClick={() => applyGoalControl(action.control)}
+                      type="button"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                  {goalActionPending && <span className="sp-muted">处理中…</span>}
+                </div>
+              )}
+              {goalActionError !== undefined && (
+                <div className="sp-error">目标操作失败：{goalActionError}</div>
+              )}
             </>
           ) : null}
         </section>

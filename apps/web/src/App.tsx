@@ -24,6 +24,7 @@ import {
   getConfig,
   getMeta,
   getSession,
+  getSessionPlan,
   listCronTasks,
   listModels,
   listMcpServers,
@@ -573,6 +574,7 @@ export function App(): ReactElement {
   const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
   const [providers, setProviders] = useState<ProviderItem[]>([]);
   const [skills, setSkills] = useState<SkillItem[]>([]);
+  const [sessionSkills, setSessionSkills] = useState<SkillItem[]>([]);
   const [skillsSessionId, setSkillsSessionId] = useState('');
   const [skillsLoading, setSkillsLoading] = useState(false);
   const [cronSessionId, setCronSessionId] = useState('');
@@ -867,13 +869,32 @@ export function App(): ReactElement {
         if (typeof sessionModel === 'string' && sessionModel.length > 0) setModel(sessionModel);
         const sessionThinking = session.agent_config?.thinking;
         setEffort(typeof sessionThinking === 'string' ? sessionThinking : '');
-        setPlanMode(session.agent_config?.plan_mode === true);
       })
       .catch(() => undefined);
+    void getSessionPlan(currentId)
+      .then((snapshot) => setPlanMode(snapshot.active))
+      .catch((error) => {
+        setPlanMode(false);
+        setError(error instanceof Error ? error.message : String(error));
+      });
     socketRef.current?.subscribe(currentId);
     framesRef.current = {};
     setLive(undefined);
   }, [currentId, refreshMessages]);
+
+  useEffect(() => {
+    setSessionSkills([]);
+    if (currentId === undefined) return;
+    let cancelled = false;
+    void listSkills(currentId)
+      .then((result) => {
+        if (!cancelled) setSessionSkills(result.skills);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentId]);
 
   const addFiles = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -1263,6 +1284,12 @@ export function App(): ReactElement {
   const runCommand = useCallback(
     (id: string) => {
       setComposer('');
+      if (id.startsWith('skill:')) {
+        if (currentId !== undefined) {
+          void activateSessionSkill(currentId, id.slice('skill:'.length));
+        }
+        return;
+      }
       switch (id) {
         case 'new':
           void newSession();
@@ -1296,7 +1323,7 @@ export function App(): ReactElement {
           break;
       }
     },
-    [currentId, downloadExport, newSession, stop],
+    [activateSessionSkill, currentId, downloadExport, newSession, stop],
   );
 
   useEffect(() => {
@@ -1485,6 +1512,17 @@ export function App(): ReactElement {
   const current = sessions.find((session) => session.id === currentId);
   const commandQuery =
     composer.startsWith('/') && !composer.includes('\n') ? composer.slice(1) : null;
+  const commandItems: CommandItem[] =
+    currentId !== undefined && sessionSkills.length > 0
+      ? [
+          ...COMMAND_ITEMS,
+          ...sessionSkills.map((skill) => ({
+            id: `skill:${skill.name}`,
+            label: skill.name,
+            description: skill.description ?? '激活这个 Skill',
+          })),
+        ]
+      : COMMAND_ITEMS;
   const usage = current?.usage;
   const contextPercent =
     usage !== undefined && usage.context_limit > 0
@@ -1546,7 +1584,7 @@ export function App(): ReactElement {
               {commandQuery !== null && (
                 <CommandMenu
                   query={commandQuery}
-                  items={COMMAND_ITEMS}
+                  items={commandItems}
                   onRun={runCommand}
                   onClose={() => {
                     setComposer('');
