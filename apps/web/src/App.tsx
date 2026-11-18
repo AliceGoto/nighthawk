@@ -4,8 +4,10 @@ import {
   ApiError,
   abortSession,
   activateSkill,
+  createCronTask,
   createProvider,
   createSession,
+  deleteCronTask,
   deleteProvider,
   deleteSession,
   exportSession,
@@ -27,6 +29,7 @@ import {
   setDefaultModel,
   setSessionConfig,
   setToken,
+  updateProvider,
   uploadFile,
   type CronTaskItem,
   type FileMeta,
@@ -112,6 +115,37 @@ function modelAliasesOf(provider: ProviderItem): string[] {
   const fallback = provider.default_model;
   if (fallback !== undefined && !aliases.includes(fallback)) return [fallback, ...aliases];
   return aliases;
+}
+
+const DEFAULT_MAX_CONTEXT = 131072;
+
+function parseProviderModels(text: string): { model: string; max_context_size: number }[] {
+  const entries: { model: string; max_context_size: number }[] = [];
+  const seen = new Set<string>();
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (line.length === 0) continue;
+    const colon = line.lastIndexOf(':');
+    const tail = colon > 0 ? line.slice(colon + 1).trim() : '';
+    const sized = /^\d+$/.test(tail);
+    const model = (sized ? line.slice(0, colon) : line).trim();
+    if (model.length === 0 || seen.has(model)) continue;
+    seen.add(model);
+    const context = sized ? Number(tail) : DEFAULT_MAX_CONTEXT;
+    entries.push({ model, max_context_size: context > 0 ? context : DEFAULT_MAX_CONTEXT });
+  }
+  return entries;
+}
+
+function providerModelsText(provider: ProviderItem, entries: ModelEntry[]): string {
+  const prefix = `${provider.id}/`;
+  return modelAliasesOf(provider)
+    .map((alias) => {
+      const model = alias.startsWith(prefix) ? alias.slice(prefix.length) : alias;
+      const size = entries.find((item) => item.model === alias)?.max_context_size ?? DEFAULT_MAX_CONTEXT;
+      return `${model}:${String(size)}`;
+    })
+    .join('\n');
 }
 
 function imageRefOf(block: {
@@ -386,6 +420,10 @@ export function App(): ReactElement {
   const [cronSessionId, setCronSessionId] = useState('');
   const [cronTasks, setCronTasks] = useState<CronTaskItem[]>([]);
   const [cronLoading, setCronLoading] = useState(false);
+  const [cronExpression, setCronExpression] = useState('');
+  const [cronPrompt, setCronPrompt] = useState('');
+  const [cronRecurring, setCronRecurring] = useState(true);
+  const [cronBusy, setCronBusy] = useState(false);
   const [activatedSkills, setActivatedSkills] = useState<Record<string, boolean>>({});
   const [activatingSkill, setActivatingSkill] = useState<string>();
   const [defaultingModel, setDefaultingModel] = useState<string>();
@@ -393,8 +431,8 @@ export function App(): ReactElement {
   const [providerType, setProviderType] = useState('openai');
   const [providerBaseUrl, setProviderBaseUrl] = useState('');
   const [providerKey, setProviderKey] = useState('');
-  const [providerModel, setProviderModel] = useState('');
-  const [providerContext, setProviderContext] = useState('131072');
+  const [providerModelsDraft, setProviderModelsDraft] = useState('');
+  const [editingProvider, setEditingProvider] = useState<ProviderItem>();
   const [providerBusy, setProviderBusy] = useState(false);
   const [pending, setPending] = useState<
     ({ kind: 'approval'; item: ApprovalItem } | { kind: 'question'; item: QuestionPrompt })[]
@@ -712,6 +750,46 @@ export function App(): ReactElement {
     }
   }, []);
 
+  const submitCron = useCallback(async () => {
+    const sessionId = cronSessionId;
+    const expression = cronExpression.trim();
+    const prompt = cronPrompt.trim();
+    if (sessionId.length === 0) {
+      setError('先选择一个会话');
+      return;
+    }
+    if (expression.length === 0 || prompt.length === 0) {
+      setError('cron 表达式和任务内容必填');
+      return;
+    }
+    setCronBusy(true);
+    try {
+      await createCronTask(sessionId, { cron: expression, prompt, recurring: cronRecurring });
+      setCronExpression('');
+      setCronPrompt('');
+      await loadCron(sessionId);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setCronBusy(false);
+    }
+  }, [cronSessionId, cronExpression, cronPrompt, cronRecurring, loadCron]);
+
+  const removeCronTask = useCallback(
+    async (taskId: string) => {
+      const sessionId = cronSessionId;
+      if (sessionId.length === 0) return;
+      if (!window.confirm('删除这个定时任务？')) return;
+      try {
+        await deleteCronTask(sessionId, taskId);
+        await loadCron(sessionId);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [cronSessionId, loadCron],
+  );
+
   const loadPanels = useCallback(
     async (which: 'plugins' | 'mcp' | 'providers' | 'skills' | 'cron') => {
       setPanel(which);
@@ -723,8 +801,9 @@ export function App(): ReactElement {
           const result = await listMcpServers();
           setMcpServers(result);
         } else if (which === 'providers') {
-          const result = await listProviders();
-          setProviders(result.items);
+          const [providerPage, modelPage] = await Promise.all([listProviders(), listModels()]);
+          setProviders(providerPage.items);
+          setModels(modelPage.items);
         } else if (which === 'cron') {
           await loadCron(currentIdRef.current ?? cronSessionIdRef.current ?? '');
         } else {
@@ -737,32 +816,77 @@ export function App(): ReactElement {
     [loadCron, loadSkills],
   );
 
+  const resetProviderForm = useCallback(() => {
+    setProviderId('');
+    setProviderBaseUrl('');
+    setProviderKey('');
+    setProviderModelsDraft('');
+  }, []);
+
+  const startEditProvider = useCallback(
+    (provider: ProviderItem) => {
+      setEditingProvider(provider);
+      setProviderId(provider.id);
+      setProviderType(provider.type ?? 'openai');
+      setProviderBaseUrl(provider.base_url ?? '');
+      setProviderKey('');
+      setProviderModelsDraft(providerModelsText(provider, models));
+    },
+    [models],
+  );
+
+  const cancelProviderEdit = useCallback(() => {
+    setEditingProvider(undefined);
+    resetProviderForm();
+  }, [resetProviderForm]);
+
   const submitProvider = useCallback(async () => {
     const id = providerId.trim();
-    const model = providerModel.trim();
-    if (id.length === 0 || model.length === 0) {
+    const entries = parseProviderModels(providerModelsDraft);
+    if (id.length === 0 || entries.length === 0) {
       setError('供应商 id 和模型 id 必填');
       return;
     }
+    const baseUrl = providerBaseUrl.trim();
+    const apiKey = providerKey.trim();
     setProviderBusy(true);
     try {
-      await createProvider({
-        id,
-        type: providerType,
-        ...(providerBaseUrl.trim().length > 0 ? { base_url: providerBaseUrl.trim() } : {}),
-        ...(providerKey.trim().length > 0 ? { api_key: providerKey.trim() } : {}),
-        models: [{ model, max_context_size: Number(providerContext) || 131072 }],
-      });
-      setProviderId('');
-      setProviderKey('');
-      setProviderModel('');
+      if (editingProvider === undefined) {
+        await createProvider({
+          id,
+          type: providerType,
+          base_url: baseUrl.length > 0 ? baseUrl : undefined,
+          api_key: apiKey.length > 0 ? apiKey : undefined,
+          models: entries,
+        });
+      } else {
+        const original = editingProvider;
+        const aliasPrefix = `${original.id}/`;
+        const defaultModel =
+          original.default_model !== undefined && original.default_model.startsWith(aliasPrefix)
+            ? original.default_model.slice(aliasPrefix.length)
+            : undefined;
+        await updateProvider(original.id, {
+          type: providerType,
+          base_url: baseUrl.length > 0 ? baseUrl : undefined,
+          api_key: apiKey.length > 0 ? apiKey : undefined,
+          new_id: id !== original.id ? id : undefined,
+          default_model:
+            defaultModel !== undefined && entries.some((entry) => entry.model === defaultModel)
+              ? defaultModel
+              : undefined,
+          models: entries,
+        });
+        setEditingProvider(undefined);
+      }
+      resetProviderForm();
       await loadPanels('providers');
     } catch (error) {
       setError(error instanceof Error ? error.message : String(error));
     } finally {
       setProviderBusy(false);
     }
-  }, [providerId, providerType, providerBaseUrl, providerKey, providerModel, providerContext, loadPanels]);
+  }, [providerId, providerType, providerBaseUrl, providerKey, providerModelsDraft, editingProvider, resetProviderForm, loadPanels]);
 
   const removeProvider = useCallback(
     async (id: string) => {
@@ -793,9 +917,12 @@ export function App(): ReactElement {
   );
 
   const activateSessionSkill = useCallback(async (sessionId: string, name: string) => {
+    const answer = window.prompt(`激活 skill「${name}」，可选参数（留空则不传）`);
+    if (answer === null) return;
+    const args = answer.trim();
     setActivatingSkill(name);
     try {
-      const result = await activateSkill(sessionId, name);
+      const result = await activateSkill(sessionId, name, args.length > 0 ? args : undefined);
       setActivatedSkills((previous) => ({
         ...previous,
         [`${sessionId}:${name}`]: true,
@@ -1352,6 +1479,9 @@ export function App(): ReactElement {
           <button type="button" className="footer-btn" onClick={() => void loadPanels('plugins')}>
             插件
           </button>
+          <button type="button" className="footer-btn" onClick={() => void loadPanels('providers')}>
+            供应商
+          </button>
           <button type="button" className="footer-btn" onClick={() => void loadPanels('mcp')}>
             MCP
           </button>
@@ -1589,30 +1719,43 @@ export function App(): ReactElement {
                     <input
                       className="sheet-input"
                       type="password"
-                      placeholder="API key（只写入，不回显）"
+                      placeholder={
+                        editingProvider === undefined
+                          ? 'API key（只写入，不回显）'
+                          : 'API key（留空表示保留原密钥）'
+                      }
                       value={providerKey}
                       onChange={(event) => setProviderKey(event.target.value)}
                     />
-                    <input
-                      className="sheet-input"
-                      placeholder="模型 id，例如 deepseek-chat"
-                      value={providerModel}
-                      onChange={(event) => setProviderModel(event.target.value)}
+                    <textarea
+                      className="sheet-input sheet-textarea"
+                      rows={3}
+                      spellCheck={false}
+                      placeholder="模型，一行一个：模型 id 或 模型id:上下文长度"
+                      value={providerModelsDraft}
+                      onChange={(event) => setProviderModelsDraft(event.target.value)}
                     />
-                    <input
-                      className="sheet-input"
-                      placeholder="上下文长度，默认 131072"
-                      value={providerContext}
-                      onChange={(event) => setProviderContext(event.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="sheet-submit"
-                      disabled={providerBusy}
-                      onClick={() => void submitProvider()}
-                    >
-                      {providerBusy ? '提交中…' : '添加供应商'}
-                    </button>
+                    <div className="sheet-form-actions">
+                      <button
+                        type="button"
+                        className="sheet-submit"
+                        disabled={providerBusy}
+                        onClick={() => void submitProvider()}
+                      >
+                        {providerBusy
+                          ? editingProvider === undefined
+                            ? '提交中…'
+                            : '保存中…'
+                          : editingProvider === undefined
+                            ? '添加供应商'
+                            : '保存修改'}
+                      </button>
+                      {editingProvider !== undefined && (
+                        <button type="button" className="sheet-cancel" onClick={cancelProviderEdit}>
+                          取消
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {providers.length === 0 ? (
                     <div className="sheet-empty">还没有配置供应商</div>
@@ -1632,6 +1775,14 @@ export function App(): ReactElement {
                               <span className={provider.has_api_key === true ? 'sheet-badge on' : 'sheet-badge'}>
                                 {provider.has_api_key === true ? '有密钥' : '无密钥'}
                               </span>
+                              <button
+                                type="button"
+                                className="sheet-action"
+                                disabled={editingProvider?.id === provider.id}
+                                onClick={() => startEditProvider(provider)}
+                              >
+                                {editingProvider?.id === provider.id ? '编辑中' : '编辑'}
+                              </button>
                               <button
                                 type="button"
                                 className="sheet-action danger"
@@ -1746,35 +1897,74 @@ export function App(): ReactElement {
                     ))}
                   </select>
                   {cronSessionId.length === 0 ? (
-                    <div className="sheet-empty">
-                      先选择一个会话，再查看它的定时任务。定时任务由 agent 的 CronCreate 工具创建，这里只做查看。
-                    </div>
-                  ) : cronLoading ? (
-                    <div className="sheet-empty">加载中…</div>
-                  ) : cronTasks.length === 0 ? (
-                    <div className="sheet-empty">
-                      这个会话没有定时任务。定时任务由 agent 的 CronCreate 工具创建，这里只做查看。
-                    </div>
+                    <div className="sheet-empty">先选择一个会话，再创建或查看它的定时任务。</div>
                   ) : (
-                    cronTasks.map((task) => (
-                      <div className="sheet-item" key={task.id}>
-                        <div className="sheet-item-head">
-                          <span className="sheet-cron">{task.cron}</span>
-                          <span className="sheet-item-tail">
-                            <span className={task.recurring ? 'sheet-badge on' : 'sheet-badge'}>
-                              {task.recurring ? '周期' : '单次'}
-                            </span>
-                            {task.stale && <span className="sheet-badge warn">已过期</span>}
-                          </span>
-                        </div>
-                        <div className="sheet-prompt">{task.prompt}</div>
-                        <div className="sheet-item-sub">
-                          {task.next_fire_at === null
-                            ? '不再触发'
-                            : `下次触发 ${formatLocalTime(task.next_fire_at)}`}
-                        </div>
+                    <>
+                      <div className="sheet-form">
+                        <input
+                          className="sheet-input"
+                          spellCheck={false}
+                          placeholder="cron 表达式，例如 0 9 * * *"
+                          value={cronExpression}
+                          onChange={(event) => setCronExpression(event.target.value)}
+                        />
+                        <textarea
+                          className="sheet-input sheet-textarea"
+                          rows={2}
+                          placeholder="到点后要发送的任务内容"
+                          value={cronPrompt}
+                          onChange={(event) => setCronPrompt(event.target.value)}
+                        />
+                        <label className="sheet-check">
+                          <input
+                            type="checkbox"
+                            checked={cronRecurring}
+                            onChange={(event) => setCronRecurring(event.target.checked)}
+                          />
+                          周期任务
+                        </label>
+                        <button
+                          type="button"
+                          className="sheet-submit"
+                          disabled={cronBusy}
+                          onClick={() => void submitCron()}
+                        >
+                          {cronBusy ? '创建中…' : '创建定时任务'}
+                        </button>
                       </div>
-                    ))
+                      {cronLoading ? (
+                        <div className="sheet-empty">加载中…</div>
+                      ) : cronTasks.length === 0 ? (
+                        <div className="sheet-empty">这个会话还没有定时任务。</div>
+                      ) : (
+                        cronTasks.map((task) => (
+                          <div className="sheet-item" key={task.id}>
+                            <div className="sheet-item-head">
+                              <span className="sheet-cron">{task.cron}</span>
+                              <span className="sheet-item-tail">
+                                <span className={task.recurring ? 'sheet-badge on' : 'sheet-badge'}>
+                                  {task.recurring ? '周期' : '单次'}
+                                </span>
+                                {task.stale && <span className="sheet-badge warn">已过期</span>}
+                                <button
+                                  type="button"
+                                  className="sheet-action danger"
+                                  onClick={() => void removeCronTask(task.id)}
+                                >
+                                  删除
+                                </button>
+                              </span>
+                            </div>
+                            <div className="sheet-prompt">{task.prompt}</div>
+                            <div className="sheet-item-sub">
+                              {task.next_fire_at === null
+                                ? '不再触发'
+                                : `下次触发 ${formatLocalTime(task.next_fire_at)}`}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </>
                   )}
                 </>
               )}

@@ -2,14 +2,14 @@
 
 NightHawk Web 是 NightHawk CLI 内置的浏览器图形界面：在终端运行 `nighthawk web`，就能在浏览器里新建会话、对话、处理审批、查看文件改动——界面更易读，会话和数据仍全部保存在你的本机。
 
-![NightHawk Web 界面](../../media/kimi-web-ui.jpg)
+![NightHawk Web 界面](../../media/nighthawk-web.png)
 
 ## 开始使用
 
 <div class="step">
-<span class="step-num">1</span> <strong>安装并登录 NightHawk CLI</strong>
+<span class="step-num">1</span> <strong>安装 NightHawk CLI 并配置好供应商</strong>
 
-`nighthawk web` 是 CLI 的内置命令，未安装 CLI 时不可用。安装与登录见 [开始使用](./getting-started.md)。
+`nighthawk web` 是 CLI 的内置命令，未安装 CLI 时不可用。安装与供应商配置见 [开始使用](./getting-started.md)。
 </div>
 
 <div class="step">
@@ -55,11 +55,17 @@ Stop:    Ctrl+C
 | `/remote-control` | 开启远程控制，从远程访问本地 Web 会话 |
 
 
+## 在浏览器里管理供应商
+
+Web 界面修改的供应商配置会写进 CLI 读取的同一份 `config.toml`。从侧栏底部的「供应商」打开面板，可以新增供应商、设为默认模型，也可以编辑或删除已有供应商。
+
+![Web 界面里的供应商面板](../../media/nighthawk-providers.png)
+
 ## 与 CLI 的关系
 
-Web 界面和 CLI 共享同一份登录态、配置（`config.toml`）和会话数据。
+Web 界面和 CLI 共享同一份供应商配置（`config.toml`）和会话数据。
 
-Web 支持的斜杠命令见上文 [常用斜杠命令](#常用斜杠命令)，与 CLI 不完全一致；部分 CLI 指令在 Web 里有对应的图形入口（设置页、模型选择器、账户菜单、任务面板）。
+Web 支持的斜杠命令见上文 [常用斜杠命令](#常用斜杠命令)，与 CLI 不完全一致；部分 CLI 指令在 Web 里有对应的图形入口（模型选择器、供应商面板、插件与 MCP 列表、定时面板）。
 
 两端能力对照如下：
 
@@ -68,12 +74,14 @@ Web 支持的斜杠命令见上文 [常用斜杠命令](#常用斜杠命令)，�
 | 功能 | CLI | Web | 说明 |
 | --- | --- | --- | --- |
 | 流式对话 | ✓ | ✓ | Web 为富格式增量渲染（表格、代码高亮、diff、工具卡片） |
-| 会话管理 | ✓ | ✓ | Web 可把不常用的会话归档收起，在已归档页按时间排序、随时恢复；Open / Done / Workspaces 标签页为 Lab 实验特性，默认关闭，需在设置的 Lab 页开启 |
-| 审批处理 | ✓ | ✓ | Web 可在图形页面中点击处理，无需指令 |
-| 后台任务 | ✓ | ✓ | Web 为任务面板实时展示进度 |
-| 文件与改动 | ✓ | ✓ | Web 有改动文件摘要卡与逐文件 diff |
-| 设置 | ✓ | ✓ | Web 另有图形化设置页（供应商、账号与用量、Lab 实验特性） |
-| 全局搜索 | — | ✓ | 需先在 `config.toml` 中设置 `[database] global_search = true`，之后 Web 可实现跨会话、跨工作区搜索 |
+| 会话管理 | ✓ | ✓ | 新建、重命名、删除会话，并导出为 ZIP |
+| 审批与提问 | ✓ | ✓ | Web 可在图形页面中点击处理，无需指令 |
+| 附件 | ✓ | ✓ | 上传或直接粘贴图片和文件到输入框 |
+| 供应商 | ✓ | ✓ | 在供应商面板里新增、编辑、删除供应商并设置默认模型 |
+| Skills | ✓ | ✓ | 列出会话可用的 skill，并激活其中一个 |
+| 定时任务 | ✓ | ✓ | 为会话创建、查看、删除 cron 定时任务 |
+| 插件与 MCP | ✓ | ✓ | 浏览已安装插件与已配置的 MCP 服务 |
+| 主题 | — | ✓ | 深色与浅色 |
 | 移动端适配 | — | ✓ | `--host` 开启局域网共享后，可实现在同一局域网下的手机浏览器中使用 |
 
 </div>

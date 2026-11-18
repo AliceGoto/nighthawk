@@ -9,7 +9,11 @@ import {
 } from '@nighthawk/agent-core-v2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { listCronTasksResponseSchema } from '../src/protocol/rest-cron';
+import {
+  createCronTaskResponseSchema,
+  deleteCronTaskResponseSchema,
+  listCronTasksResponseSchema,
+} from '../src/protocol/rest-cron';
 import { type RunningServer, startServer } from '../src/start';
 import { authHeaders } from './helpers/auth';
 import { TEST_HOST_IDENTITY } from './helpers/hostIdentity';
@@ -68,6 +72,14 @@ describe('server-v2 /api/v1 sessions cron', () => {
     return { status: res.status, body: (await res.json()) as Envelope<T> };
   }
 
+  async function deleteJson<T>(path: string): Promise<{ status: number; body: Envelope<T> }> {
+    const res = await fetch(`${base}${path}`, {
+      method: 'DELETE',
+      headers: authHeaders(server as RunningServer),
+    } as never);
+    return { status: res.status, body: (await res.json()) as Envelope<T> };
+  }
+
   async function createSession(): Promise<string> {
     const { body } = await postJson<{ id: string }>('/api/v1/sessions', {
       metadata: { cwd: home as string },
@@ -111,6 +123,104 @@ describe('server-v2 /api/v1 sessions cron', () => {
       const { body } = await getJson<null>('/api/v1/sessions/nope/cron');
       expect(body.code).toBe(40401);
       expect(body.msg).toMatch(/does not exist/);
+    });
+  });
+
+  describe('POST /api/v1/sessions/{sid}/cron', () => {
+    it('schedules a task that the list endpoint returns', async () => {
+      const id = await createSession();
+      const { body } = await postJson<unknown>(`/api/v1/sessions/${id}/cron`, {
+        cron: '*/5 * * * *',
+        prompt: 'Check the deploy',
+      });
+      expect(body.code).toBe(0);
+      const created = createCronTaskResponseSchema.parse(body.data);
+      expect(created.task).toMatchObject({
+        cron: '*/5 * * * *',
+        prompt: 'Check the deploy',
+        recurring: true,
+        stale: false,
+      });
+      expect(created.task.next_fire_at).toBeTypeOf('number');
+
+      const list = await getJson<{ items: unknown[] }>(`/api/v1/sessions/${id}/cron`);
+      expect(list.body.code).toBe(0);
+      const parsed = listCronTasksResponseSchema.parse(list.body.data);
+      expect(parsed.items).toEqual([created.task]);
+    });
+
+    it('honors recurring: false', async () => {
+      const id = await createSession();
+      const { body } = await postJson<unknown>(`/api/v1/sessions/${id}/cron`, {
+        cron: '30 14 28 2 *',
+        prompt: 'Leap-day reminder',
+        recurring: false,
+      });
+      expect(body.code).toBe(0);
+      const created = createCronTaskResponseSchema.parse(body.data);
+      expect(created.task.recurring).toBe(false);
+    });
+
+    it('returns 40001 for an invalid cron expression', async () => {
+      const id = await createSession();
+      const { body } = await postJson<null>(`/api/v1/sessions/${id}/cron`, {
+        cron: 'not a cron',
+        prompt: 'Never scheduled',
+      });
+      expect(body.code).toBe(40001);
+      expect(body.msg).toMatch(/cron/);
+    });
+
+    it('returns 40001 for an empty prompt', async () => {
+      const id = await createSession();
+      const { body } = await postJson<null>(`/api/v1/sessions/${id}/cron`, {
+        cron: '*/5 * * * *',
+        prompt: '',
+      });
+      expect(body.code).toBe(40001);
+    });
+
+    it('returns 40401 for an unknown session', async () => {
+      const { body } = await postJson<null>('/api/v1/sessions/nope/cron', {
+        cron: '*/5 * * * *',
+        prompt: 'Never scheduled',
+      });
+      expect(body.code).toBe(40401);
+    });
+  });
+
+  describe('DELETE /api/v1/sessions/{sid}/cron/{task_id}', () => {
+    it('removes the task and leaves the list empty', async () => {
+      const id = await createSession();
+      const created = await postJson<unknown>(`/api/v1/sessions/${id}/cron`, {
+        cron: '0 9 * * *',
+        prompt: 'Say good morning',
+      });
+      expect(created.body.code).toBe(0);
+      const task = createCronTaskResponseSchema.parse(created.body.data).task;
+
+      const { body } = await deleteJson<unknown>(
+        `/api/v1/sessions/${id}/cron/${task.id}`,
+      );
+      expect(body.code).toBe(0);
+      const removed = deleteCronTaskResponseSchema.parse(body.data);
+      expect(removed.removed).toEqual([task.id]);
+
+      const list = await getJson<{ items: unknown[] }>(`/api/v1/sessions/${id}/cron`);
+      expect(list.body.code).toBe(0);
+      expect(listCronTasksResponseSchema.parse(list.body.data).items).toEqual([]);
+    });
+
+    it('returns an empty array for an unknown task id', async () => {
+      const id = await createSession();
+      const { body } = await deleteJson<unknown>(`/api/v1/sessions/${id}/cron/nope`);
+      expect(body.code).toBe(0);
+      expect(deleteCronTaskResponseSchema.parse(body.data).removed).toEqual([]);
+    });
+
+    it('returns 40401 for an unknown session', async () => {
+      const { body } = await deleteJson<null>('/api/v1/sessions/nope/cron/nope');
+      expect(body.code).toBe(40401);
     });
   });
 });

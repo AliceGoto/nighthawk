@@ -2037,6 +2037,54 @@ body::after {
   opacity: 0.5;
 }
 
+.sheet-textarea {
+  min-height: 62px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.sheet-form-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.sheet-form-actions .sheet-submit {
+  flex: 1;
+}
+
+.sheet-cancel {
+  padding: 7px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sheet-cancel:hover {
+  color: var(--gold-2);
+  border-color: var(--gold);
+}
+
+.sheet-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+
+.sheet-check input {
+  width: auto;
+  padding: 0;
+  accent-color: var(--gold);
+}
+
 @media (max-width: 860px) {
   .app {
     grid-template-columns: 1fr;

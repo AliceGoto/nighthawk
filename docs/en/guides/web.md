@@ -2,14 +2,14 @@
 
 NightHawk Web is the browser-based graphical interface built into NightHawk CLI: run `nighthawk web` in a terminal, and you can start sessions, chat, handle approvals, and review file changes in a browser — a friendlier interface, while sessions and data still live entirely on your machine.
 
-![NightHawk Web UI](../../media/kimi-web-ui.jpg)
+![NightHawk Web interface](../../media/nighthawk-web.png)
 
 ## Getting started
 
 <div class="step">
-<span class="step-num">1</span> <strong>Install NightHawk CLI and log in</strong>
+<span class="step-num">1</span> <strong>Install NightHawk CLI and configure a provider</strong>
 
-`nighthawk web` is a built-in CLI command — it isn't available without the CLI. See [Getting started](./getting-started.md) for installation and login.
+`nighthawk web` is a built-in CLI command — it isn't available without the CLI. See [Getting started](./getting-started.md) for installation and provider configuration.
 </div>
 
 <div class="step">
@@ -54,11 +54,17 @@ The `#token=` fragment is the access credential — don't share it. Stop the ser
 | `/export` | Export the session content and troubleshooting logs as a ZIP |
 | `/remote-control` | Enable remote control to access the local web session remotely |
 
+## Managing providers
+
+Provider changes made in the web UI are written to the same `config.toml` the CLI reads. Open **Providers** from the sidebar footer to add a provider, set a default model, or edit and delete an existing one.
+
+![Provider sheet in the web UI](../../media/nighthawk-providers.png)
+
 ## Relationship with the CLI
 
-The web UI and the CLI share the same login state, configuration (`config.toml`), and session data.
+The web UI and the CLI share the same provider configuration (`config.toml`) and session data.
 
-The web UI supports only a subset of the CLI's slash commands — see [Common slash commands](#common-slash-commands) above. Everything else usually has a point-and-click equivalent in the UI (the settings page, the model picker, the account menu, the task panel).
+The web UI supports only a subset of the CLI's slash commands — see [Common slash commands](#common-slash-commands) above. Everything else usually has a point-and-click equivalent in the UI (the model picker, the provider sheet, the plugin and MCP lists, the cron panel).
 
 How the two sides compare:
 
@@ -67,12 +73,14 @@ How the two sides compare:
 | Feature | CLI | Web | Notes |
 | --- | --- | --- | --- |
 | Streaming chat | ✓ | ✓ | Web renders rich formats incrementally (tables, code highlighting, diffs, tool cards) |
-| Session management | ✓ | ✓ | Web lets you archive less-used sessions away; the archive page sorts them by time and you can restore them anytime; the Open / Done / Workspaces tabs are a Lab experiment (off by default) — enable them on the settings Lab page |
-| Approvals | ✓ | ✓ | Web handles them with clicks in the UI — no commands needed |
-| Background tasks | ✓ | ✓ | Web shows live progress in the task panel |
-| Files and changes | ✓ | ✓ | Web has a changed-files summary card and per-file diffs |
-| Settings | ✓ | ✓ | Web adds a settings UI (providers, account & usage, Lab experiments) |
-| Global search | — | ✓ | Set `[database] global_search = true` in `config.toml` first; Web then searches across sessions and workspaces |
+| Session management | ✓ | ✓ | Create, rename, delete, and export a session as a ZIP |
+| Approvals and questions | ✓ | ✓ | Click to approve or answer in the UI — no commands needed |
+| Attachments | ✓ | ✓ | Upload or paste images and files into the prompt |
+| Providers | ✓ | ✓ | Add, edit, delete, and set a default model from the provider sheet |
+| Skills | ✓ | ✓ | List the skills available to a session and activate one |
+| Scheduled tasks | ✓ | ✓ | Create, view, and delete cron tasks for a session |
+| Plugins and MCP | ✓ | ✓ | Browse installed plugins and configured MCP servers |
+| Themes | — | ✓ | Dark and light |
 | Mobile layout | — | ✓ | With LAN sharing on (`--host`), it works in phone browsers on the same network |
 
 </div>

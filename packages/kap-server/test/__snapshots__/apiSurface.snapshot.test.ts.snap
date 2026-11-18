@@ -38,6 +38,10 @@ exports[`API surface snapshot > matches the documented v2 route table and meta e
     ],
     [
       "DELETE",
+      "/api/v1/sessions/{session_id}/cron/{task_id}",
+    ],
+    [
+      "DELETE",
       "/api/v1/workspaces/{workspace_id}",
     ],
     [
@@ -455,6 +459,10 @@ exports[`API surface snapshot > matches the documented v2 route table and meta e
     [
       "POST",
       "/api/v1/sessions/{session_id}/children",
+    ],
+    [
+      "POST",
+      "/api/v1/sessions/{session_id}/cron",
     ],
     [
       "POST",

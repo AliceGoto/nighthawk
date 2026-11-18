@@ -300,6 +300,32 @@ export function deleteProvider(providerId: string): Promise<void> {
   return request(`/api/v1/providers/${encodeURIComponent(providerId)}`, { method: 'DELETE' });
 }
 
+export function updateProvider(
+  providerId: string,
+  body: {
+    type: string;
+    base_url?: string;
+    api_key?: string;
+    api_key_env?: string;
+    default_model?: string;
+    new_id?: string;
+    models: { model: string; max_context_size: number }[];
+  },
+): Promise<{ provider: ProviderItem }> {
+  return request(`/api/v1/providers/${encodeURIComponent(providerId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      type: body.type,
+      ...(body.base_url === undefined ? {} : { base_url: body.base_url }),
+      ...(body.api_key === undefined ? {} : { api_key: body.api_key }),
+      ...(body.api_key_env === undefined ? {} : { api_key_env: body.api_key_env }),
+      ...(body.default_model === undefined ? {} : { default_model: body.default_model }),
+      ...(body.new_id === undefined ? {} : { new_id: body.new_id }),
+      models: body.models,
+    }),
+  });
+}
+
 export function listSkills(sessionId: string): Promise<{ skills: SkillItem[] }> {
   return request(`/api/v1/sessions/${sessionId}/skills`);
 }
@@ -359,4 +385,20 @@ export interface CronTaskItem {
 
 export function listCronTasks(sessionId: string): Promise<{ items: CronTaskItem[] }> {
   return request(`/api/v1/sessions/${sessionId}/cron`);
+}
+
+export function createCronTask(
+  sessionId: string,
+  body: { cron: string; prompt: string; recurring?: boolean },
+): Promise<{ task: CronTaskItem }> {
+  return request(`/api/v1/sessions/${sessionId}/cron`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteCronTask(sessionId: string, taskId: string): Promise<{ removed: string[] }> {
+  return request(`/api/v1/sessions/${sessionId}/cron/${encodeURIComponent(taskId)}`, {
+    method: 'DELETE',
+  });
 }

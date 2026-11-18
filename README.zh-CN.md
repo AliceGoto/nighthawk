@@ -5,38 +5,38 @@
 [Documentation](https://alicegoto.github.io/nighthawk/zh/) · [Issues](https://github.com/AliceGoto/nighthawk/issues) · [English](README.md)
 
 
-![NightHawk 的使用演示](./docs/media/intro.gif)
+![NightHawk Web 界面](./docs/media/nighthawk-web.png)
 
 
 ## 什么是 NightHawk CLI
 
-NightHawk CLI 是一个运行在终端里的 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。开箱即用对接 Moonshot AI 的 NightHawk 模型，也可指向其他兼容厂商。
+NightHawk CLI 是一个运行在终端里的 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。默认使用 DeepSeek，也可以接入任意 OpenAI 兼容供应商，在 `config.toml` 或 Web 供应商面板里配置。
 
 ## 安装
 
-推荐使用官方安装脚本，不需要提前安装 Node.js。
-
-- **macOS / Linux**：
+**macOS（Apple 芯片）** 到 [Releases](https://github.com/AliceGoto/nighthawk/releases) 下载 `nighthawk-darwin-arm64.tar.gz`，解压后确认可执行文件能正常运行：
 
 ```sh
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
+tar -xzf nighthawk-darwin-arm64.tar.gz
+./nighthawk --version
 ```
 
-- **Windows（PowerShell）**：
+把 `nighthawk` 移到 `PATH` 里的某个目录，之后就能在任意项目里直接运行。
 
-```powershell
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
+**其他平台** 从源码构建，需要 Node.js ≥ 24.15.0 和 pnpm 10.33.0。
+
+```sh
+git clone https://github.com/AliceGoto/nighthawk.git
+cd nighthawk
+pnpm install
+pnpm build
 ```
+
+构建完成后用 `node apps/nighthawk/dist/main.mjs` 运行，或者在 `apps/nighthawk` 里执行 `pnpm link --global`，把 `nighthawk` 挂到 `PATH` 上。
 
 > Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，NightHawk CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `NIGHTHAWK_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
 
-随后在新的终端会话中运行：
-
-```sh
-nighthawk --version
-```
-
-npm 安装、升级、卸载方式，见[快速上手](https://alicegoto.github.io/nighthawk/zh/guides/getting-started)。
+首次使用前先配置一个供应商和 API 密钥，`config.toml` 和 Web 供应商面板的用法见[供应商配置](https://alicegoto.github.io/nighthawk/zh/configuration/providers)。
 
 ## 快速开始
 
@@ -47,7 +47,7 @@ cd your-project
 nighthawk
 ```
 
-首次启动时，在 NightHawk CLI 里输入 `/login`，选择 NightHawk OAuth 或 Moonshot AI Open Platform API 密钥登录。登录完成后，可以先让它熟悉项目：
+首次启动时按上面的说明配置好供应商，再让它熟悉项目：
 
 ```
 帮我看一下这个项目的目录结构，简单介绍一下每个目录是做什么的
@@ -55,7 +55,7 @@ nighthawk
 
 ## 核心特性
 
-- **二进制发行，零环境依赖** 一行命令安装，不需要预装 Node.js，不用折腾 PATH，也不会和全局模块冲突。
+- **二进制发行，零环境依赖** 一个压缩包解压即用，不需要预装 Node.js，不用折腾 PATH，也不会和全局模块冲突。
 - **极速启动** TUI 在毫秒级就绪，开一个新会话没有任何心智负担。
 - **精致的 TUI 体验** 端到端打磨的交互界面，专为长时间、专注的 Agent 会话优化。
 - **视频也能输入** 把屏幕录像、演示视频拖进对话，让 Agent 看那些难以用文字描述的东西——把参考片段做成 LUT、把长视频剪成短视频、把录屏变成代码，等等。
@@ -64,11 +64,12 @@ nighthawk
 - **子 Agent 聚焦并行工作** 内置 `coder`、`explore`、`plan` 子 Agent 在隔离上下文中处理子任务，主对话保持清爽。
 - **生命周期 hooks** 在关键节点执行本地命令：拦截高风险工具调用、审计决策、发送桌面通知，或对接你自己的自动化脚本。
 - **编辑器 / IDE 集成（ACP）** 用 `nighthawk acp` 让 Zed、JetBrains 等任意 [Agent Client Protocol](https://agentclientprotocol.com/) 客户端直接驱动会话。
+- **浏览器界面** 运行 `nighthawk web` 会启动本地 Web 客户端，支持会话、审批、附件、供应商、Skills 和定时任务，与 CLI 读写同一份数据。
 
 
 ## 在编辑器里使用（ACP）
 
-NightHawk CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)，ACP 兼容的编辑器 / IDE（Zed、JetBrains……）可以通过 stdio 直接驱动会话。登录一次后，把编辑器指向 `nighthawk acp` 子命令即可，无需重复登录。
+NightHawk CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)，ACP 兼容的编辑器 / IDE（Zed、JetBrains……）可以通过 stdio 直接驱动会话。配置一次供应商后，把编辑器指向 `nighthawk acp` 子命令即可，无需重复配置。
 
 以 Zed 为例，在 `~/.config/zed/settings.json` 中加入：
 
@@ -120,6 +121,10 @@ pnpm build      # 构建所有包
 
 - [Issues](https://github.com/AliceGoto/nighthawk/issues)
 - 安全漏洞反馈，请见 [SECURITY.md](SECURITY.md)。
+
+## Star 趋势
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AliceGoto/nighthawk&type=Timeline)](https://star-history.com/#AliceGoto/nighthawk&Timeline)
 
 ## 致谢
 
