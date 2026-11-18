@@ -3600,7 +3600,7 @@ describe('global search switched off', () => {
     await expect(stat(join(home!, 'search-index'))).rejects.toMatchObject({ code: 'ENOENT' });
   }
 
-  it('stays off by default: no index directory, no worker, search tells how to enable it', async () => {
+  it('global_search = false keeps the index off: no directory, no worker, search tells how to enable it', async () => {
     const s1 = summary('s1', '搜索重构讨论', T1);
     await writeTitle(home!, s1.id, s1.title!);
     await writeWire(home!, 's1', 'main', [userLine('帮我看看苹果怎么挑', T1)]);
@@ -3608,7 +3608,7 @@ describe('global search switched off', () => {
       staticIndex([s1]),
       makeBootstrap(home!),
       noopLog,
-      offConfig({ search: true }),
+      offConfig({ globalSearch: false, search: true }),
     );
     service.syncDebounceMs = 0;
     await expectOff(service);

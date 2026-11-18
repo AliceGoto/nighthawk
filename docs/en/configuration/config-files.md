@@ -465,7 +465,7 @@ Both values must be positive integers. A call's `max_chars` overrides the defaul
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `base` | `boolean` | `true` | Use the minidb-backed read model for session indexing; `false` falls back to reading session metadata directly |
-| `global_search` | `boolean` | `false` | Build the global full-text search index and serve `POST /api/v1/search`; when off, no sessions are scanned, no search worker starts, and the search endpoint reports the index as unavailable |
+| `global_search` | `boolean` | `true` | Build the global full-text search index and serve `POST /api/v1/search`; set it to `false` to skip scanning, stop the search worker, and make the search endpoint report the index as unavailable |
 | `search` | `boolean` | `true` | With global search enabled, run the index in a dedicated worker thread; `false` runs it in the server process |
 
 `base` can be overridden by the `NIGHTHAWK_PERSISTENCE_MINIDB_READMODEL` environment variable, `global_search` by `NIGHTHAWK_GLOBAL_SEARCH`, and `search` by `NIGHTHAWK_SEARCH_WORKER`; all take higher priority than `config.toml`.

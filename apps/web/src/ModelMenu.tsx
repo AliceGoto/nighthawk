@@ -90,6 +90,9 @@ export interface ModelMenuProps {
   effort: string;
   onSelectModel: (entry: ModelEntry) => void;
   onSelectEffort: (value: string) => void;
+  pending?: boolean;
+  onManageProviders?: () => void;
+  openSignal?: number;
 }
 
 export function ModelMenu({
@@ -98,6 +101,9 @@ export function ModelMenu({
   effort,
   onSelectModel,
   onSelectEffort,
+  pending,
+  onManageProviders,
+  openSignal,
 }: ModelMenuProps): ReactElement {
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<Panel>('root');
@@ -109,6 +115,7 @@ export function ModelMenu({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const wasOpenRef = useRef(false);
+  const openSignalRef = useRef(openSignal ?? 0);
 
   const selected = useMemo(
     () => models.find((entry) => entry.model === model),
@@ -116,11 +123,18 @@ export function ModelMenu({
   );
   const efforts = selected?.support_efforts ?? [];
   const hasEfforts = efforts.length > 0;
+  const defaultEffort = selected?.default_effort ?? efforts[0] ?? '';
+  const canManageProviders = onManageProviders !== undefined;
+  const manageRowIndex = hasEfforts ? 2 : 1;
   const showSearch = models.length > 4;
   const visible = panel === 'models' ? filterModels(models, query) : [];
   const groups = panel === 'models' ? groupModels(visible) : [];
   const itemCount =
-    panel === 'root' ? (hasEfforts ? 2 : 1) : panel === 'models' ? visible.length : efforts.length;
+    panel === 'root'
+      ? (hasEfforts ? 2 : 1) + (canManageProviders ? 1 : 0)
+      : panel === 'models'
+        ? visible.length
+        : efforts.length + (hasEfforts ? 1 : 0);
 
   const triggerLabel = models.length === 0 ? '没有可用模型' : displayName(selected, model);
   const effortText = effort.length > 0 ? effortLabel(effort) : '';
@@ -141,6 +155,17 @@ export function ModelMenu({
     }
     popupRef.current?.focus();
   }, [open, panel]);
+
+  useEffect(() => {
+    const signal = openSignal ?? 0;
+    if (signal === openSignalRef.current) return;
+    openSignalRef.current = signal;
+    if (signal <= 0) return;
+    setPanel('root');
+    setQuery('');
+    setHighlight(0);
+    setOpen(true);
+  }, [openSignal]);
 
   useEffect(() => {
     setHighlight(0);
@@ -196,6 +221,11 @@ export function ModelMenu({
     close();
   };
 
+  const manageProviders = (): void => {
+    close();
+    onManageProviders?.();
+  };
+
   const moveHighlight = (delta: number): void => {
     if (itemCount === 0) return;
     setHighlight((previous) => {
@@ -212,6 +242,8 @@ export function ModelMenu({
         openPanel('models');
       } else if (index === 1 && hasEfforts) {
         openPanel('efforts');
+      } else if (index === manageRowIndex && canManageProviders) {
+        manageProviders();
       }
       return;
     }
@@ -220,8 +252,14 @@ export function ModelMenu({
       if (entry !== undefined) chooseModel(entry);
       return;
     }
-    const value = efforts[index];
-    if (value !== undefined) chooseEffort(value);
+    if (hasEfforts) {
+      if (index === 0) {
+        chooseEffort(defaultEffort);
+        return;
+      }
+      const value = efforts[index - 1];
+      if (value !== undefined) chooseEffort(value);
+    }
   };
 
   const onMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -257,16 +295,21 @@ export function ModelMenu({
         className="mm-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        disabled={models.length === 0}
+        aria-busy={pending === true ? true : undefined}
+        disabled={models.length === 0 || pending === true}
         onClick={toggle}
       >
         <span className="mm-trigger-name">{triggerLabel}</span>
         {models.length > 0 && effortText.length > 0 && (
           <span className="mm-trigger-tier">· {effortText}</span>
         )}
-        <span className="mm-chev" aria-hidden="true">
-          ⌄
-        </span>
+        {pending === true ? (
+          <span className="mm-spinner" aria-hidden="true" />
+        ) : (
+          <span className="mm-chev" aria-hidden="true">
+            ⌄
+          </span>
+        )}
       </button>
       {open && models.length > 0 && (
         <div
@@ -337,6 +380,21 @@ export function ModelMenu({
                   </span>
                 </button>
               )}
+              {canManageProviders && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={highlight === manageRowIndex ? 'mm-row mm-active' : 'mm-row'}
+                  data-mm-index={manageRowIndex}
+                  onMouseEnter={() => setHighlight(manageRowIndex)}
+                  onClick={manageProviders}
+                >
+                  <span className="mm-row-label">管理供应商</span>
+                  <span className="mm-arrow" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+              )}
             </div>
           )}
           {panel === 'models' && (
@@ -370,23 +428,42 @@ export function ModelMenu({
           )}
           {panel === 'efforts' && (
             <div className="mm-list" role="menu" aria-label="选择强度">
-              {efforts.map((value, index) => (
+              {hasEfforts && (
                 <button
-                  key={value}
                   type="button"
                   role="menuitemradio"
-                  aria-checked={value === effort}
-                  className={index === highlight ? 'mm-item mm-active' : 'mm-item'}
-                  data-mm-index={index}
-                  onMouseEnter={() => setHighlight(index)}
-                  onClick={() => chooseEffort(value)}
+                  aria-checked={effort === defaultEffort}
+                  className={highlight === 0 ? 'mm-item mm-active' : 'mm-item'}
+                  data-mm-index={0}
+                  onMouseEnter={() => setHighlight(0)}
+                  onClick={() => chooseEffort(defaultEffort)}
                 >
                   <span className="mm-check" aria-hidden="true">
-                    {value === effort ? '✓' : ''}
+                    {effort === defaultEffort ? '✓' : ''}
                   </span>
-                  <span className="mm-item-name">{effortLabel(value)}</span>
+                  <span className="mm-item-name">模型默认</span>
                 </button>
-              ))}
+              )}
+              {efforts.map((value, index) => {
+                const rowIndex = index + 1;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={value === effort}
+                    className={rowIndex === highlight ? 'mm-item mm-active' : 'mm-item'}
+                    data-mm-index={rowIndex}
+                    onMouseEnter={() => setHighlight(rowIndex)}
+                    onClick={() => chooseEffort(value)}
+                  >
+                    <span className="mm-check" aria-hidden="true">
+                      {value === effort ? '✓' : ''}
+                    </span>
+                    <span className="mm-item-name">{effortLabel(value)}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

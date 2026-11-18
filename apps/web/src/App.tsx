@@ -13,6 +13,7 @@ import {
   ApiError,
   abortSession,
   activateSkill,
+  compactSession,
   createCronTask,
   createProvider,
   createSession,
@@ -51,6 +52,7 @@ import {
   type Session,
 } from './api';
 import { AuthImage } from './AuthImage';
+import { CommandMenu, type CommandItem } from './CommandMenu';
 import { Markdown } from './Markdown';
 import { ModelMenu } from './ModelMenu';
 import {
@@ -59,6 +61,8 @@ import {
   type ApprovalItem,
   type QuestionPrompt,
 } from './Pending';
+import { SearchDialog } from './SearchDialog';
+import { SessionPanel } from './SessionPanel';
 import { Socket, type WireEvent } from './ws';
 
 interface ToolCall {
@@ -93,6 +97,7 @@ const QUICK_PROMPTS = [
 const SIDEBAR_MIN = 264;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_DEFAULT = 280;
+const SIDEBAR_RAIL = 56;
 const SIDEBAR_AUTO_COLLAPSE = 1024;
 const SIDEBAR_DRAWER = 768;
 const CENTER_MIN = 400;
@@ -101,11 +106,12 @@ const RIGHT_DEFAULT_RATIO = 0.45;
 const RIGHT_MAX_RATIO = 0.7;
 
 const PANEL_TABS = [
+  ['session', '会话'],
   ['plugins', '插件'],
   ['providers', '供应商'],
   ['skills', 'Skills'],
-  ['mcp', 'MCP'],
   ['cron', '定时'],
+  ['mcp', 'MCP'],
 ] as const;
 
 type PanelTab = (typeof PANEL_TABS)[number][0];
@@ -114,6 +120,20 @@ function panelFromUrl(): PanelTab | undefined {
   const fromUrl = new URLSearchParams(location.search).get('panel');
   return PANEL_TABS.find(([tab]) => tab === fromUrl)?.[0];
 }
+
+const COMMAND_ITEMS: CommandItem[] = [
+  { id: 'new', label: 'new', description: '新建会话' },
+  { id: 'model', label: 'model', description: '切换模型与强度' },
+  { id: 'search', label: 'search', description: '搜索所有会话' },
+  { id: 'export', label: 'export', description: '导出当前会话' },
+  { id: 'compact', label: 'compact', description: '压缩当前上下文' },
+  { id: 'stop', label: 'stop', description: '停止当前回合' },
+  { id: 'theme', label: 'theme', description: '切换深色浅色' },
+  { id: 'panel', label: 'panel', description: '切换右侧面板' },
+];
+
+const CONTEXT_RING_RADIUS = 5.2;
+const CONTEXT_RING_CIRCUMFERENCE = 2 * Math.PI * CONTEXT_RING_RADIUS;
 
 function readStoredWidth(key: string): number | undefined {
   const raw = localStorage.getItem(key);
@@ -522,7 +542,10 @@ export function App(): ReactElement {
   const [meta, setMeta] = useState<Record<string, unknown>>();
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [model, setModel] = useState('');
+  const [modelPending, setModelPending] = useState(false);
+  const [modelSignal, setModelSignal] = useState(0);
   const [effort, setEffort] = useState('');
+  const [planMode, setPlanMode] = useState(false);
   const [query, setQuery] = useState('');
   const [attachments, setAttachments] = useState<FileMeta[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -545,6 +568,7 @@ export function App(): ReactElement {
   const [narrowSidebarOpen, setNarrowSidebarOpen] = useState(false);
   const [panel, setPanel] = useState<PanelTab>(() => panelFromUrl() ?? 'plugins');
   const [panelOpen, setPanelOpen] = useState(() => panelFromUrl() !== undefined);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [plugins, setPlugins] = useState<PluginSummary[]>([]);
   const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
   const [providers, setProviders] = useState<ProviderItem[]>([]);
@@ -600,8 +624,10 @@ export function App(): ReactElement {
   const narrow = viewport < SIDEBAR_AUTO_COLLAPSE;
   const drawer = viewport < SIDEBAR_DRAWER;
   const sidebarOpen = narrow ? narrowSidebarOpen : wideSidebarOpen;
+  const sidebarRail = !drawer && !sidebarOpen;
+  const sidebarInteractive = sidebarOpen || sidebarRail;
   const sidebarPrefWidth = clampWidth(sidebarWidth, SIDEBAR_MIN, SIDEBAR_MAX);
-  const sidebarColumnWidth = sidebarOpen && !drawer ? sidebarPrefWidth : 0;
+  const sidebarColumnWidth = drawer ? 0 : sidebarOpen ? sidebarPrefWidth : SIDEBAR_RAIL;
   const rightPrefWidth = clampWidth(
     rightWidth ?? Math.round(viewport * RIGHT_DEFAULT_RATIO),
     RIGHT_MIN,
@@ -824,13 +850,15 @@ export function App(): ReactElement {
   useEffect(() => {
     if (!panelOpen) return;
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setPanelOpen(false);
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      setPanelOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panelOpen]);
 
   useEffect(() => {
+    setPlanMode(false);
     if (currentId === undefined) return;
     void refreshMessages(currentId);
     void getSession(currentId)
@@ -839,6 +867,7 @@ export function App(): ReactElement {
         if (typeof sessionModel === 'string' && sessionModel.length > 0) setModel(sessionModel);
         const sessionThinking = session.agent_config?.thinking;
         setEffort(typeof sessionThinking === 'string' ? sessionThinking : '');
+        setPlanMode(session.agent_config?.plan_mode === true);
       })
       .catch(() => undefined);
     socketRef.current?.subscribe(currentId);
@@ -972,7 +1001,7 @@ export function App(): ReactElement {
           setModels(modelPage.items);
         } else if (which === 'cron') {
           await loadCron(currentIdRef.current ?? cronSessionIdRef.current ?? '');
-        } else {
+        } else if (which === 'skills') {
           await loadSkills(currentIdRef.current ?? skillsSessionIdRef.current ?? '');
         }
       } catch (error) {
@@ -1231,6 +1260,45 @@ export function App(): ReactElement {
     }
   }, [cwd, model, reload]);
 
+  const runCommand = useCallback(
+    (id: string) => {
+      setComposer('');
+      switch (id) {
+        case 'new':
+          void newSession();
+          break;
+        case 'model':
+          setModelSignal((previous) => previous + 1);
+          break;
+        case 'search':
+          setSearchOpen(true);
+          break;
+        case 'export':
+          void downloadExport();
+          break;
+        case 'compact':
+          if (currentId !== undefined) {
+            void compactSession(currentId).catch((error) => {
+              setError(error instanceof Error ? error.message : String(error));
+            });
+          }
+          break;
+        case 'stop':
+          void stop();
+          break;
+        case 'theme':
+          setTheme((previous) => (previous === 'dark' ? 'light' : 'dark'));
+          break;
+        case 'panel':
+          setPanelOpen((previous) => !previous);
+          break;
+        default:
+          break;
+      }
+    },
+    [currentId, downloadExport, newSession, stop],
+  );
+
   useEffect(() => {
     if (panelOpen) void loadPanels(panel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1264,6 +1332,21 @@ export function App(): ReactElement {
     const onKey = (event: KeyboardEvent): void => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (
+        event.ctrlKey &&
+        event.altKey &&
+        (event.code === 'KeyN' || event.key.toLowerCase() === 'n')
+      ) {
+        event.preventDefault();
         void newSession();
       }
     };
@@ -1271,36 +1354,44 @@ export function App(): ReactElement {
     return () => window.removeEventListener('keydown', onKey);
   }, [newSession]);
 
-  const applyConfig = useCallback(
-    (patch: { model?: string; thinking?: string }) => {
+  const selectModel = useCallback((entry: ModelEntry) => {
+    const list = entry.support_efforts ?? [];
+    const nextEffort = entry.default_effort ?? list[Math.floor(list.length / 2)] ?? '';
+    setModel(entry.model);
+    setEffort(nextEffort);
+    const sessionId = currentIdRef.current;
+    if (sessionId === undefined) return;
+    setModelPending(true);
+    void setSessionConfig(
+      sessionId,
+      nextEffort.length > 0
+        ? { model: entry.model, thinking: nextEffort }
+        : { model: entry.model },
+    )
+      .catch((error) => {
+        setError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        setModelPending(false);
+      });
+  }, []);
+
+  const changeEffort = useCallback((value: string) => {
+    setEffort(value);
+    if (effortTimer.current !== undefined) window.clearTimeout(effortTimer.current);
+    effortTimer.current = window.setTimeout(() => {
       const sessionId = currentIdRef.current;
       if (sessionId === undefined) return;
-      void setSessionConfig(sessionId, patch).catch((error) => {
-        setError(error instanceof Error ? error.message : String(error));
-      });
-    },
-    [],
-  );
-
-  const selectModel = useCallback(
-    (entry: ModelEntry) => {
-      const list = entry.support_efforts ?? [];
-      const nextEffort = entry.default_effort ?? list[Math.floor(list.length / 2)] ?? '';
-      setModel(entry.model);
-      setEffort(nextEffort);
-      applyConfig({ model: entry.model, ...(nextEffort.length > 0 ? { thinking: nextEffort } : {}) });
-    },
-    [applyConfig],
-  );
-
-  const changeEffort = useCallback(
-    (value: string) => {
-      setEffort(value);
-      if (effortTimer.current !== undefined) window.clearTimeout(effortTimer.current);
-      effortTimer.current = window.setTimeout(() => applyConfig({ thinking: value }), 350);
-    },
-    [applyConfig],
-  );
+      setModelPending(true);
+      void setSessionConfig(sessionId, { thinking: value })
+        .catch((error) => {
+          setError(error instanceof Error ? error.message : String(error));
+        })
+        .finally(() => {
+          setModelPending(false);
+        });
+    }, 350);
+  }, []);
 
   const removeSession = useCallback(
     async (id: string) => {
@@ -1392,6 +1483,13 @@ export function App(): ReactElement {
   }
 
   const current = sessions.find((session) => session.id === currentId);
+  const commandQuery =
+    composer.startsWith('/') && !composer.includes('\n') ? composer.slice(1) : null;
+  const usage = current?.usage;
+  const contextPercent =
+    usage !== undefined && usage.context_limit > 0
+      ? Math.round((usage.context_tokens / usage.context_limit) * 100)
+      : undefined;
 
   const composerNode = (
           <footer className={`composer${current === undefined ? ' composer-inline' : ''}`}>
@@ -1445,6 +1543,16 @@ export function App(): ReactElement {
                   ))}
                 </div>
               )}
+              {commandQuery !== null && (
+                <CommandMenu
+                  query={commandQuery}
+                  items={COMMAND_ITEMS}
+                  onRun={runCommand}
+                  onClose={() => {
+                    setComposer('');
+                  }}
+                />
+              )}
               <textarea
                 value={composer}
                 onChange={(event) => setComposer(event.target.value)}
@@ -1461,7 +1569,7 @@ export function App(): ReactElement {
                     void submit();
                   }
                 }}
-                placeholder="问点什么，Enter 发送，Shift+Enter 换行"
+                placeholder={planMode ? '先规划，再执行…' : '问点什么，Enter 发送，Shift+Enter 换行'}
                 rows={2}
               />
               <div className="composer-bar">
@@ -1487,14 +1595,73 @@ export function App(): ReactElement {
                       </svg>
                     )}
                   </button>
+                  {currentId !== undefined && (
+                    <button
+                      type="button"
+                      className={planMode ? 'bar-icon plan-toggle active' : 'bar-icon plan-toggle'}
+                      title={planMode ? '退出 Plan 模式' : '进入 Plan 模式'}
+                      aria-pressed={planMode}
+                      onClick={() => {
+                        const previous = planMode;
+                        const next = !previous;
+                        setPlanMode(next);
+                        void setSessionConfig(currentId, { plan_mode: next }).catch((error) => {
+                          setPlanMode(previous);
+                          setError(error instanceof Error ? error.message : String(error));
+                        });
+                      }}
+                    >
+                      Plan
+                    </button>
+                  )}
                 </div>
                 <div className="composer-right">
+                  {usage !== undefined && contextPercent !== undefined && (
+                    <button
+                      type="button"
+                      className="context-meter"
+                      title={`已用 ${usage.context_tokens.toLocaleString('zh-CN')} / ${usage.context_limit.toLocaleString('zh-CN')} tokens（${String(contextPercent)}%）`}
+                      onClick={() => {
+                        setPanel('session');
+                        setPanelOpen(true);
+                      }}
+                    >
+                      <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true">
+                        <circle
+                          cx="7"
+                          cy="7"
+                          r={CONTEXT_RING_RADIUS}
+                          fill="none"
+                          stroke="var(--line-strong)"
+                          strokeWidth="2"
+                        />
+                        <circle
+                          cx="7"
+                          cy="7"
+                          r={CONTEXT_RING_RADIUS}
+                          fill="none"
+                          stroke={contextPercent > 85 ? 'var(--blood)' : 'var(--gold)'}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeDasharray={CONTEXT_RING_CIRCUMFERENCE}
+                          strokeDashoffset={
+                            CONTEXT_RING_CIRCUMFERENCE * (1 - Math.min(100, contextPercent) / 100)
+                          }
+                          transform="rotate(-90 7 7)"
+                        />
+                      </svg>
+                      <span>{contextPercent}%</span>
+                    </button>
+                  )}
                   <ModelMenu
                     models={models}
                     model={model}
                     effort={effort}
                     onSelectModel={selectModel}
                     onSelectEffort={changeEffort}
+                    pending={modelPending}
+                    openSignal={modelSignal}
+                    onManageProviders={() => void loadPanels('providers')}
                   />
                   {busy ? (
                     <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
@@ -1523,6 +1690,7 @@ export function App(): ReactElement {
       data-sidebar-drawer={drawer || undefined}
       data-sidebar-open={sidebarOpen || undefined}
       data-sidebar-collapsed={sidebarOpen ? undefined : true}
+      data-sidebar-rail={sidebarRail || undefined}
       data-right-overlay={rightMode === 'overlay' || undefined}
       data-right-full={(panelOpen && drawer) || undefined}
       style={
@@ -1534,17 +1702,52 @@ export function App(): ReactElement {
         } as CSSProperties
       }
     >
-      <aside id="app-sidebar" className="sidebar" aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
+      <aside
+        id="app-sidebar"
+        className="sidebar"
+        aria-hidden={!sidebarInteractive}
+        inert={!sidebarInteractive}
+      >
         <div className="brand">
-          <img src="/nighthawk-icon.svg" alt="" width={22} height={22} />
+          <img src="/brand-icon.svg" alt="" width={22} height={22} />
           <span className="brand-name">NightHawk</span>
           <span className="brand-tag">codex</span>
           <span className={`dot ${status}`} title={status} />
         </div>
-        <button type="button" className="new-chat" onClick={() => void newSession()}>
-          <span className="new-chat-label">＋　新建会话</span>
-          <kbd>⌘K</kbd>
+        <button
+          type="button"
+          className="new-chat"
+          title="新建会话"
+          onClick={() => void newSession()}
+        >
+          <span className="new-chat-text">
+            <span className="new-chat-glyph">＋</span>
+            <span className="new-chat-label">新建会话</span>
+          </span>
+          <kbd>⌃⌥N</kbd>
         </button>
+        {sidebarRail && (
+          <button
+            type="button"
+            className="rail-search"
+            title="展开侧栏并搜索会话"
+            aria-label="展开侧栏并搜索会话"
+            onClick={toggleSidebar}
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            >
+              <circle cx="7" cy="7" r="4.4" />
+              <path d="m10.3 10.3 3 3" />
+            </svg>
+          </button>
+        )}
         <div className="new-session">
           <input
             value={cwd}
@@ -1641,6 +1844,9 @@ export function App(): ReactElement {
           {visibleSessions.length === 0 && <div className="sessions-empty">没有会话</div>}
         </nav>
         <div className="sidebar-footer">
+          <button type="button" className="footer-btn" onClick={() => void loadPanels('session')}>
+            会话
+          </button>
           <button type="button" className="footer-btn" onClick={() => void loadPanels('plugins')}>
             插件
           </button>
@@ -1693,14 +1899,24 @@ export function App(): ReactElement {
               </div>
             )}
           </div>
-          {current !== undefined && (
-            <div className="header-right">
-              <button type="button" className="header-btn" onClick={() => void downloadExport()}>
-                导出
-              </button>
-              <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
-            </div>
-          )}
+          <div className="header-right">
+            <button
+              type="button"
+              className="header-btn"
+              title="搜索所有会话（⌘K）"
+              onClick={() => setSearchOpen(true)}
+            >
+              搜索
+            </button>
+            {current !== undefined && (
+              <>
+                <button type="button" className="header-btn" onClick={() => void downloadExport()}>
+                  导出
+                </button>
+                <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
+              </>
+            )}
+          </div>
         </header>
 
         {current === undefined ? (
@@ -1824,6 +2040,12 @@ export function App(): ReactElement {
               </button>
             </div>
             <div className="sheet-body">
+              {panel === 'session' &&
+                (current === undefined ? (
+                  <div className="sheet-empty">先打开一个会话</div>
+                ) : (
+                  <SessionPanel session={current} />
+                ))}
               {panel === 'plugins' &&
                 (plugins.length === 0 ? (
                   <div className="sheet-empty">没有已安装的插件</div>
@@ -2152,6 +2374,15 @@ export function App(): ReactElement {
           </aside>
         </>
       )}
+
+      <SearchDialog
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onOpenSession={(id) => {
+          setCurrentId(id);
+          setSearchOpen(false);
+        }}
+      />
 
       {sidebarOpen && !drawer && (
         <DragHandle

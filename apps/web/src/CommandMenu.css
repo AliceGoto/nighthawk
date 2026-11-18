@@ -1,0 +1,69 @@
+.cm-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, 100%);
+  max-height: 300px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  color: var(--text);
+  background: var(--leather-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--ink) 60%, transparent);
+}
+
+.cm-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 8px;
+  font-family: var(--ui);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text);
+  text-align: left;
+  border-radius: 2px;
+}
+
+.cm-item:hover {
+  background: var(--leather-3);
+}
+
+.cm-item.cm-active {
+  background: var(--leather-3);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+
+.cm-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-item[aria-selected='true'] .cm-label {
+  color: var(--gold-2);
+}
+
+.cm-desc {
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-empty {
+  padding: 16px 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: center;
+}

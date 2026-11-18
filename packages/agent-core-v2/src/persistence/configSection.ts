@@ -50,7 +50,7 @@ export function databaseBaseEnabled(config: IConfigService): boolean {
 }
 
 export function databaseGlobalSearchEnabled(config: IConfigService): boolean {
-  return config.get<DatabaseConfig | undefined>(DATABASE_SECTION)?.globalSearch ?? false;
+  return config.get<DatabaseConfig | undefined>(DATABASE_SECTION)?.globalSearch ?? true;
 }
 
 export function databaseSearchEnabled(config: IConfigService): boolean {

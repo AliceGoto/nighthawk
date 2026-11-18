@@ -53,6 +53,22 @@
   color: var(--text-3);
 }
 
+.mm-spinner {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--text-3);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: mm-spin 0.7s linear infinite;
+}
+
+@keyframes mm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .mm-popup {
   position: absolute;
   right: 0;

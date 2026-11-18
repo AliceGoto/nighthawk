@@ -465,7 +465,7 @@ max_chars = 100000
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `base` | `boolean` | `true` | 会话索引使用基于 minidb 的读模型；`false` 回退为直接读取会话元数据 |
-| `global_search` | `boolean` | `false` | 是否构建全局全文搜索索引并提供 `POST /api/v1/search`；关闭时不扫描会话、不启动搜索 worker，搜索接口返回索引不可用 |
+| `global_search` | `boolean` | `true` | 是否构建全局全文搜索索引并提供 `POST /api/v1/search`；设为 `false` 时不扫描会话、不启动搜索 worker，搜索接口返回索引不可用 |
 | `search` | `boolean` | `true` | 全局搜索开启时，在独立 worker 线程中运行索引；`false` 在服务器进程内运行 |
 
 `base` 可被环境变量 `NIGHTHAWK_PERSISTENCE_MINIDB_READMODEL` 覆盖，`global_search` 可被 `NIGHTHAWK_GLOBAL_SEARCH` 覆盖，`search` 可被 `NIGHTHAWK_SEARCH_WORKER` 覆盖，优先级均高于配置文件。

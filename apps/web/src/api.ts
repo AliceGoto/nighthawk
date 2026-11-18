@@ -16,7 +16,17 @@ export interface Session {
   pending_interaction: 'none' | 'approval' | 'question';
   last_prompt: string;
   metadata: { cwd?: string; [key: string]: unknown };
-  agent_config?: { model?: string; thinking?: string };
+  agent_config?: { model?: string; thinking?: string; plan_mode?: boolean; permission_mode?: string };
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_tokens: number;
+    cache_creation_tokens: number;
+    total_cost_usd: number;
+    context_tokens: number;
+    context_limit: number;
+    turn_count: number;
+  };
 }
 
 export interface ContentBlock {
@@ -107,7 +117,13 @@ export function getConfig(): Promise<Config> {
 
 export function setSessionConfig(
   sessionId: string,
-  patch: { model?: string; thinking?: string },
+  patch: {
+    model?: string;
+    thinking?: string;
+    plan_mode?: boolean;
+    permission_mode?: string;
+    goal_control?: 'pause' | 'resume' | 'cancel';
+  },
 ): Promise<Session> {
   return request(`/api/v1/sessions/${sessionId}/profile`, {
     method: 'POST',
@@ -401,4 +417,96 @@ export function deleteCronTask(sessionId: string, taskId: string): Promise<{ rem
   return request(`/api/v1/sessions/${sessionId}/cron/${encodeURIComponent(taskId)}`, {
     method: 'DELETE',
   });
+}
+
+export interface SearchHit {
+  session_id: string;
+  workspace_id: string;
+  session_title: string;
+  agent_id: string;
+  role: 'user' | 'assistant' | 'title';
+  snippet: string;
+  time: number;
+  turn?: number;
+  score: number;
+}
+
+export interface SearchResult {
+  items: SearchHit[];
+  has_more: boolean;
+  page_token?: string;
+  index_state: {
+    state: 'building' | 'ready' | 'readonly';
+    indexed_sessions: number;
+    total_sessions: number;
+    documents: number;
+    stale?: boolean;
+    degraded?: string;
+  };
+  source: 'live' | 'index';
+}
+
+export function searchMessages(query: string, pageSize = 20): Promise<SearchResult> {
+  return request('/api/v1/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, page_size: pageSize }),
+  });
+}
+
+export interface FileChange {
+  path: string;
+  status: 'added' | 'modified' | 'deleted';
+  additions: number;
+  deletions: number;
+  binary?: boolean;
+  oversize?: boolean;
+}
+
+export function getFileHistoryChanges(
+  sessionId: string,
+  turnId: number,
+): Promise<{ changes: FileChange[]; recorded: boolean }> {
+  return request(`/api/v1/sessions/${sessionId}/file-history/changes?turn_id=${String(turnId)}`);
+}
+
+export interface GoalSnapshot {
+  goalId: string;
+  objective: string;
+  completionCriterion?: string;
+  status: string;
+  turnsUsed: number;
+  tokensUsed: number;
+  wallClockMs: number;
+  terminalReason?: string;
+}
+
+export function getSessionGoal(sessionId: string): Promise<GoalSnapshot | null> {
+  return request(`/api/v1/sessions/${sessionId}/goal`);
+}
+
+export interface SessionWarning {
+  code: string;
+  message: string;
+  severity: 'info' | 'warning' | 'error';
+}
+
+export function getSessionWarnings(sessionId: string): Promise<{ warnings: SessionWarning[] }> {
+  return request(`/api/v1/sessions/${sessionId}/warnings`);
+}
+
+export interface SessionEnvironmentItem {
+  environment_id: string;
+  type: 'local' | 'ssh' | 'docker' | 'command';
+  status: string;
+  connect_error?: string;
+}
+
+export function getSessionEnvironments(
+  sessionId: string,
+): Promise<{ environments: SessionEnvironmentItem[] }> {
+  return request(`/api/v1/sessions/${sessionId}/environments`);
+}
+
+export function compactSession(sessionId: string): Promise<unknown> {
+  return request(`/api/v1/sessions/${sessionId}:compact`, { method: 'POST', body: '{}' });
 }
