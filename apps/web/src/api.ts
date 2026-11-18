@@ -135,8 +135,8 @@ export function setDefaultModel(modelAlias: string): Promise<unknown> {
   });
 }
 
-export function getSnapshot(sessionId: string): Promise<{ session: Session }> {
-  return request(`/api/v1/sessions/${sessionId}/snapshot`);
+export function getSession(sessionId: string): Promise<Session> {
+  return request(`/api/v1/sessions/${sessionId}`);
 }
 
 export function getMeta(): Promise<Record<string, unknown>> {

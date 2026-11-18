@@ -1,0 +1,242 @@
+.mm-root {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.mm-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 4px 6px;
+  font-family: var(--ui);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  border-radius: 2px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.mm-trigger:hover:not(:disabled) {
+  color: var(--gold-2);
+  background: var(--leather-3);
+}
+
+.mm-trigger:disabled {
+  color: var(--text-3);
+}
+
+.mm-trigger:focus-visible,
+.mm-item:focus-visible,
+.mm-row:focus-visible,
+.mm-back:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -1px;
+}
+
+.mm-trigger-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-trigger-tier {
+  color: var(--gold-2);
+  white-space: nowrap;
+}
+
+.mm-chev {
+  flex: none;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-3);
+}
+
+.mm-popup {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  max-height: min(60vh, 480px);
+  overflow: hidden;
+  color: var(--text);
+  background: var(--leather-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  outline: none;
+}
+
+.mm-popup:focus-visible {
+  border-color: var(--gold);
+}
+
+.mm-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mm-back {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-2);
+  border-radius: 2px;
+}
+
+.mm-back:hover {
+  color: var(--gold-2);
+  background: var(--leather-3);
+}
+
+.mm-title {
+  font-family: var(--ui);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-2);
+}
+
+.mm-search {
+  flex: none;
+  margin: 8px 8px 2px;
+  padding: 5px 8px;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--leather-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.mm-search:focus {
+  background: var(--leather-3);
+  border-color: var(--gold);
+}
+
+.mm-search::placeholder {
+  color: var(--text-3);
+}
+
+.mm-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.mm-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.mm-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -4px;
+  padding: 7px 12px 4px;
+  font-family: var(--ui);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-2);
+  text-transform: uppercase;
+  background: var(--leather-2);
+}
+
+.mm-row,
+.mm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  font-family: var(--ui);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text);
+  text-align: left;
+  border-radius: 2px;
+}
+
+.mm-row {
+  justify-content: space-between;
+}
+
+.mm-row:hover,
+.mm-item:hover {
+  background: var(--leather-3);
+}
+
+.mm-row.mm-active,
+.mm-item.mm-active {
+  background: var(--leather-3);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+
+.mm-row-label {
+  flex: none;
+  color: var(--text-2);
+}
+
+.mm-row-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-left: 12px;
+}
+
+.mm-row-text {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-arrow {
+  flex: none;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-3);
+}
+
+.mm-check {
+  flex: none;
+  width: 14px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gold-2);
+  text-align: center;
+}
+
+.mm-item-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-item[aria-checked='true'] .mm-item-name {
+  color: var(--gold-2);
+}
+
+.mm-empty {
+  padding: 16px 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: center;
+}

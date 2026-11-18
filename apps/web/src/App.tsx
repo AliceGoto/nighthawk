@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactElement,
+} from 'react';
 
 import {
   ApiError,
@@ -13,7 +22,7 @@ import {
   exportSession,
   getConfig,
   getMeta,
-  getSnapshot,
+  getSession,
   listCronTasks,
   listModels,
   listMcpServers,
@@ -43,6 +52,7 @@ import {
 } from './api';
 import { AuthImage } from './AuthImage';
 import { Markdown } from './Markdown';
+import { ModelMenu } from './ModelMenu';
 import {
   ApprovalCard,
   QuestionCard,
@@ -80,18 +90,40 @@ const QUICK_PROMPTS = [
   '给最近改动的文件补一组测试',
 ];
 
-const EFFORT_LABELS: Record<string, string> = {
-  off: '关闭',
-  minimal: '最低',
-  low: '低',
-  medium: '中',
-  high: '高',
-  xhigh: '极高',
-  max: '最高',
-};
+const SIDEBAR_MIN = 264;
+const SIDEBAR_MAX = 420;
+const SIDEBAR_DEFAULT = 280;
+const SIDEBAR_AUTO_COLLAPSE = 1024;
+const SIDEBAR_DRAWER = 768;
+const CENTER_MIN = 400;
+const RIGHT_MIN = 320;
+const RIGHT_DEFAULT_RATIO = 0.45;
+const RIGHT_MAX_RATIO = 0.7;
 
-function effortLabel(value: string): string {
-  return EFFORT_LABELS[value] ?? value;
+const PANEL_TABS = [
+  ['plugins', '插件'],
+  ['providers', '供应商'],
+  ['skills', 'Skills'],
+  ['mcp', 'MCP'],
+  ['cron', '定时'],
+] as const;
+
+type PanelTab = (typeof PANEL_TABS)[number][0];
+
+function panelFromUrl(): PanelTab | undefined {
+  const fromUrl = new URLSearchParams(location.search).get('panel');
+  return PANEL_TABS.find(([tab]) => tab === fromUrl)?.[0];
+}
+
+function readStoredWidth(key: string): number | undefined {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function clampWidth(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 const PROVIDER_STATUS_LABELS: Record<string, string> = {
@@ -360,6 +392,110 @@ function buildLive(frames: Record<string, FrameState>): Item | undefined {
   return { id: 'live', role: 'assistant', text, thinking, tools, images: [] };
 }
 
+function DragHandle({
+  side,
+  style,
+  onStart,
+  onDrag,
+  onEnd,
+}: {
+  side: 'sidebar' | 'right';
+  style: CSSProperties;
+  onStart: () => void;
+  onDrag: (dx: number) => void;
+  onEnd: () => void;
+}): ReactElement {
+  const [dragging, setDragging] = useState(false);
+  const active = useRef(false);
+  const origin = useRef(0);
+  const latest = useRef(0);
+  const frame = useRef<number | null>(null);
+  const callbacks = useRef({ onStart, onDrag, onEnd });
+  callbacks.current = { onStart, onDrag, onEnd };
+
+  const stop = useCallback((apply: boolean): void => {
+    if (!active.current) return;
+    active.current = false;
+    if (frame.current !== null) {
+      cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
+    if (apply) callbacks.current.onDrag(latest.current - origin.current);
+    document.body.classList.remove('is-resizing');
+    setDragging(false);
+    callbacks.current.onEnd();
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (!active.current) return;
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      document.body.classList.remove('is-resizing');
+      callbacks.current.onEnd();
+    },
+    [],
+  );
+
+  const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    origin.current = event.clientX;
+    latest.current = event.clientX;
+    active.current = true;
+    callbacks.current.onStart();
+    document.body.classList.add('is-resizing');
+    setDragging(true);
+  }, []);
+
+  const onPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!active.current) return;
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    latest.current = event.clientX;
+    frame.current ??= requestAnimationFrame(() => {
+      frame.current = null;
+      callbacks.current.onDrag(latest.current - origin.current);
+    });
+  }, []);
+
+  const onPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!active.current) return;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      stop(true);
+    },
+    [stop],
+  );
+
+  const onPointerCancel = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      stop(false);
+    },
+    [stop],
+  );
+
+  const onLostPointerCapture = useCallback(() => {
+    stop(true);
+  }, [stop]);
+
+  return (
+    <div
+      className={`resizer resizer-${side}`}
+      style={style}
+      data-dragging={dragging ? true : undefined}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onLostPointerCapture}
+    />
+  );
+}
+
 function useSessions(): {
   sessions: Session[];
   reload: () => Promise<void>;
@@ -387,9 +523,6 @@ export function App(): ReactElement {
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [model, setModel] = useState('');
   const [effort, setEffort] = useState('');
-  const [pickerOpen, setPickerOpen] = useState(
-    () => new URLSearchParams(location.search).get('picker') === '1',
-  );
   const [query, setQuery] = useState('');
   const [attachments, setAttachments] = useState<FileMeta[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -401,16 +534,17 @@ export function App(): ReactElement {
     if (fromUrl === 'light' || fromUrl === 'dark') return fromUrl;
     return localStorage.getItem('nighthawk.theme') === 'light' ? 'light' : 'dark';
   });
-  const [panel, setPanel] = useState<'none' | 'plugins' | 'mcp' | 'providers' | 'skills' | 'cron'>(() => {
-    const fromUrl = new URLSearchParams(location.search).get('panel');
-    return fromUrl === 'plugins' ||
-      fromUrl === 'mcp' ||
-      fromUrl === 'providers' ||
-      fromUrl === 'skills' ||
-      fromUrl === 'cron'
-      ? fromUrl
-      : 'none';
-  });
+  const [viewport, setViewport] = useState(() => window.innerWidth);
+  const [sidebarWidth, setSidebarWidth] = useState(() =>
+    clampWidth(readStoredWidth('nighthawk.sidebarWidth') ?? SIDEBAR_DEFAULT, SIDEBAR_MIN, SIDEBAR_MAX),
+  );
+  const [rightWidth, setRightWidth] = useState<number | undefined>(() =>
+    readStoredWidth('nighthawk.rightWidth'),
+  );
+  const [wideSidebarOpen, setWideSidebarOpen] = useState(true);
+  const [narrowSidebarOpen, setNarrowSidebarOpen] = useState(false);
+  const [panel, setPanel] = useState<PanelTab>(() => panelFromUrl() ?? 'plugins');
+  const [panelOpen, setPanelOpen] = useState(() => panelFromUrl() !== undefined);
   const [plugins, setPlugins] = useState<PluginSummary[]>([]);
   const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
   const [providers, setProviders] = useState<ProviderItem[]>([]);
@@ -454,9 +588,38 @@ export function App(): ReactElement {
   const currentIdRef = useRef<string | undefined>(undefined);
   const skillsSessionIdRef = useRef('');
   const cronSessionIdRef = useRef('');
+  const sidebarWidthRef = useRef(sidebarWidth);
+  const rightWidthRef = useRef(rightWidth);
+  const sidebarBase = useRef(0);
+  const rightBase = useRef(0);
+  const dockedWidthsRef = useRef({ sidebar: 0, right: 0 });
   const { sessions, reload } = useSessions();
 
   currentIdRef.current = currentId;
+
+  const narrow = viewport < SIDEBAR_AUTO_COLLAPSE;
+  const drawer = viewport < SIDEBAR_DRAWER;
+  const sidebarOpen = narrow ? narrowSidebarOpen : wideSidebarOpen;
+  const sidebarPrefWidth = clampWidth(sidebarWidth, SIDEBAR_MIN, SIDEBAR_MAX);
+  const sidebarColumnWidth = sidebarOpen && !drawer ? sidebarPrefWidth : 0;
+  const rightPrefWidth = clampWidth(
+    rightWidth ?? Math.round(viewport * RIGHT_DEFAULT_RATIO),
+    RIGHT_MIN,
+    Math.max(RIGHT_MIN, Math.round(viewport * RIGHT_MAX_RATIO)),
+  );
+  const rightSpace = viewport - sidebarColumnWidth - CENTER_MIN;
+  const rightDockWidth = panelOpen ? Math.min(rightPrefWidth, Math.max(0, rightSpace)) : 0;
+  const rightMode: 'none' | 'docked' | 'overlay' =
+    !panelOpen ? 'none' : drawer || rightDockWidth < RIGHT_MIN ? 'overlay' : 'docked';
+  const rightColumnWidth = rightMode === 'docked' ? rightDockWidth : 0;
+  const rightDragMax = Math.max(
+    RIGHT_MIN,
+    Math.min(Math.round(viewport * RIGHT_MAX_RATIO), rightSpace),
+  );
+
+  sidebarWidthRef.current = sidebarWidth;
+  rightWidthRef.current = rightWidth;
+  dockedWidthsRef.current = { sidebar: sidebarColumnWidth, right: rightColumnWidth };
 
   const handleEvent = useCallback(
     (event: WireEvent) => {
@@ -623,11 +786,13 @@ export function App(): ReactElement {
         const modelPage = await listModels();
         if (!cancelled) {
           setModels(modelPage.items);
-          const initial = configData.default_model ?? modelPage.items[0]?.model ?? '';
-          setModel(initial);
-          const entry = modelPage.items.find((item) => item.model === initial);
-          const levels = entry?.support_efforts ?? [];
-          setEffort(entry?.default_effort ?? levels[Math.floor(levels.length / 2)] ?? '');
+          if (currentIdRef.current === undefined) {
+            const initial = configData.default_model ?? modelPage.items[0]?.model ?? '';
+            setModel(initial);
+            const entry = modelPage.items.find((item) => item.model === initial);
+            const levels = entry?.support_efforts ?? [];
+            setEffort(entry?.default_effort ?? levels[Math.floor(levels.length / 2)] ?? '');
+          }
         }
         await reload();
       } catch (error) {
@@ -657,23 +822,23 @@ export function App(): ReactElement {
   }, [token, handleEvent]);
 
   useEffect(() => {
-    if (!pickerOpen) return;
+    if (!panelOpen) return;
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setPickerOpen(false);
+      if (event.key === 'Escape') setPanelOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pickerOpen]);
+  }, [panelOpen]);
 
   useEffect(() => {
     if (currentId === undefined) return;
     void refreshMessages(currentId);
-    void getSnapshot(currentId)
-      .then((snapshot) => {
-        const sessionModel = snapshot.session.agent_config?.model;
+    void getSession(currentId)
+      .then((session) => {
+        const sessionModel = session.agent_config?.model;
         if (typeof sessionModel === 'string' && sessionModel.length > 0) setModel(sessionModel);
-        const sessionThinking = snapshot.session.agent_config?.thinking;
-        if (typeof sessionThinking === 'string' && sessionThinking.length > 0) setEffort(sessionThinking);
+        const sessionThinking = session.agent_config?.thinking;
+        setEffort(typeof sessionThinking === 'string' ? sessionThinking : '');
       })
       .catch(() => undefined);
     socketRef.current?.subscribe(currentId);
@@ -791,8 +956,9 @@ export function App(): ReactElement {
   );
 
   const loadPanels = useCallback(
-    async (which: 'plugins' | 'mcp' | 'providers' | 'skills' | 'cron') => {
+    async (which: PanelTab) => {
       setPanel(which);
+      setPanelOpen(true);
       try {
         if (which === 'plugins') {
           const result = await listPlugins();
@@ -815,6 +981,43 @@ export function App(): ReactElement {
     },
     [loadCron, loadSkills],
   );
+
+  const toggleSidebar = useCallback(() => {
+    if (narrow) setNarrowSidebarOpen((open) => !open);
+    else setWideSidebarOpen((open) => !open);
+  }, [narrow]);
+
+  const startSidebarResize = useCallback(() => {
+    sidebarBase.current = dockedWidthsRef.current.sidebar;
+  }, []);
+
+  const resizeSidebar = useCallback((dx: number) => {
+    const next = clampWidth(sidebarBase.current + dx, SIDEBAR_MIN, SIDEBAR_MAX);
+    sidebarWidthRef.current = next;
+    setSidebarWidth(next);
+  }, []);
+
+  const endSidebarResize = useCallback(() => {
+    localStorage.setItem('nighthawk.sidebarWidth', String(sidebarWidthRef.current));
+  }, []);
+
+  const startRightResize = useCallback(() => {
+    rightBase.current = dockedWidthsRef.current.right;
+  }, []);
+
+  const resizeRight = useCallback(
+    (dx: number) => {
+      const next = clampWidth(rightBase.current - dx, RIGHT_MIN, rightDragMax);
+      rightWidthRef.current = next;
+      setRightWidth(next);
+    },
+    [rightDragMax],
+  );
+
+  const endRightResize = useCallback(() => {
+    const width = rightWidthRef.current;
+    if (width !== undefined) localStorage.setItem('nighthawk.rightWidth', String(width));
+  }, []);
 
   const resetProviderForm = useCallback(() => {
     setProviderId('');
@@ -1028,18 +1231,8 @@ export function App(): ReactElement {
     }
   }, [cwd, model, reload]);
 
-  const groupedModels = useMemo(() => {
-    const groups = new Map<string, ModelEntry[]>();
-    for (const entry of models) {
-      const list = groups.get(entry.provider) ?? [];
-      list.push(entry);
-      groups.set(entry.provider, list);
-    }
-    return [...groups.entries()].toSorted(([a], [b]) => a.localeCompare(b));
-  }, [models]);
-
   useEffect(() => {
-    if (panel !== 'none') void loadPanels(panel);
+    if (panelOpen) void loadPanels(panel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1047,6 +1240,25 @@ export function App(): ReactElement {
     document.documentElement.dataset['theme'] = theme;
     localStorage.setItem('nighthawk.theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    let frame: number | null = null;
+    const onResize = (): void => {
+      frame ??= requestAnimationFrame(() => {
+        frame = null;
+        setViewport(window.innerWidth);
+      });
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    setNarrowSidebarOpen(false);
+  }, [narrow, drawer]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -1058,13 +1270,6 @@ export function App(): ReactElement {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [newSession]);
-
-  const selectedEntry = useMemo(
-    () => models.find((entry) => entry.model === model),
-    [models, model],
-  );
-  const efforts = useMemo(() => selectedEntry?.support_efforts ?? [], [selectedEntry]);
-  const effortText = effort.length > 0 ? effortLabel(effort) : '';
 
   const applyConfig = useCallback(
     (patch: { model?: string; thinking?: string }) => {
@@ -1084,7 +1289,6 @@ export function App(): ReactElement {
       setModel(entry.model);
       setEffort(nextEffort);
       applyConfig({ model: entry.model, ...(nextEffort.length > 0 ? { thinking: nextEffort } : {}) });
-      setPickerOpen(false);
     },
     [applyConfig],
   );
@@ -1212,55 +1416,6 @@ export function App(): ReactElement {
               </div>
             )}
             <div className="composer-inner">
-              {pickerOpen && <div className="picker-backdrop" onClick={() => setPickerOpen(false)} />}
-              {pickerOpen && (
-                <div className="model-picker">
-                  <div className="picker-head">
-                    <span className="picker-title">模型</span>
-                    <span className="picker-scope">{selectedEntry?.provider ?? ''}</span>
-                    <button type="button" className="picker-close" onClick={() => setPickerOpen(false)}>
-                      ×
-                    </button>
-                  </div>
-                  {efforts.length > 0 && (
-                    <div className="tier-row">
-                      <span className="tier-label">强度</span>
-                      {efforts.map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={value === effort ? 'tier-chip active' : 'tier-chip'}
-                          onClick={() => changeEffort(value)}
-                        >
-                          {effortLabel(value)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="picker-list">
-                    {groupedModels.map(([provider, entries]) => (
-                      <div className="picker-group" key={provider}>
-                        <div className="picker-group-title">{provider}</div>
-                        {entries.map((entry) => (
-                          <button
-                            type="button"
-                            key={entry.model}
-                            className={entry.model === model ? 'picker-item active' : 'picker-item'}
-                            onClick={() => selectModel(entry)}
-                          >
-                            <span className="picker-item-name">{entry.display_name ?? entry.model}</span>
-                            <span className="picker-item-meta">
-                              {entry.support_efforts !== undefined && entry.support_efforts.length > 0
-                                ? `${String(entry.support_efforts.length)} 档`
-                                : '—'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1334,18 +1489,13 @@ export function App(): ReactElement {
                   </button>
                 </div>
                 <div className="composer-right">
-                  <button
-                    type="button"
-                    className="model-trigger"
-                    aria-expanded={pickerOpen}
-                    onClick={() => setPickerOpen((open) => !open)}
-                  >
-                    <span className="model-trigger-name">
-                      {selectedEntry?.display_name ?? model ?? '选择模型'}
-                    </span>
-                    {effortText.length > 0 && <span className="model-trigger-tier">· {effortText}</span>}
-                    <span className="chev">⌄</span>
-                  </button>
+                  <ModelMenu
+                    models={models}
+                    model={model}
+                    effort={effort}
+                    onSelectModel={selectModel}
+                    onSelectEffort={changeEffort}
+                  />
                   {busy ? (
                     <button type="button" className="send-btn stop" aria-label="停止" onClick={() => void stop()}>
                       <span className="send-stop" />
@@ -1368,8 +1518,23 @@ export function App(): ReactElement {
   );
 
   return (
-    <div className="app">
-      <aside className="sidebar">
+    <div
+      className="app"
+      data-sidebar-drawer={drawer || undefined}
+      data-sidebar-open={sidebarOpen || undefined}
+      data-sidebar-collapsed={sidebarOpen ? undefined : true}
+      data-right-overlay={rightMode === 'overlay' || undefined}
+      data-right-full={(panelOpen && drawer) || undefined}
+      style={
+        {
+          '--sidebar-w': `${sidebarColumnWidth}px`,
+          '--sidebar-pref-w': `${sidebarPrefWidth}px`,
+          '--right-w': `${rightColumnWidth}px`,
+          '--right-pref-w': `${rightPrefWidth}px`,
+        } as CSSProperties
+      }
+    >
+      <aside id="app-sidebar" className="sidebar" aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
         <div className="brand">
           <img src="/nighthawk-icon.svg" alt="" width={22} height={22} />
           <span className="brand-name">NightHawk</span>
@@ -1501,21 +1666,42 @@ export function App(): ReactElement {
         </div>
       </aside>
 
+      {drawer && sidebarOpen && (
+        <div className="drawer-backdrop" onClick={() => setNarrowSidebarOpen(false)} />
+      )}
+
       <main className="main">
-        {current !== undefined && (
-          <header className="header">
-            <div className="header-title">
-              <strong>{current.title.length > 0 ? current.title : '未命名会话'}</strong>
-              <span className="cwd">{current.metadata.cwd ?? ''}</span>
-            </div>
+        <header className="header">
+          <div className="header-left">
+            <button
+              type="button"
+              className="sidebar-toggle"
+              aria-controls="app-sidebar"
+              aria-expanded={sidebarOpen}
+              title={sidebarOpen ? '收起侧栏' : '展开侧栏'}
+              aria-label={sidebarOpen ? '收起侧栏' : '展开侧栏'}
+              onClick={toggleSidebar}
+            >
+              <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <path d="M2.5 4h11M2.5 8h11M2.5 12h11" />
+              </svg>
+            </button>
+            {current !== undefined && (
+              <div className="header-title">
+                <strong>{current.title.length > 0 ? current.title : '未命名会话'}</strong>
+                <span className="cwd">{current.metadata.cwd ?? ''}</span>
+              </div>
+            )}
+          </div>
+          {current !== undefined && (
             <div className="header-right">
               <button type="button" className="header-btn" onClick={() => void downloadExport()}>
                 导出
               </button>
               <span className={`pill ${busy ? 'busy' : 'idle'}`}>{busy ? '运行中' : '空闲'}</span>
             </div>
-          </header>
-        )}
+          )}
+        </header>
 
         {current === undefined ? (
           <div className="welcome">
@@ -1616,20 +1802,14 @@ export function App(): ReactElement {
         )}
       </main>
 
-      {panel !== 'none' && (
+      {panelOpen && (
         <>
-          <div className="sheet-backdrop" onClick={() => setPanel('none')} />
+          {rightMode === 'overlay' && (
+            <div className="sheet-backdrop" onClick={() => setPanelOpen(false)} />
+          )}
           <aside className="sheet">
             <div className="sheet-head">
-              {(
-                [
-                  ['plugins', '插件'],
-                  ['providers', '供应商'],
-                  ['skills', 'Skills'],
-                  ['mcp', 'MCP'],
-                  ['cron', '定时'],
-                ] as const
-              ).map(([tab, label]) => (
+              {PANEL_TABS.map(([tab, label]) => (
                 <button
                   key={tab}
                   type="button"
@@ -1639,7 +1819,7 @@ export function App(): ReactElement {
                   {label}
                 </button>
               ))}
-              <button type="button" className="sheet-close" onClick={() => setPanel('none')}>
+              <button type="button" className="sheet-close" onClick={() => setPanelOpen(false)}>
                 ×
               </button>
             </div>
@@ -1971,6 +2151,25 @@ export function App(): ReactElement {
             </div>
           </aside>
         </>
+      )}
+
+      {sidebarOpen && !drawer && (
+        <DragHandle
+          side="sidebar"
+          style={{ left: sidebarColumnWidth }}
+          onStart={startSidebarResize}
+          onDrag={resizeSidebar}
+          onEnd={endSidebarResize}
+        />
+      )}
+      {rightMode === 'docked' && (
+        <DragHandle
+          side="right"
+          style={{ right: rightColumnWidth }}
+          onStart={startRightResize}
+          onDrag={resizeRight}
+          onEnd={endRightResize}
+        />
       )}
     </div>
   );

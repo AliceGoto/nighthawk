@@ -103,12 +103,59 @@ textarea::placeholder {
 }
 
 .app {
+  --sidebar-w: 280px;
+  --sidebar-pref-w: 280px;
+  --right-w: 0px;
+  --right-pref-w: 360px;
+  position: relative;
   display: grid;
-  grid-template-columns: 264px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--right-w);
+  grid-template-rows: 100%;
   height: 100%;
   background:
     radial-gradient(120% 80% at 70% -10%, rgba(176, 138, 69, 0.06), transparent 60%),
     var(--void);
+}
+
+.app[data-sidebar-drawer] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 4px;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  transition: background 0.12s ease;
+}
+
+.resizer:hover,
+.resizer[data-dragging] {
+  background: var(--gold);
+}
+
+.resizer-sidebar {
+  margin-left: -2px;
+}
+
+.resizer-right {
+  margin-right: -2px;
+}
+
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 body::before {
@@ -137,10 +184,40 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
   padding: 16px 12px;
   background: linear-gradient(180deg, var(--leather) 0%, var(--leather-2) 100%);
   border-right: 1px solid var(--line);
+}
+
+.app[data-sidebar-drawer] .sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  width: min(var(--sidebar-pref-w), 86vw);
+  border-right-color: var(--line-strong);
+  box-shadow: 20px 0 60px rgba(0, 0, 0, 0.55);
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+}
+
+.app[data-sidebar-drawer][data-sidebar-open] .sidebar {
+  transform: translateX(0);
+}
+
+.app[data-sidebar-drawer]:not([data-sidebar-open]) .sidebar {
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .app[data-sidebar-collapsed] .sidebar {
+    visibility: hidden;
+    border-right-color: transparent;
+  }
 }
 
 .brand {
@@ -406,6 +483,29 @@ body::after {
   background: color-mix(in srgb, var(--void) 82%, transparent);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(16px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sidebar-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.sidebar-toggle:hover {
+  color: var(--gold-2);
+  border-color: var(--gold);
 }
 
 .header-title {
@@ -1774,37 +1874,56 @@ body::after {
 
 /* ---------- plugin, provider, skill and MCP sheet ---------- */
 
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba(0, 0, 0, 0.45);
+}
+
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 45;
   background: rgba(0, 0, 0, 0.45);
 }
 
 .sheet {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--leather);
+  border-left: 1px solid var(--line-strong);
+}
+
+.app[data-right-overlay] .sheet {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 11;
-  display: flex;
-  flex-direction: column;
-  width: min(380px, 92vw);
-  background: var(--leather);
-  border-left: 1px solid var(--line-strong);
+  z-index: 46;
+  width: min(var(--right-pref-w), 92vw);
   box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.app[data-right-full] .sheet {
+  left: 0;
+  width: 100%;
+  border-left: none;
 }
 
 .sheet-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 12px;
   border-bottom: 1px solid var(--line);
 }
 
 .sheet-tab {
-  padding: 6px 12px;
+  padding: 6px 9px;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.1em;
@@ -2085,13 +2204,9 @@ body::after {
   accent-color: var(--gold);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 767px) {
   .app {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    display: none;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .header,
