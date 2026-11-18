@@ -73,6 +73,10 @@ How the two sides compare:
 | Feature | CLI | Web | Notes |
 | --- | --- | --- | --- |
 | Streaming chat | ✓ | ✓ | Web renders rich formats incrementally (tables, code highlighting, diffs, tool cards) |
+| Global search | — | ✓ | Cmd+K or the header search button; searches titles and messages across sessions |
+| Session panel | — | ✓ | Environment, usage, file changes, goal, and warnings for the open session |
+| Command palette | ✓ | ✓ | Type `/` in the composer for new, model, search, export, compact, stop, theme, and panel |
+| Plan mode | ✓ | ✓ | Toggle Plan in the composer; the input placeholder changes |
 | Session management | ✓ | ✓ | Create, rename, delete, and export a session as a ZIP |
 | Approvals and questions | ✓ | ✓ | Click to approve or answer in the UI — no commands needed |
 | Attachments | ✓ | ✓ | Upload or paste images and files into the prompt |
